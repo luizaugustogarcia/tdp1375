@@ -65,7 +65,6 @@ public class Util {
 				_pi.add(newPi.get(i));
 			}
 			pi = new Cycle(newPi);
-			System.out.println(pi.getStartingBy((byte) 0));
 		}
 
 		return pi.getStartingBy((byte) 0);
@@ -350,37 +349,6 @@ public class Util {
 		}
 
 		return results;
-	}
-
-	private static boolean areNotIntersecting(List<Cycle> cycles, byte[] pi) {
-		Set<Byte> symbols = new HashSet<>(Bytes.asList(pi));
-
-		Map<Byte, Byte> symbolToLabel = new HashMap<>();
-
-		for (int i = 0; i < cycles.size(); i++) {
-			for (int j = 0; j < cycles.get(i).size(); j++) {
-				byte symbol = cycles.get(i).getSymbols()[j];
-				symbolToLabel.put(symbol, (byte) i);
-				symbols.remove(symbol);
-			}
-		}
-
-		ByteArrayList _pi = new ByteArrayList(Arrays.copyOf(pi, pi.length));
-		_pi.removeAll(new ByteArrayList(Bytes.toArray(symbols)));
-
-		Map<Integer, Integer> states = new HashMap<>();
-		for (int i = 0; i < _pi.size(); i++) {
-			int currentLabel = symbolToLabel.get(_pi.get(i));
-			int state = !states.containsKey(currentLabel) ? 0 : states.get(currentLabel);
-			int nextLabel = symbolToLabel.get(_pi.get((i + 1) % _pi.size()));
-			if (currentLabel != nextLabel)
-				state++;
-			if (state == 2)
-				return false;
-			states.put(currentLabel, state);
-		}
-
-		return true;
 	}
 
 	private static <T> Generator<T> combinations(Collection<T> collection, int k) {
