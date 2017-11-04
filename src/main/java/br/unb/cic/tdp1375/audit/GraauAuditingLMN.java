@@ -73,7 +73,6 @@ public class GraauAuditingLMN implements RearrangementAlgorithm {
 
 		try {
 			Cycle pi = new Cycle("0," + StringUtils.join(ArrayUtils.toObject(permutation), ","));
-			// In order to simulate the algorithm of Elias and Hartman, it is enough to simplify the permutation before sorting it
 			d = Sorting1375.sort(pi);
 		} catch (Exception e) {
 			logger.error(String.format("erro ao ordenar %s", Arrays.toString(permutation)));
