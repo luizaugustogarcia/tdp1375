@@ -7,6 +7,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -36,32 +37,32 @@ import com.google.common.primitives.Bytes;
 
 import br.unb.cic.tdp1375.permutations.Cycle;
 import br.unb.cic.tdp1375.permutations.MulticyclePermutation;
-import br.unb.cic.tdp1375.permutations.PermutationGroups;
 import br.unb.cic.tdp1375.permutations.MulticyclePermutation.ByteArrayRepresentation;
+import br.unb.cic.tdp1375.permutations.PermutationGroups;
 import br.unb.cic.tdp1375.util.Util;
 import cern.colt.list.ByteArrayList;
 
-public class TranslateSBT1375ProofUnoriented {
+public class DesimplifyUnoriented {
 
-	private static final String INPUT_DIR = "/home/luiz/SBT1375_proof/";
-	private static final String OUTPUT_DIR = "/home/luiz/cases/unoriented/";
+	private static final String INPUT_DIR = "/home/luiz/Desktop/SBT1375_proof/";
+	private static final String OUTPUT_DIR = "/home/luiz/Desktop/SBT1375_proof/cases/unoriented/";
 	
 	private static final Set<String> VISITED_FILES = new HashSet<>();
 	private static final Pattern SIGMA_PI_INVERSE_PATTERN = Pattern.compile(".*\"(.*)\".*");
 	private static final Pattern SORTING_PATTERN = Pattern.compile(".*a = (\\d+).*b = (\\d+).*c = (\\d+).*");
-	private static Cache<ByteArrayRepresentation, Object> cache;
-	private static Object FAKE_OBJECT = new Object();
+	private static Cache<ByteArrayRepresentation, Serializable> cache;
+	private static Serializable FAKE_OBJECT = new Serializable() {};
 
 	public static void main(String[] args) throws IOException {
 		PersistentCacheManager persistentCacheManager = CacheManagerBuilder.newCacheManagerBuilder()
 				.with(CacheManagerBuilder.persistence("/home/luiz/cache/mydata"))
 				.withCache("cache",
 						CacheConfigurationBuilder.newCacheConfigurationBuilder(ByteArrayRepresentation.class,
-								Object.class, ResourcePoolsBuilder.newResourcePoolsBuilder().heap(1, MemoryUnit.GB)
+								Serializable.class, ResourcePoolsBuilder.newResourcePoolsBuilder().heap(1, MemoryUnit.GB)
 										.offheap(2, MemoryUnit.GB).disk(1, MemoryUnit.TB)))
 				.build(true);
 
-		cache = persistentCacheManager.getCache("cache", ByteArrayRepresentation.class, Object.class);
+		cache = persistentCacheManager.getCache("cache", ByteArrayRepresentation.class, Serializable.class);
 
 		System.out.println("/* unoriented interleaving pair */");
 		translate("bfs_files/", "[3](0_4_2)[3](1_5_3).html", OUTPUT_DIR + "(0,4,2)(1,5,3)");
