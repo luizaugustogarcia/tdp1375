@@ -8,5 +8,5 @@ The class "br.unb.cic.tdp1375.Sorting1375" implements the algorithm proposed by 
 To run the project:
 
 1. Copy the content of "tdp1375/deps/" folder to your .m2 folder
-2. Uncompress the two files "case*.tar.gz", each one in a different folder
+2. Uncompress the two files "case*.tar.gz", each one into a different folder
 3. Run the main method of br.unb.cic.tdp1375.Sorting1375 passing as parameters: the folder for unoriented cases (first), the folder for the oriented cases (second) and the permutation to sort (last parameter), e.g., 0,8,7,6,5,4,3,2,1.
