@@ -5,7 +5,7 @@ This project requires Maven.
 
 The class "br.unb.cic.tdp1375.Sorting1375" implements the algorithm proposed by Silva et al.
 
-Before execute the project:
+To run the project:
 
 1. Copy the content of "tdp1375/deps/" folder to your .m2 folder
 2. Uncompress the two files "case*.tar.gz", each one in a different folder
