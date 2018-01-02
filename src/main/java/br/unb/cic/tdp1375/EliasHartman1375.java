@@ -43,32 +43,33 @@ public class EliasHartman1375 {
 	private static List<Case> _3_2Cases = new ArrayList<>();
 	private static Map<Integer, List<Case>> _11_8UnorientedCases = new HashMap<>();
 
-	static {
+	private static void initializeCases(String unorientedCasesFolder) {
 		_1_1OddCyclesCases.addAll(OddCyclesCases.get1_1Cases());
 		_2_2OddCyclesCases.addAll(OddCyclesCases.get2_2Cases());
 
 		_3_2Cases = Cases_3_2.get3_2Cases();
 
-		String inputFolder = "/home/luiz/Desktop/SBT1375_proof/cases/unoriented";
 		List<Case> cases = new ArrayList<>();
-		cases.addAll(get11_8Cases(inputFolder + "/(0,3,1)(2,5,4)"));
-		cases.addAll(get11_8Cases(inputFolder + "/(0,4,2)(1,5,3)"));
-		cases.addAll(get11_8Cases(inputFolder + "/bad-small-(0,7,5)(1,11,9)(2,6,4)(3,10,8)"));
-		cases.addAll(get11_8Cases(inputFolder + "/bad-small-(0,4,2)(1,5,3)"));
-		cases.addAll(get11_8Cases(inputFolder + "/bad-small-(0,10,2)(1,5,3)(4,8,6)(7,11,9)"));
-		cases.addAll(get11_8Cases(inputFolder + "/bad-small-(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)"));
-		cases.addAll(get11_8Cases(inputFolder + "/bad-small-(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/(0,3,1)(2,5,4)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/(0,4,2)(1,5,3)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,7,5)(1,11,9)(2,6,4)(3,10,8)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,4,2)(1,5,3)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,10,2)(1,5,3)(4,8,6)(7,11,9)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)"));
+		cases.addAll(
+				get11_8Cases(unorientedCasesFolder + "/bad-small-(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)"));
 		_11_8UnorientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
 	}
 
 	public static void main(String[] args) {
-		System.out.println(sort(new Cycle("0,8,3,7,6,2,5,1,4,9,14,13,12,11,10")));
+		initializeCases(args[0]);
+		System.out.println(sort(new Cycle(args[1])));
 	}
 
 	@SuppressWarnings({ "unchecked" })
 	public static int sort(Cycle pi) {
 		pi = Util.simplify(pi);
-		
+
 		int n = pi.size();
 
 		byte[] array = new byte[pi.size()];
