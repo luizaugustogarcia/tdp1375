@@ -46,7 +46,12 @@ public class Sorting1375 {
 	private static Map<Integer, List<Case>> _11_8UnorientedCases = new HashMap<>();
 	private static Map<Integer, List<Case>> _11_8OrientedCases = new HashMap<>();
 
-	static {
+	public static void main(String[] args) {
+		initializeCases(args[0], args[1]);
+		System.out.println(sort(new Cycle(args[2])));
+	}
+
+	private static void initializeCases(String unorientedCasesFolder, String orientedCasesFolder) {
 		_11_8OrientedCycle.addAll(OrientedCycleGreaterThan5.get11_8Cases());
 
 		_1_1OddCyclesCases.addAll(OddCyclesCases.get1_1Cases());
@@ -54,26 +59,21 @@ public class Sorting1375 {
 
 		_3_2Cases = Cases_3_2.get3_2Cases();
 
-		String inputFolder = "/home/luiz/cases/unoriented";
 		List<Case> cases = new ArrayList<>();
-		cases.addAll(get11_8Cases(inputFolder + "/(0,3,1)(2,5,4)"));
-		cases.addAll(get11_8Cases(inputFolder + "/(0,4,2)(1,5,3)"));
-		cases.addAll(get11_8Cases(inputFolder + "/bad-small-(0,7,5)(1,11,9)(2,6,4)(3,10,8)"));
-		cases.addAll(get11_8Cases(inputFolder + "/bad-small-(0,4,2)(1,5,3)"));
-		cases.addAll(get11_8Cases(inputFolder + "/bad-small-(0,10,2)(1,5,3)(4,8,6)(7,11,9)"));
-		cases.addAll(get11_8Cases(inputFolder + "/bad-small-(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)"));
-		cases.addAll(get11_8Cases(inputFolder + "/bad-small-(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/(0,3,1)(2,5,4)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/(0,4,2)(1,5,3)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,7,5)(1,11,9)(2,6,4)(3,10,8)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,4,2)(1,5,3)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,10,2)(1,5,3)(4,8,6)(7,11,9)"));
+		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)"));
+		cases.addAll(
+				get11_8Cases(unorientedCasesFolder + "/bad-small-(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)"));
 		_11_8UnorientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
 
-		inputFolder = "/home/luiz/cases/oriented";
 		cases = new ArrayList<>();
-		cases.addAll(get11_8Cases(inputFolder + "/(0,4,2)(1,5,3)"));
-		cases.addAll(get11_8Cases(inputFolder + "/bad-small-(0,4,2)(1,5,3)"));
+		cases.addAll(get11_8Cases(orientedCasesFolder + "/(0,4,2)(1,5,3)"));
+		cases.addAll(get11_8Cases(orientedCasesFolder + "/bad-small-(0,4,2)(1,5,3)"));
 		_11_8OrientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
-	}
-
-	public static void main(String[] args) {
-		System.out.println(sort(new Cycle("0,8,3,7,6,2,5,1,4,9,14,13,12,11,10")));
 	}
 
 	@SuppressWarnings({ "unchecked" })
@@ -272,7 +272,7 @@ public class Sorting1375 {
 	public static <T> Generator<T> combinations(Collection<T> collection, int k) {
 		return Factory.createSimpleCombinationGenerator(Factory.createVector(collection), k);
 	}
-	
+
 	private static List<Cycle> get2CyclesSegments(Cycle cycle) {
 		List<Cycle> result = new ArrayList<>();
 		for (int i = 0; i < cycle.size(); i++) {
