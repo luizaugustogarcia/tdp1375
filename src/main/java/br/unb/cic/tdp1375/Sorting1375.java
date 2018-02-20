@@ -128,7 +128,7 @@ public class Sorting1375 {
 							.findFirst().get();
 					mu.add(new Cycle(initialFactor.get(0), initialFactor.get(1), initialFactor.get(2)));
 
-					boolean badSmallComponent = true;
+					boolean badSmallComponent = false;
 					// O(n)
 					for (int i = 0; i < 8; i++) {
 						int norm = getNorm(mu);
@@ -145,7 +145,6 @@ public class Sorting1375 {
 							for (byte[] rho : _11_8Seq)
 								pi = computeProduct(new Cycle(rho), pi).asNCycle();
 							distance += _11_8Seq.length;
-							badSmallComponent = false;
 							break;
 						}
 					}
