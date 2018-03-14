@@ -1,12 +1,14 @@
 # tdp1375
 Algorithm for sorting by transpositions with guarantee of approximation ratio of 1.375
 
-This project requires Maven.
+This project requires Maven to be compiled.
 
-The class "br.unb.cic.tdp1375.Sorting1375" implements the algorithm proposed by Silva et al.
+The class "br.unb.cic.tdp.Silvaetal" implements the algorithm proposed by Silva et al.
 
 To run the project:
 
-1. Copy the content of "tdp1375/deps/" folder to your .m2 folder
-2. Uncompress the two files "case*.tar.gz", each one into a different folder
-3. Run the main method of br.unb.cic.tdp1375.Sorting1375 passing as parameters: the folder for unoriented cases (first parameter), the folder for the oriented cases (second parameter) and the permutation to sort (third and last parameter), e.g., 0,8,7,6,5,4,3,2,1.
+1. Copy the content of "tdp/deps/" folder to your .m2 folder
+2. Uncompress the file "cases.tar.gz"
+3. Run the main method of br.unb.cic.tdp.Silvaetal providing as parameters: the folder into which the file file "cases.tar.gz" was decompressed (first parameter), then the permutation to sort (last parameter), e.g., 0,8,7,6,5,4,3,2,1.
+
+The package "br.unb.cic.tdp.proof" contains the programs responsible to generate all the cases employed by the proposed algorithm. To generatethe cases corresponding to the desimplifications of the catalog created by Elias and Hartman, it is necessary to download and decompress the file "SBT1375_proof.tar.gz". The path for this catalog on the localhost must be provided in the classes "br.unb.cic.tdp.proof.Desimplify*.java".
