@@ -1,4 +1,4 @@
-package br.unb.cic.tdp1375.cases;
+package br.unb.cic.tdp.proof;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,10 +15,10 @@ import org.paukov.combinatorics.ICombinatoricsVector;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 
-import br.unb.cic.tdp1375.permutations.Cycle;
-import br.unb.cic.tdp1375.permutations.MulticyclePermutation;
-import br.unb.cic.tdp1375.permutations.MulticyclePermutation.ByteArrayRepresentation;
-import br.unb.cic.tdp1375.util.Util;
+import br.unb.cic.tdp.Util;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.permutation.MulticyclePermutation.ByteArrayRepresentation;
 
 public class Cases_3_2 {
 

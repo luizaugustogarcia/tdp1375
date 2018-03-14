@@ -1,11 +1,7 @@
-package br.unb.cic.tdp1375;
+package br.unb.cic.tdp;
 
-import static br.unb.cic.tdp1375.permutations.PermutationGroups.computeProduct;
+import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -15,69 +11,51 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.commons.collections.ListUtils;
 import org.apache.commons.math3.util.Pair;
-import org.paukov.combinatorics.Factory;
-import org.paukov.combinatorics.Generator;
-import org.paukov.combinatorics.ICombinatoricsVector;
 
-import com.google.common.base.Throwables;
-
-import br.unb.cic.tdp1375.cases.Case;
-import br.unb.cic.tdp1375.cases.Cases_3_2;
-import br.unb.cic.tdp1375.cases.OddCyclesCases;
-import br.unb.cic.tdp1375.cases.OrientedCycleGreaterThan5;
-import br.unb.cic.tdp1375.permutations.Cycle;
-import br.unb.cic.tdp1375.permutations.MulticyclePermutation;
-import br.unb.cic.tdp1375.permutations.PermutationGroups;
-import br.unb.cic.tdp1375.util.Util;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.proof.Case;
+import br.unb.cic.tdp.proof.OrientedCycleGreaterThan5;
 import cern.colt.list.ByteArrayList;
 
-public class Sorting1375 {
+public class Silvaetal extends BaseAlgorithm {
 
-	private static List<Case> _11_8OrientedCycle = new ArrayList<>();
-	private static List<Case> _1_1OddCyclesCases = new ArrayList<>();
-	private static List<Case> _2_2OddCyclesCases = new ArrayList<>();
-	private static List<Case> _3_2Cases = new ArrayList<>();
-	private static Map<Integer, List<Case>> _11_8UnorientedCases = new HashMap<>();
-	private static Map<Integer, List<Case>> _11_8OrientedCases = new HashMap<>();
+	private static final String ORTD_INTERLEAVING_PAIR = "oriented/(0,4,2)(1,5,3)";
+	private static final String ORTD_BAD_SMAL_INTERLEAVING_PAIR = "oriented/(0,4,2)(1,5,3)";
+
+	private List<Case> _11_8OrientedCycle = new ArrayList<>();
+
+	private Map<Integer, List<Case>> _11_8OrientedCases = new HashMap<>();
 
 	public static void main(String[] args) {
-		initializeCases(args[0], args[1]);
-		System.out.println(sort(new Cycle(args[2])));
+		Silvaetal silvaetal = new Silvaetal(args[0]);
+		System.out.println(silvaetal.sort(new Cycle(args[1])));
 	}
 
-	private static void initializeCases(String unorientedCasesFolder, String orientedCasesFolder) {
-		_11_8OrientedCycle.addAll(OrientedCycleGreaterThan5.get11_8Cases());
+	public Silvaetal(String casesFolder) {
+		super(casesFolder);
+	}
 
-		_1_1OddCyclesCases.addAll(OddCyclesCases.get1_1Cases());
-		_2_2OddCyclesCases.addAll(OddCyclesCases.get2_2Cases());
+	protected void loadCases(String casesFolder) {
+		super.loadCases(casesFolder);
 
-		_3_2Cases = Cases_3_2.get3_2Cases();
-
-		List<Case> cases = new ArrayList<>();
-		cases.addAll(get11_8Cases(unorientedCasesFolder + "/(0,3,1)(2,5,4)"));
-		cases.addAll(get11_8Cases(unorientedCasesFolder + "/(0,4,2)(1,5,3)"));
-		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,7,5)(1,11,9)(2,6,4)(3,10,8)"));
-		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,4,2)(1,5,3)"));
-		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,10,2)(1,5,3)(4,8,6)(7,11,9)"));
-		cases.addAll(get11_8Cases(unorientedCasesFolder + "/bad-small-(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)"));
-		cases.addAll(
-				get11_8Cases(unorientedCasesFolder + "/bad-small-(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)"));
-		_11_8UnorientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
-
-		cases = new ArrayList<>();
-		cases.addAll(get11_8Cases(orientedCasesFolder + "/(0,4,2)(1,5,3)"));
-		cases.addAll(get11_8Cases(orientedCasesFolder + "/bad-small-(0,4,2)(1,5,3)"));
+		ArrayList<Case> cases = new ArrayList<>();
+		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, ORTD_INTERLEAVING_PAIR)));
+		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, ORTD_BAD_SMAL_INTERLEAVING_PAIR)));
 		_11_8OrientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
+
+		// Generates the (4,3)-sequences cases to be applied when we have an oriented
+		// cycle with length greater than 6
+		_11_8OrientedCycle.addAll(OrientedCycleGreaterThan5.get11_8Cases());
 	}
 
 	@SuppressWarnings({ "unchecked" })
-	public static int sort(Cycle pi) {
+	public int sort(Cycle pi) {
 		int n = pi.size();
 
 		byte[] array = new byte[pi.size()];
@@ -185,102 +163,10 @@ public class Sorting1375 {
 			sigmaPiInverse = computeProduct(true, sigma, pi.getInverse());
 		}
 
-		if (distance < lowerBound)
-			throw new RuntimeException("ERROR");
-
 		return distance;
 	}
 
-	private static int getNorm(Collection<Cycle> mu) {
-		return mu.stream().mapToInt(c -> c.getNorm()).sum();
-	}
-
-	private static void apply2MoveTwoOddCycles(MulticyclePermutation sigmaPiInverse, Cycle pi) {
-		int evenCycles = sigmaPiInverse.getNumberOfEvenCycles();
-		List<Cycle> oddCycles = sigmaPiInverse.stream().filter(c -> !c.isEven()).collect(Collectors.toList());
-		for (Cycle c1 : oddCycles)
-			for (Cycle c2 : oddCycles)
-				if (c1 != c2) {
-					for (Cycle a : get2CyclesSegments(c1))
-						for (Cycle b : get2CyclesSegments(c2)) {
-							for (ICombinatoricsVector<Byte> rho : combinations(
-									Arrays.asList(a.get(0), a.get(1), b.get(0), b.get(1)), 3)) {
-								Cycle rho1 = new Cycle(rho.getVector().stream().mapToInt(i -> i).toArray());
-								if (pi.areSymbolsInCyclicOrder(rho1.getSymbols())
-										&& (computeProduct(sigmaPiInverse, rho1.getInverse())).getNumberOfEvenCycles()
-												- evenCycles == 2) {
-									applyMovesRedefining(pi, rho1.getSymbols());
-									return;
-								}
-							}
-						}
-				}
-	}
-
-	private static Pair<Cycle, Cycle> searchFor2_2Seq(MulticyclePermutation sigmaPiInverse, Cycle pi) {
-		List<Cycle> oddCycles = sigmaPiInverse.stream().filter(c -> !c.isEven()).collect(Collectors.toList());
-		for (Cycle c1 : oddCycles)
-			for (Cycle c2 : oddCycles)
-				if (c1 != c2) {
-					for (Cycle a : get2CyclesSegments(c1))
-						for (Byte b : c2.getSymbols()) {
-							for (ICombinatoricsVector<Byte> rho : combinations(Arrays.asList(a.get(0), a.get(1), b),
-									3)) {
-								Cycle rho1 = new Cycle(rho.getVector().stream().mapToInt(i -> i).toArray());
-								if (pi.areSymbolsInCyclicOrder(rho1.getSymbols())) {
-									MulticyclePermutation _sigmaPiInverse = PermutationGroups
-											.computeProduct(sigmaPiInverse, rho1.getInverse());
-									Cycle _pi = new Cycle(Util.applyTransposition(rho1.getSymbols(), pi.getSymbols()));
-									Cycle rho2 = searchFor2Move(_sigmaPiInverse, _pi);
-									if (rho2 != null)
-										return new Pair<>(rho1, rho2);
-								}
-							}
-						}
-				}
-
-		for (Cycle cycle : sigmaPiInverse.stream().filter(c -> !pi.getInverse().isFactor(c))
-				.collect(Collectors.toList())) {
-			int before = cycle.isEven() ? 1 : 0;
-			for (int i = 0; i < cycle.size() - 2; i++) {
-				for (int j = i + 1; j < cycle.size() - 1; j++) {
-					for (int k = j + 1; k < cycle.size(); k++) {
-						byte a = cycle.get(i), b = cycle.get(j), c = cycle.get(k);
-						if (pi.areSymbolsInCyclicOrder(a, b, c)) {
-							int after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
-							after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
-							after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
-							if (after - before == 2) {
-								Cycle rho1 = new Cycle(a, b, c);
-								MulticyclePermutation _sigmaPiInverse = PermutationGroups.computeProduct(sigmaPiInverse,
-										rho1.getInverse());
-								Cycle _pi = new Cycle(Util.applyTransposition(rho1.getSymbols(), pi.getSymbols()));
-								Cycle rho2 = searchFor2Move(_sigmaPiInverse, _pi);
-								if (rho2 != null)
-									return new Pair<>(rho1, rho2);
-							}
-						}
-					}
-				}
-			}
-		}
-
-		return null;
-	}
-
-	public static <T> Generator<T> combinations(Collection<T> collection, int k) {
-		return Factory.createSimpleCombinationGenerator(Factory.createVector(collection), k);
-	}
-
-	private static List<Cycle> get2CyclesSegments(Cycle cycle) {
-		List<Cycle> result = new ArrayList<>();
-		for (int i = 0; i < cycle.size(); i++) {
-			result.add(new Cycle(cycle.get(i), cycle.image(cycle.get(i))));
-		}
-		return result;
-	}
-
-	private static byte[][] searchFor11_8Seq(Collection<Cycle> mu, MulticyclePermutation sigmaPiInverse, Cycle pi) {
+	private byte[][] searchFor11_8Seq(Collection<Cycle> mu, MulticyclePermutation sigmaPiInverse, Cycle pi) {
 		byte[][] rhos = null;
 
 		if (mu.stream().filter(c -> c.size() == 5 && !pi.getInverse().isFactor(c)).count() > 0)
@@ -292,7 +178,7 @@ public class Sorting1375 {
 		return rhos;
 	}
 
-	private static Set<Cycle> extend(Set<Cycle> mu, MulticyclePermutation sigmaPiInverse, Cycle pi) {
+	private Set<Cycle> extend(Set<Cycle> mu, MulticyclePermutation sigmaPiInverse, Cycle pi) {
 		Cycle piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
 		Set<Byte> muSymbols = new HashSet<>();
 
@@ -384,15 +270,8 @@ public class Sorting1375 {
 		return mu;
 	}
 
-	private static boolean contains(Set<Byte> muSymbols, Cycle cycle) {
-		for (Byte symbol : cycle.getSymbols())
-			if (muSymbols.contains(symbol))
-				return true;
-		return false;
-	}
-
 	// O(n)
-	private static Cycle align(Cycle sigmaPiInverseCycle, Cycle segment) {
+	private Cycle align(Cycle sigmaPiInverseCycle, Cycle segment) {
 		for (int i = 0; i < segment.size(); i++) {
 			byte symbol = segment.get(i);
 			int index = sigmaPiInverseCycle.indexOf(symbol);
@@ -411,37 +290,13 @@ public class Sorting1375 {
 		return null;
 	}
 
-	// O(n)
-	private static Cycle getIntersectingCycle(int left, int right, Cycle[] symbolToSigmaPiInverseCycles,
-			MulticyclePermutation sigmaPiInverse, Cycle piInverse) {
-		int gates = left < right ? right - left : piInverse.size() - (left - right);
-		for (int i = 1; i < gates; i++) {
-			int index = (i + left) % piInverse.size();
-			Cycle intersectingCycle = symbolToSigmaPiInverseCycles[piInverse.get(index)];
-			if (intersectingCycle != null && intersectingCycle.size() > 1) {
-				byte a = piInverse.get(index);
-				byte b = intersectingCycle.image(a);
-				if (isOutOfInterval(piInverse.indexOf(b), left, right, piInverse.size())) {
-					return intersectingCycle.getStartingBy(a);
-				}
-			}
-		}
-		return null;
-	}
-
-	private static boolean isOutOfInterval(int x, int left, int right, int n) {
-		if (left < right)
-			return x < left || x > right;
-		return x > left && x < right;
-	}
-
-	private static Cycle searchForOrientedCycleBiggerThan5(MulticyclePermutation sigmaPiInverse, Cycle pi) {
+	private Cycle searchForOrientedCycleBiggerThan5(MulticyclePermutation sigmaPiInverse, Cycle pi) {
 		return sigmaPiInverse.stream().filter(c -> c.size() > 5 && !pi.getInverse().isFactor(c)).findFirst()
 				.orElse(null);
 	}
 
 	// O(n^3)
-	private static int apply11_8SeqOrientedCase(Cycle orientedCycle, MulticyclePermutation sigmaPiInverse, Cycle pi) {
+	private int apply11_8SeqOrientedCase(Cycle orientedCycle, MulticyclePermutation sigmaPiInverse, Cycle pi) {
 		for (int j = 0; j < orientedCycle.size(); j++) {
 			byte a = orientedCycle.get(j);
 			byte d = orientedCycle.image(a);
@@ -472,7 +327,7 @@ public class Sorting1375 {
 						}
 
 						if (is11_8(sigmaPiInverse, pi.getSymbols(), rhos)) {
-							applyMovesRedefining(pi, rhos);
+							applyMoves(pi, rhos);
 							return rhos.length;
 						}
 					}
@@ -484,7 +339,7 @@ public class Sorting1375 {
 	}
 
 	// O(n)
-	private static byte[][] searchForSeq(Collection<Cycle> mu, MulticyclePermutation sigmaPiInverse, Cycle pi,
+	private byte[][] searchForSeq(Collection<Cycle> mu, MulticyclePermutation sigmaPiInverse, Cycle pi,
 			List<Case> cases) {
 		if (cases != null) {
 			Cycle[] symbolToMuCycle = new Cycle[pi.size()];
@@ -547,18 +402,11 @@ public class Sorting1375 {
 		return null;
 	}
 
-	private static byte[] getStartingBy(byte[] cycle, int i) {
-		byte[] _symbols = new byte[cycle.length];
-		System.arraycopy(cycle, i, _symbols, 0, _symbols.length - i);
-		System.arraycopy(cycle, 0, _symbols, _symbols.length - i, i);
-		return _symbols;
-	}
-
-	private static boolean isOriented(Cycle pi, Cycle cycle) {
+	private boolean isOriented(Cycle pi, Cycle cycle) {
 		return !pi.getInverse().isFactor(cycle);
 	}
 
-	private static boolean is11_8(MulticyclePermutation sigmaPiInverse, byte[] pi, byte[][] rhos) {
+	private boolean is11_8(MulticyclePermutation sigmaPiInverse, byte[] pi, byte[][] rhos) {
 		int evenCycles = sigmaPiInverse.getNumberOfEvenCycles();
 		for (byte[] rho : rhos) {
 			if (areSymbolsInCyclicOrder(rho, pi)) {
@@ -572,7 +420,7 @@ public class Sorting1375 {
 		return after > evenCycles && (float) rhos.length / ((after - evenCycles) / 2) <= ((float) 11 / 8);
 	}
 
-	private static boolean areSymbolsInCyclicOrder(byte[] rho, byte[] pi) {
+	private boolean areSymbolsInCyclicOrder(byte[] rho, byte[] pi) {
 		int a = 0, b = 0, c = 0;
 		for (int i = 0; i < pi.length; i++) {
 			if (pi[i] == rho[0])
@@ -585,40 +433,7 @@ public class Sorting1375 {
 		return a < b && b < c || c < a && a < b || b < c && c < a;
 	}
 
-	private static List<Case> get11_8Cases(String file) {
-		List<Case> _cases = new ArrayList<>();
-
-		try (Reader fr = new BufferedReader(new FileReader(file), 10000000)) {
-			try (Scanner scanner = new Scanner(fr)) {
-				scanner.useDelimiter("\\n");
-
-				while (scanner.hasNext()) {
-					String line = scanner.next().trim();
-					MulticyclePermutation sigmaPiInverse = new MulticyclePermutation(line.split(";")[0]);
-					byte[] pi = new byte[sigmaPiInverse.stream().mapToInt(c -> c.getSymbols().length).sum()];
-					for (int i = 0; i < pi.length; i++) {
-						pi[i] = (byte) i;
-					}
-					List<byte[]> rhos = new ArrayList<>();
-					for (String _rho : line.split(";")[1].split("-")) {
-						_rho = _rho.replace("[", "").replace("]", "");
-						byte[] rho = new byte[3];
-						rho[0] = Byte.parseByte(_rho.split(",")[0].trim());
-						rho[1] = Byte.parseByte(_rho.split(",")[1].trim());
-						rho[2] = Byte.parseByte(_rho.split(",")[2].trim());
-						rhos.add(rho);
-					}
-					_cases.add(new Case(pi, sigmaPiInverse, rhos));
-				}
-			}
-		} catch (IOException e) {
-			Throwables.propagate(e);
-		}
-
-		return _cases;
-	}
-
-	private static void apply3_2(MulticyclePermutation sigmaPiInverse, Cycle pi) {
+	private void apply3_2(MulticyclePermutation sigmaPiInverse, Cycle pi) {
 		Cycle orientedCycle = sigmaPiInverse.stream().filter(c -> c.size() >= 5 && !pi.getInverse().isFactor(c))
 				.findFirst().orElse(null);
 
@@ -633,14 +448,14 @@ public class Sorting1375 {
 				mu = extend(mu, sigmaPiInverse, pi);
 				byte[][] rhos = searchForSeq(mu, sigmaPiInverse, pi, _3_2Cases);
 				if (rhos != null) {
-					applyMovesRedefining(pi, rhos);
+					applyMoves(pi, rhos);
 					return;
 				}
 			}
 		}
 	}
 
-	private static void apply3_2OrientedCase(Cycle orientedCycle, MulticyclePermutation sigmaPiInverse, Cycle pi) {
+	private void apply3_2OrientedCase(Cycle orientedCycle, MulticyclePermutation sigmaPiInverse, Cycle pi) {
 		int even = sigmaPiInverse.getNumberOfEvenCycles();
 
 		for (int i = 0; i <= orientedCycle.size() - 5; i++) {
@@ -657,63 +472,13 @@ public class Sorting1375 {
 
 			if (computeProduct(true, sigmaPiInverse, new Cycle(rho1).getInverse(), new Cycle(rho2).getInverse(),
 					new Cycle(rho3).getInverse()).getNumberOfEvenCycles() - even >= 4) {
-				applyMovesRedefining(pi, rho1, rho2, rho3);
+				applyMoves(pi, rho1, rho2, rho3);
 				return;
 			}
 		}
 	}
 
-	private static void applyMovesRedefining(Cycle omega, byte[]... rhos) {
-		byte[] pi = omega.getSymbols();
-		for (byte[] rho : rhos)
-			pi = Util.applyTransposition(rho, pi);
-		omega.redefine(pi);
-	}
-
-	private static boolean thereAreOddCycles(MulticyclePermutation sigmaPiInverse) {
-		return sigmaPiInverse.stream().filter(c -> !c.isEven()).count() > 0;
-	}
-
-	private static Cycle searchFor2Move(MulticyclePermutation sigmaPiInverse, Cycle pi) {
-		List<Cycle> oddCycles = sigmaPiInverse.stream().filter(c -> !c.isEven()).collect(Collectors.toList());
-		for (Cycle c1 : oddCycles)
-			for (Cycle c2 : oddCycles)
-				if (c1 != c2) {
-					for (Cycle a : get2CyclesSegments(c1))
-						for (Byte b : c2.getSymbols()) {
-							for (ICombinatoricsVector<Byte> rho : combinations(Arrays.asList(a.get(0), a.get(1), b),
-									3)) {
-								Cycle rho1 = new Cycle(rho.getVector().stream().mapToInt(i -> i).toArray());
-								if (pi.areSymbolsInCyclicOrder(rho1.getSymbols())) {
-									return rho1;
-								}
-							}
-						}
-				}
-
-		for (Cycle cycle : sigmaPiInverse.stream().filter(c -> !pi.getInverse().isFactor(c))
-				.collect(Collectors.toList())) {
-			int before = cycle.isEven() ? 1 : 0;
-			for (int i = 0; i < cycle.size() - 2; i++) {
-				for (int j = i + 1; j < cycle.size() - 1; j++) {
-					for (int k = j + 1; k < cycle.size(); k++) {
-						byte a = cycle.get(i), b = cycle.get(j), c = cycle.get(k);
-						if (pi.areSymbolsInCyclicOrder(a, b, c)) {
-							int after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
-							after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
-							after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
-							if (after - before == 2)
-								return new Cycle(a, b, c);
-						}
-					}
-				}
-			}
-		}
-
-		return null;
-	}
-
-	private static Cycle searchFor2MoveOriented(MulticyclePermutation sigmaPiInverse, Cycle pi) {
+	private Cycle searchFor2MoveOriented(MulticyclePermutation sigmaPiInverse, Cycle pi) {
 		for (Cycle cycle : sigmaPiInverse.stream().filter(c -> !pi.getInverse().isFactor(c))
 				.collect(Collectors.toList())) {
 			int before = cycle.isEven() ? 1 : 0;

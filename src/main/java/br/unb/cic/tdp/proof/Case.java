@@ -1,9 +1,9 @@
-package br.unb.cic.tdp1375.cases;
+package br.unb.cic.tdp.proof;
 
 import java.util.List;
 
-import br.unb.cic.tdp1375.permutations.Cycle;
-import br.unb.cic.tdp1375.util.Util;
+import br.unb.cic.tdp.Util;
+import br.unb.cic.tdp.permutation.Cycle;
 
 public class Case {
 
