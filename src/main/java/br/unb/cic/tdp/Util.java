@@ -1,4 +1,4 @@
-package br.unb.cic.tdp1375.util;
+package br.unb.cic.tdp;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,9 +18,9 @@ import org.paukov.combinatorics.ICombinatoricsVector;
 
 import com.google.common.primitives.Bytes;
 
-import br.unb.cic.tdp1375.permutations.Cycle;
-import br.unb.cic.tdp1375.permutations.MulticyclePermutation;
-import br.unb.cic.tdp1375.permutations.PermutationGroups;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.permutation.PermutationGroups;
 import cern.colt.list.ByteArrayList;
 import cern.colt.list.FloatArrayList;
 
@@ -351,7 +351,7 @@ public class Util {
 		return results;
 	}
 
-	private static <T> Generator<T> combinations(Collection<T> collection, int k) {
+	public static <T> Generator<T> combinations(Collection<T> collection, int k) {
 		return Factory.createSimpleCombinationGenerator(Factory.createVector(collection), k);
 	}
 }

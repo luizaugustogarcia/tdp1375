@@ -1,4 +1,4 @@
-package br.unb.cic.tdp1375.eliashartman;
+package br.unb.cic.tdp.proof;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -30,10 +30,10 @@ import org.paukov.combinatorics.ICombinatoricsVector;
 
 import com.google.common.base.Throwables;
 
-import br.unb.cic.tdp1375.permutations.Cycle;
-import br.unb.cic.tdp1375.permutations.MulticyclePermutation;
-import br.unb.cic.tdp1375.permutations.MulticyclePermutation.ByteArrayRepresentation;
-import br.unb.cic.tdp1375.util.Util;
+import br.unb.cic.tdp.Util;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.permutation.MulticyclePermutation.ByteArrayRepresentation;
 
 public class DesimplifyOriented extends DesimplifyUnoriented {
 
