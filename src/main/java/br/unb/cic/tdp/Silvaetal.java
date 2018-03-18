@@ -39,9 +39,10 @@ public class Silvaetal extends BaseAlgorithm {
 
 	public Silvaetal(String casesFolder) {
 		super(casesFolder);
+		loadExtraCases(casesFolder);
 	}
 
-	protected void loadCases(String casesFolder) {
+	private void loadExtraCases(String casesFolder) {
 		super.loadCases(casesFolder);
 
 		ArrayList<Case> cases = new ArrayList<>();
