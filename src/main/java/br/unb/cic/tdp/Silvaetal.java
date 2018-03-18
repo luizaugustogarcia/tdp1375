@@ -43,8 +43,6 @@ public class Silvaetal extends BaseAlgorithm {
 	}
 
 	private void loadExtraCases(String casesFolder) {
-		super.loadCases(casesFolder);
-
 		ArrayList<Case> cases = new ArrayList<>();
 		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, ORTD_INTERLEAVING_PAIR)));
 		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, ORTD_BAD_SMAL_INTERLEAVING_PAIR)));
