@@ -1,5 +1,5 @@
 # tdp1375
-Algorithm for sorting by transpositions with guarantee of approximation ratio of 1.375. This is part of the Ph.D. thesis of Luiz Silva.
+Algorithm for sorting by transpositions based on an algebraic approach with guarantee of approximation ratio of 1.375, conceived as part of the Ph.D. thesis of Luiz Silva.
 
 This project requires Maven to be compiled.
 
