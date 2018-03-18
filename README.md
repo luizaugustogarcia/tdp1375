@@ -3,7 +3,7 @@ Algorithm for sorting by transpositions with guarantee of approximation ratio of
 
 This project requires Maven to be compiled.
 
-The class "br.unb.cic.tdp.Silvaetal" implements the algorithm proposed by Silva et al.
+The class "br.unb.cic.tdp.Silvaetal" implements the algorithm proposed by Silva et al (unpublished yet).
 
 To run the algorithm:
 
