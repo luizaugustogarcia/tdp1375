@@ -65,7 +65,7 @@ public class Silvaetal extends BaseAlgorithm {
 
 		MulticyclePermutation sigmaPiInverse = computeProduct(true, n, sigma, pi.getInverse());
 
-		int distance = 0, lowerBound = (pi.getSymbols().length - sigmaPiInverse.getNumberOfEvenCycles()) / 2;
+		int distance = 0;
 
 		// O(n^6)
 		Pair<Cycle, Cycle> _2_2Seq = searchFor2_2Seq(sigmaPiInverse, pi);
