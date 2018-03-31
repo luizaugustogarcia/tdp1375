@@ -1,11 +1,15 @@
 package br.unb.cic.tdp.proof;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
@@ -24,7 +28,20 @@ public class OrientedCycleGreaterThan5 {
 
 	private static Set<ByteArrayRepresentation> cache = new HashSet<>();
 
-	public static List<Case> get11_8Cases() {
+	public static void main(String[] args) throws IOException {
+		String outputFile = args[0];
+
+		try (FileWriter writer = new FileWriter(outputFile, true);) {
+			try (BufferedWriter out = new BufferedWriter(writer)) {
+				for (Case _case : generateCases()) {
+					out.write(_case.getSigmaPiInverse() + ";" + _case.getRhos().stream()
+							.map(r -> Arrays.toString(r).intern()).collect(Collectors.joining("-")) + "\n");
+				}
+			}
+		}
+	}
+
+	public static List<Case> generateCases() {
 		Cycle orientedCycle = new Cycle(a, d, e, b, f, c, g);
 		return generate(orientedCycle, new byte[] { a, b, c });
 	}

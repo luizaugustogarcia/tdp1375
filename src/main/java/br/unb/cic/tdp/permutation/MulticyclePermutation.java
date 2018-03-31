@@ -11,6 +11,8 @@ import org.apache.commons.lang.StringUtils;
 
 import com.google.common.collect.Lists;
 
+import cern.colt.list.ByteArrayList;
+
 public class MulticyclePermutation extends ArrayList<Cycle> implements Permutation {
 
 	public MulticyclePermutation() {
@@ -19,10 +21,22 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
 	public MulticyclePermutation(String permutation) {
 		super();
 
-		permutation = permutation.replace("(", "");
-		for (String cycle : permutation.split("\\)")) {
-			if (!StringUtils.isBlank(cycle)) {
+		ByteArrayList cycle = new ByteArrayList();
+		byte symbol = 0;
+		for (int i = 0; i < permutation.length(); i++) {
+			char current = permutation.charAt(i);
+			if (current == '(') {
+				continue;
+			} else if (current == ')') {
+				cycle.add(symbol);
+				symbol = 0;
 				this.add(new Cycle(cycle));
+				cycle = new ByteArrayList();
+			} else if (current == ',') {
+				cycle.add(symbol);
+				symbol = 0;
+			} else {
+				symbol = (byte) (symbol * 10 + Character.getNumericValue(current));
 			}
 		}
 	}

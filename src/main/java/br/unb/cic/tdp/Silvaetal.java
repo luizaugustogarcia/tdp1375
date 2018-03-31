@@ -20,11 +20,11 @@ import org.apache.commons.math3.util.Pair;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.Case;
-import br.unb.cic.tdp.proof.OrientedCycleGreaterThan5;
 import cern.colt.list.ByteArrayList;
 
 public class Silvaetal extends BaseAlgorithm {
 
+	private static final String ORTD_GREATER_THAN_5 = "oriented/oriented_gt_5";
 	private static final String ORTD_INTERLEAVING_PAIR = "oriented/(0,4,2)(1,5,3)";
 	private static final String ORTD_BAD_SMAL_INTERLEAVING_PAIR = "oriented/(0,4,2)(1,5,3)";
 
@@ -44,13 +44,13 @@ public class Silvaetal extends BaseAlgorithm {
 
 	private void loadExtraCases(String casesFolder) {
 		ArrayList<Case> cases = new ArrayList<>();
-		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, ORTD_INTERLEAVING_PAIR)));
-		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, ORTD_BAD_SMAL_INTERLEAVING_PAIR)));
+		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, ORTD_INTERLEAVING_PAIR)));
+		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, ORTD_BAD_SMAL_INTERLEAVING_PAIR)));
 		_11_8OrientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
 
 		// Generates the (4,3)-sequences cases to be applied when we have an oriented
 		// cycle with length greater than 6
-		_11_8OrientedCycle.addAll(OrientedCycleGreaterThan5.get11_8Cases());
+		_11_8OrientedCycle.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, ORTD_GREATER_THAN_5)));
 	}
 
 	@SuppressWarnings({ "unchecked" })

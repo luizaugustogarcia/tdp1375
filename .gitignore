@@ -1,0 +1,6 @@
+/cases/
+/target/
+/.settings/
+*.classpath
+*.project
+*.tar.gz
