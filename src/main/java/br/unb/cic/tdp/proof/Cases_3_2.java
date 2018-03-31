@@ -1,5 +1,8 @@
 package br.unb.cic.tdp.proof;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -7,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
@@ -22,7 +26,20 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation.ByteArrayRepresentation;
 
 public class Cases_3_2 {
 
-	public static List<Case> get3_2Cases() {
+	public static void main(String[] args) throws IOException {
+		String outputFile = args[0];
+
+		try (FileWriter writer = new FileWriter(outputFile, true);) {
+			try (BufferedWriter out = new BufferedWriter(writer)) {
+				for (Case _case : generate3_2Cases()) {
+					out.write(_case.getSigmaPiInverse() + ";" + _case.getRhos().stream()
+							.map(r -> Arrays.toString(r).intern()).collect(Collectors.joining("-")) + "\n");
+				}
+			}
+		}
+	}
+
+	public static List<Case> generate3_2Cases() {
 		List<Case> result = new ArrayList<>();
 		result.add(new Case(new byte[] { 0, 1, 2, 3, 4, 5 }, new MulticyclePermutation("(0,4,2)(1,5,3)"),
 				Arrays.asList(new byte[] { 0, 2, 4 }, new byte[] { 3, 1, 5 }, new byte[] { 2, 4, 0 })));

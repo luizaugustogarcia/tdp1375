@@ -5,15 +5,14 @@ import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Scanner;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.math3.util.Pair;
@@ -25,11 +24,11 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.proof.Case;
-import br.unb.cic.tdp.proof.Cases_3_2;
 import br.unb.cic.tdp.proof.OddCyclesCases;
 
 abstract class BaseAlgorithm {
 
+	protected static final String UNRTD_3_2 = "unoriented/3_2";
 	protected static final String UNRTD_INTERSECTING_PAIR = "unoriented/(0,3,1)(2,5,4)";
 	protected static final String UNRTD_INTERLEAVING_PAIR = "unoriented/(0,4,2)(1,5,3)";
 	protected static final String UNRTD_BAD_SMALL_INTERLEAVING_PAIR = "unoriented/bad-small-(0,4,2)(1,5,3)";
@@ -58,20 +57,20 @@ abstract class BaseAlgorithm {
 		// sigma pi^{-1}
 		_2_2OddCyclesCases.addAll(OddCyclesCases.get2_2Cases());
 
-		// Generates the (3,2)-sequences to be applied to the interleaving pair and to
+		// Loads the (3,2)-sequences to be applied to the interleaving pair and to
 		// the cases where three 3-cycles are intersecting
-		_3_2Cases = Cases_3_2.get3_2Cases();
+		_3_2Cases = loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_3_2));
 
 		List<Case> cases = new ArrayList<>();
-		
-		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, UNRTD_INTERSECTING_PAIR)));
-		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, UNRTD_INTERLEAVING_PAIR)));
-		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_INTERLEAVING_PAIR)));
-		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_NECKLACE_SIZE_4)));
-		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_TWISTED_NECKLACE_SIZE_4)));
-		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_NECKLACE_SIZE_5)));
-		cases.addAll(load11_8Cases(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_NECKLACE_SIZE_6)));
-		
+
+		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_INTERSECTING_PAIR)));
+		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_INTERLEAVING_PAIR)));
+		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_INTERLEAVING_PAIR)));
+		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_NECKLACE_SIZE_4)));
+		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_TWISTED_NECKLACE_SIZE_4)));
+		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_NECKLACE_SIZE_5)));
+		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_NECKLACE_SIZE_6)));
+
 		_11_8UnorientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
 	}
 
@@ -240,31 +239,32 @@ abstract class BaseAlgorithm {
 		omega.redefine(pi);
 	}
 
-	protected List<Case> load11_8Cases(String file) {
+	static Pattern LINE_PATTERN = Pattern.compile("(\\(.*\\))");
+
+	protected List<Case> loadCasesFromFile(String file) {
 		List<Case> _cases = new ArrayList<>();
 
-		try (Reader fr = new BufferedReader(new FileReader(file), 10000000)) {
-			try (Scanner scanner = new Scanner(fr)) {
-				scanner.useDelimiter("\\n");
+		try (BufferedReader fr = new BufferedReader(new FileReader(file), 10000000)) {
+			String line;
 
-				while (scanner.hasNext()) {
-					String line = scanner.next().trim();
-					MulticyclePermutation sigmaPiInverse = new MulticyclePermutation(line.split(";")[0]);
-					byte[] pi = new byte[sigmaPiInverse.stream().mapToInt(c -> c.getSymbols().length).sum()];
-					for (int i = 0; i < pi.length; i++) {
-						pi[i] = (byte) i;
-					}
-					List<byte[]> rhos = new ArrayList<>();
-					for (String _rho : line.split(";")[1].split("-")) {
-						_rho = _rho.replace("[", "").replace("]", "");
-						byte[] rho = new byte[3];
-						rho[0] = Byte.parseByte(_rho.split(",")[0].trim());
-						rho[1] = Byte.parseByte(_rho.split(",")[1].trim());
-						rho[2] = Byte.parseByte(_rho.split(",")[2].trim());
-						rhos.add(rho);
-					}
-					_cases.add(new Case(pi, sigmaPiInverse, rhos));
+			while ((line = fr.readLine()) != null) {
+				String[] parts = line.trim().split(";");
+				MulticyclePermutation sigmaPiInverse = new MulticyclePermutation(parts[0]);
+				byte[] pi = new byte[sigmaPiInverse.stream().mapToInt(c -> c.getSymbols().length).sum()];
+				for (int i = 0; i < pi.length; i++) {
+					pi[i] = (byte) i;
 				}
+				List<byte[]> rhos = new ArrayList<>();
+				for (String _rho : parts[1].split("-")) {
+					_rho = _rho.replaceAll("\\[|\\]|\\s", "");
+					byte[] rho = new byte[3];
+					String[] symbols = _rho.split(",");
+					rho[0] = Byte.parseByte(symbols[0]);
+					rho[1] = Byte.parseByte(symbols[1]);
+					rho[2] = Byte.parseByte(symbols[2]);
+					rhos.add(rho);
+				}
+				_cases.add(new Case(pi, sigmaPiInverse, rhos));
 			}
 		} catch (IOException e) {
 			Throwables.propagate(e);
