@@ -183,10 +183,11 @@ abstract class BaseAlgorithm {
 
 	protected Pair<Cycle, Cycle> searchFor2_2Seq(MulticyclePermutation sigmaPiInverse, Cycle pi) {
 		List<Cycle> oddCycles = sigmaPiInverse.stream().filter(c -> !c.isEven()).collect(Collectors.toList());
-		for (Cycle c1 : oddCycles)
-			for (Cycle c2 : oddCycles)
+		
+		for /* O(n) */ (Cycle c1 : oddCycles)
+			for /* O(n) */ (Cycle c2 : oddCycles)
 				if (c1 != c2) {
-					for (Cycle a : get2CyclesSegments(c1))
+					for /* O(n) */ (Cycle a : get2CyclesSegments(c1))
 						for (Byte b : c2.getSymbols()) {
 							for (ICombinatoricsVector<Byte> rho : Util
 									.combinations(Arrays.asList(a.get(0), a.get(1), b), 3)) {

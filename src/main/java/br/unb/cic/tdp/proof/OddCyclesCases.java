@@ -46,7 +46,7 @@ public class OddCyclesCases {
 		Set<ByteArrayRepresentation> cache = new HashSet<>();
 
 		permutation: for (ICombinatoricsVector<Byte> permutation : gen) {
-			Cycle pi = new Cycle(Bytes.toArray(permutation.getVector()));
+			Cycle pi = new Cycle(Bytes.toArray(permutation.getVector())).getInverse();
 
 			for (byte[] rho1 : Util.searchAllApp3Cycles(pi.getSymbols())) {
 				MulticyclePermutation _sigmaPiInverse = PermutationGroups.computeProduct(sigmaPiInverse,

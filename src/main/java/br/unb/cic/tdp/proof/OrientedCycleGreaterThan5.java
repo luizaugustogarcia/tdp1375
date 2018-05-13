@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Stack;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.paukov.combinatorics.Factory;
@@ -26,7 +27,7 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation.ByteArrayRepresentation;
 public class OrientedCycleGreaterThan5 {
 	public static final byte a = 0, b = 1, c = 2, d = 3, e = 4, f = 5, g = 6, h = 7, i = 8;
 
-	private static Set<ByteArrayRepresentation> cache = new HashSet<>();
+	private static Set<String> cache = new HashSet<>();
 
 	public static void main(String[] args) throws IOException {
 		String outputFile = args[0];
@@ -66,11 +67,21 @@ public class OrientedCycleGreaterThan5 {
 				if (rhos != null && !rhos.isEmpty()) {
 					// if rhos.size() == 1, then there is a 2-move on pi
 					if (rhos.size() > 1) {
-						byte[] __pi = Arrays.copyOf(pi.getSymbols(), pi.size());
-						MulticyclePermutation __sigmaPiInverse = Util.canonicalize(sigmaPiInverse, __pi, rhos);
-						ByteArrayRepresentation byteArrayRepresentation = __sigmaPiInverse.byteArrayRepresentation();
-						if (!cache.contains(byteArrayRepresentation)) {
-							cache.add(byteArrayRepresentation);
+
+						TreeSet<String> signature = new TreeSet<>();
+						for (byte symbol : pi.getSymbols()) {
+							pi = pi.getStartingBy(symbol);
+							byte[] __pi = Arrays.copyOf(pi.getSymbols(), pi.size());
+							MulticyclePermutation __sigmaPiInverse = Util.canonicalize(sigmaPiInverse, __pi, rhos);
+							ByteArrayRepresentation byteArrayRepresentation = __sigmaPiInverse
+									.byteArrayRepresentation();
+							signature.add(byteArrayRepresentation.toString());
+						}
+
+						if (!cache.contains(signature.toString())) {
+							cache.add(signature.toString());
+							byte[] __pi = Arrays.copyOf(pi.getSymbols(), pi.size());
+							MulticyclePermutation __sigmaPiInverse = Util.canonicalize(sigmaPiInverse, __pi, rhos);
 							Case _case = new Case(__pi, __sigmaPiInverse, rhos);
 							result.add(_case);
 						}

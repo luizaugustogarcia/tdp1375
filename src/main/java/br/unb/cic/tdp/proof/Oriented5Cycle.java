@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
@@ -24,57 +23,58 @@ import br.unb.cic.tdp.Util;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.MulticyclePermutation.ByteArrayRepresentation;
+import br.unb.cic.tdp.permutation.PermutationGroups;
 
-public class Cases_3_2 {
+public class Oriented5Cycle {
+	public static final byte a = 0, b = 1, c = 2, d = 3, e = 4, f = 5, g = 6, h = 7, i = 8;
+
+	private static Set<String> cache = new HashSet<>();
 
 	public static void main(String[] args) throws IOException {
 		String outputFile = args[0];
 
 		try (FileWriter writer = new FileWriter(outputFile, true);) {
 			try (BufferedWriter out = new BufferedWriter(writer)) {
-				for (Case _case : generate3_2Cases()) {
-					out.write(_case.getSigmaPiInverse() + ";" + _case.getRhos().stream()
-							.map(r -> Arrays.toString(r).intern()).collect(Collectors.joining("-")) + "\n");
+				for (Case _case : generateCases()) {
+					out.write(_case.getSigmaPiInverse() + ";" + _case.getRhos().stream().map(r -> Arrays.toString(r).intern())
+							.collect(Collectors.joining("-")) + "\n");
 				}
 			}
 		}
 	}
 
-	public static List<Case> generate3_2Cases() {
-		List<Case> result = new ArrayList<>();
-		result.add(new Case(new byte[] { 0, 1, 2, 3, 4, 5 }, new MulticyclePermutation("(0,4,2)(1,5,3)"),
-				Arrays.asList(new byte[] { 0, 2, 4 }, new byte[] { 3, 1, 5 }, new byte[] { 2, 4, 0 })));
-		result.addAll(generate(new MulticyclePermutation("(0,1,2)(3,4,5)(6,7,8)")));
-		return result;
+	public static List<Case> generateCases() {
+		Cycle orientedCycle = new Cycle(a, d, b, e, c);
+		return generate(orientedCycle, new byte[] { a, b, c });
 	}
 
-	private static List<Case> generate(MulticyclePermutation sigmaPiInverse) {
+	private static List<Case> generate(Cycle orientedCycle, byte[] orientedTriple) {
 		List<Case> result = new ArrayList<>();
 
+		MulticyclePermutation sigmaPiInverse = new MulticyclePermutation(orientedCycle);
+
 		List<Byte> symbols = Lists.newArrayList();
-		sigmaPiInverse.stream().forEach(c -> symbols.addAll(Bytes.asList(c.getSymbols())));
+		symbols.addAll(Bytes.asList(orientedCycle.getSymbols()));
 
-		ICombinatoricsVector<Byte> initialVector = Factory.createVector(symbols);
+		ICombinatoricsVector<Byte> initialVector = Factory.createVector(Bytes.asList(orientedCycle.getSymbols()));
 		Generator<Byte> gen = Factory.createPermutationGenerator(initialVector);
-
-		Set<String> cache = new HashSet<>();
 
 		for (ICombinatoricsVector<Byte> permutation : gen) {
 			Cycle pi = new Cycle(Bytes.toArray(permutation.getVector()));
 
-			boolean valid = true;
-			for (Cycle cycle : sigmaPiInverse) {
-				if (!pi.getInverse().areSymbolsInCyclicOrder(cycle.getSymbols())) {
-					valid = false;
-					break;
-				}
+			try {
+				PermutationGroups.computeProduct(sigmaPiInverse, pi.getInverse()).asNCycle();
+			} catch (Exception e) {
+				continue;
 			}
 
-			if (valid) {
-				Map<Cycle, Integer> openGates = Util.openGatesPerCycle(sigmaPiInverse, pi.getInverse());
-				if (openGates.values().stream().mapToInt(j -> j.intValue()).sum() <= 2) {
-					List<byte[]> rhos = Util.findSequence(pi.getSymbols(), sigmaPiInverse, new Stack<>(), 3, 1.5F);
-					if (rhos != null) {
+			if (pi.areSymbolsInCyclicOrder(orientedTriple)) {
+				List<byte[]> rhos = Util.findSequence(pi.getSymbols(), sigmaPiInverse, new Stack<>(),
+						sigmaPiInverse.getNumberOfEvenCycles(), 1.5F);
+
+				if (rhos != null && !rhos.isEmpty()) {
+					if (rhos.size() > 1) {
+
 
 						TreeSet<String> signature = new TreeSet<>();
 						for (byte symbol : pi.getSymbols()) {
@@ -92,10 +92,9 @@ public class Cases_3_2 {
 							MulticyclePermutation __sigmaPiInverse = Util.canonicalize(sigmaPiInverse, __pi, rhos);
 							Case _case = new Case(__pi, __sigmaPiInverse, rhos);
 							result.add(_case);
-						}
-					} else
-						throw new RuntimeException("ERROR");
-				}
+						}					}
+				} else
+					throw new RuntimeException("ERROR");
 			}
 		}
 
