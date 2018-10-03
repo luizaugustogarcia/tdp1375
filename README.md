@@ -3,7 +3,7 @@ Algorithm for sorting by transpositions based on an algebraic approach with guar
 
 This project requires Maven to be compiled.
 
-The class "br.unb.cic.tdp.Silvaetal" implements the algorithm proposed by Silva et al (article not yet published).
+The class "br.unb.cic.tdp.Silvaetal" implements the algorithm proposed by Silva et al (article not published yet).
 
 To run the algorithm:
 
