@@ -62,16 +62,18 @@ abstract class BaseAlgorithm {
 		_3_2Cases = loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_3_2));
 
 		List<Case> cases = new ArrayList<>();
-
-		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_INTERSECTING_PAIR)));
-		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_INTERLEAVING_PAIR)));
-		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_INTERLEAVING_PAIR)));
-		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_NECKLACE_SIZE_4)));
-		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_TWISTED_NECKLACE_SIZE_4)));
-		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_NECKLACE_SIZE_5)));
-		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_BAD_SMALL_NECKLACE_SIZE_6)));
+		addCases(casesFolder, cases, UNRTD_INTERSECTING_PAIR, UNRTD_INTERLEAVING_PAIR, 
+						UNRTD_BAD_SMALL_INTERLEAVING_PAIR, UNRTD_BAD_SMALL_NECKLACE_SIZE_4,
+						UNRTD_BAD_SMALL_TWISTED_NECKLACE_SIZE_4, UNRTD_BAD_SMALL_NECKLACE_SIZE_5,
+						UNRTD_BAD_SMALL_NECKLACE_SIZE_6);
 
 		_11_8UnorientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
+	}
+	
+	private void addCases(String casesFolder, List<Case> cases, String... caseFiles) {
+		for (String caseFile : caseFiles) {
+			cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, caseFile)));
+		}
 	}
 
 	protected int getNorm(Collection<Cycle> mu) {
