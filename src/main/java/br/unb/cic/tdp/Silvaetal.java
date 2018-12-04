@@ -44,8 +44,9 @@ public class Silvaetal extends BaseAlgorithm {
 
 	private void loadExtraCases(String casesFolder) {
 		ArrayList<Case> cases = new ArrayList<>();
-		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, ORTD_INTERLEAVING_PAIR)));
-		cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, ORTD_BAD_SMAL_INTERLEAVING_PAIR)));
+		
+		addCases(casesFolder, cases, ORTD_INTERLEAVING_PAIR, ORTD_BAD_SMAL_INTERLEAVING_PAIR);
+		
 		_11_8OrientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
 
 		// Generates the (4,3)-sequences cases to be applied when we have an oriented
