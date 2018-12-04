@@ -70,7 +70,7 @@ abstract class BaseAlgorithm {
 		_11_8UnorientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
 	}
 	
-	private void addCases(String casesFolder, List<Case> cases, String... caseFiles) {
+	protected void addCases(String casesFolder, List<Case> cases, String... caseFiles) {
 		for (String caseFile : caseFiles) {
 			cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, caseFile)));
 		}
