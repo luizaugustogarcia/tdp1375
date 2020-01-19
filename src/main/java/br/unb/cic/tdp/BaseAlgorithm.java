@@ -51,25 +51,25 @@ abstract class BaseAlgorithm {
 	protected void loadCases(String casesFolder) {
 		// Generates the 2-moves to be applied when we have one odd cycle in sigma
 		// pi^{-1}
-		_1_1OddCyclesCases.addAll(OddCyclesCases.get1_1Cases());
+		_1_1OddCyclesCases.addAll(OddCyclesCases.generate1_1Cases());
 
 		// Generates the (2,2)-sequences to be applied when we have four odd cycles in
 		// sigma pi^{-1}
-		_2_2OddCyclesCases.addAll(OddCyclesCases.get2_2Cases());
+		_2_2OddCyclesCases.addAll(OddCyclesCases.generate2_2Cases());
 
 		// Loads the (3,2)-sequences to be applied to the interleaving pair and to
 		// the cases where three 3-cycles are intersecting
 		_3_2Cases = loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_3_2));
 
 		List<Case> cases = new ArrayList<>();
-		addCases(casesFolder, cases, UNRTD_INTERSECTING_PAIR, UNRTD_INTERLEAVING_PAIR, 
+		addCases(casesFolder, cases, UNRTD_INTERSECTING_PAIR, UNRTD_INTERLEAVING_PAIR,
 						UNRTD_BAD_SMALL_INTERLEAVING_PAIR, UNRTD_BAD_SMALL_NECKLACE_SIZE_4,
 						UNRTD_BAD_SMALL_TWISTED_NECKLACE_SIZE_4, UNRTD_BAD_SMALL_NECKLACE_SIZE_5,
 						UNRTD_BAD_SMALL_NECKLACE_SIZE_6);
 
 		_11_8UnorientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
 	}
-	
+
 	protected void addCases(String casesFolder, List<Case> cases, String... caseFiles) {
 		for (String caseFile : caseFiles) {
 			cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, caseFile)));
@@ -117,8 +117,8 @@ abstract class BaseAlgorithm {
 		for (Cycle c1 : oddCycles)
 			for (Cycle c2 : oddCycles)
 				if (c1 != c2) {
-					for (Cycle a : get2CyclesSegments(c1))
-						for (Cycle b : get2CyclesSegments(c2)) {
+					for (Cycle a : Util.get2CyclesSegments(c1))
+						for (Cycle b : Util.get2CyclesSegments(c2)) {
 							for (ICombinatoricsVector<Byte> rho : Util
 									.combinations(Arrays.asList(a.get(0), a.get(1), b.get(0), b.get(1)), 3)) {
 								Cycle rho1 = new Cycle(rho.getVector().stream().mapToInt(i -> i).toArray());
@@ -144,52 +144,13 @@ abstract class BaseAlgorithm {
 		return false;
 	}
 
-	protected Cycle searchFor2Move(MulticyclePermutation sigmaPiInverse, Cycle pi) {
-		List<Cycle> oddCycles = sigmaPiInverse.stream().filter(c -> !c.isEven()).collect(Collectors.toList());
-		for (Cycle c1 : oddCycles)
-			for (Cycle c2 : oddCycles)
-				if (c1 != c2) {
-					for (Cycle a : get2CyclesSegments(c1))
-						for (Byte b : c2.getSymbols()) {
-							for (ICombinatoricsVector<Byte> rho : Util
-									.combinations(Arrays.asList(a.get(0), a.get(1), b), 3)) {
-								Cycle rho1 = new Cycle(rho.getVector().stream().mapToInt(i -> i).toArray());
-								if (pi.areSymbolsInCyclicOrder(rho1.getSymbols())) {
-									return rho1;
-								}
-							}
-						}
-				}
-
-		for (Cycle cycle : sigmaPiInverse.stream().filter(c -> !pi.getInverse().isFactor(c))
-				.collect(Collectors.toList())) {
-			int before = cycle.isEven() ? 1 : 0;
-			for (int i = 0; i < cycle.size() - 2; i++) {
-				for (int j = i + 1; j < cycle.size() - 1; j++) {
-					for (int k = j + 1; k < cycle.size(); k++) {
-						byte a = cycle.get(i), b = cycle.get(j), c = cycle.get(k);
-						if (pi.areSymbolsInCyclicOrder(a, b, c)) {
-							int after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
-							after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
-							after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
-							if (after - before == 2)
-								return new Cycle(a, b, c);
-						}
-					}
-				}
-			}
-		}
-
-		return null;
-	}
-
 	protected Pair<Cycle, Cycle> searchFor2_2Seq(MulticyclePermutation sigmaPiInverse, Cycle pi) {
 		List<Cycle> oddCycles = sigmaPiInverse.stream().filter(c -> !c.isEven()).collect(Collectors.toList());
-		
+
 		for /* O(n) */ (Cycle c1 : oddCycles)
 			for /* O(n) */ (Cycle c2 : oddCycles)
 				if (c1 != c2) {
-					for /* O(n) */ (Cycle a : get2CyclesSegments(c1))
+					for /* O(n) */ (Cycle a : Util.get2CyclesSegments(c1))
 						for (Byte b : c2.getSymbols()) {
 							for (ICombinatoricsVector<Byte> rho : Util
 									.combinations(Arrays.asList(a.get(0), a.get(1), b), 3)) {
@@ -198,7 +159,7 @@ abstract class BaseAlgorithm {
 									MulticyclePermutation _sigmaPiInverse = PermutationGroups
 											.computeProduct(sigmaPiInverse, rho1.getInverse());
 									Cycle _pi = new Cycle(Util.applyTransposition(rho1.getSymbols(), pi.getSymbols()));
-									Cycle rho2 = searchFor2Move(_sigmaPiInverse, _pi);
+									Cycle rho2 = Util.searchFor2Move(_sigmaPiInverse, _pi);
 									if (rho2 != null)
 										return new Pair<>(rho1, rho2);
 								}
@@ -222,7 +183,7 @@ abstract class BaseAlgorithm {
 								MulticyclePermutation _sigmaPiInverse = PermutationGroups.computeProduct(sigmaPiInverse,
 										rho1.getInverse());
 								Cycle _pi = new Cycle(Util.applyTransposition(rho1.getSymbols(), pi.getSymbols()));
-								Cycle rho2 = searchFor2Move(_sigmaPiInverse, _pi);
+								Cycle rho2 = Util.searchFor2Move(_sigmaPiInverse, _pi);
 								if (rho2 != null)
 									return new Pair<>(rho1, rho2);
 							}
@@ -275,13 +236,4 @@ abstract class BaseAlgorithm {
 
 		return _cases;
 	}
-
-	protected List<Cycle> get2CyclesSegments(Cycle cycle) {
-		List<Cycle> result = new ArrayList<>();
-		for (int i = 0; i < cycle.size(); i++) {
-			result.add(new Cycle(cycle.get(i), cycle.image(cycle.get(i))));
-		}
-		return result;
-	}
-
 }

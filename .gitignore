@@ -1,6 +1,7 @@
-/cases/
-/target/
-/.settings/
-*.classpath
-*.project
+cases*
+target
+.settings
+.classpath
+.project
 *.tar.gz
+.history

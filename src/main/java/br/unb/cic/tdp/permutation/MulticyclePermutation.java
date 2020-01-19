@@ -41,7 +41,7 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
 		}
 	}
 
-	public ByteArrayRepresentation byteArrayRepresentation() {
+	public CyclicRepresentation cyclicRepresentation() {
 		byte[][] representation = new byte[this.size()][];
 		for (int i = 0; i < representation.length; i++) {
 			byte[] r = new byte[this.get(i).getSymbols().length];
@@ -70,7 +70,7 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
 
 		Arrays.sort(representation, (a, b) -> Byte.compare(a[0], b[0]));
 
-		return new ByteArrayRepresentation(representation);
+		return new CyclicRepresentation(representation);
 	}
 
 	public MulticyclePermutation(Cycle cycle) {
@@ -179,19 +179,18 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
 		return (int) stream().filter(cycle -> cycle.size() > 0).count();
 	}
 
-	public static class ByteArrayRepresentation implements Serializable {
+	public static class CyclicRepresentation implements Serializable {
 
-		private byte[][] representation;
+		private byte[][] cyclicRepresentation;
 
-		public ByteArrayRepresentation(byte[][] representation) {
-			super();
-			this.representation = representation;
+		public CyclicRepresentation(byte[][] cyclicRepresentation) {
+			this.cyclicRepresentation = cyclicRepresentation;
 		}
 
 		@Override
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
-			for (byte[] cycle : representation) {
+			for (byte[] cycle : cyclicRepresentation) {
 				sb.append("(");
 				for (int i = 0; i < cycle.length; i++) {
 					sb.append(cycle[i]);
@@ -207,7 +206,7 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
 		public int hashCode() {
 			final int prime = 31;
 			int result = 1;
-			result = prime * result + Arrays.deepHashCode(representation);
+			result = prime * result + Arrays.deepHashCode(cyclicRepresentation);
 			return result;
 		}
 
@@ -219,8 +218,8 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
 				return false;
 			if (getClass() != obj.getClass())
 				return false;
-			ByteArrayRepresentation other = (ByteArrayRepresentation) obj;
-			if (!Arrays.deepEquals(representation, other.representation))
+			CyclicRepresentation other = (CyclicRepresentation) obj;
+			if (!Arrays.deepEquals(cyclicRepresentation, other.cyclicRepresentation))
 				return false;
 			return true;
 		}

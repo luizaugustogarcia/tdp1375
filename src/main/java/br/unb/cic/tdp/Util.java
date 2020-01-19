@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.paukov.combinatorics.Factory;
@@ -178,8 +179,7 @@ public class Util {
 		return array;
 	}
 
-	public static MulticyclePermutation canonicalize(MulticyclePermutation sigmaPiInverse, byte[] pi,
-			List<byte[]> rhos) {
+	public static MulticyclePermutation canonicalize(MulticyclePermutation sigmaPiInverse, byte[] pi, List<byte[]> rhos) {
 		int max = 0;
 		for (int i = 0; i < pi.length; i++)
 			if (pi[i] > max)
@@ -209,22 +209,32 @@ public class Util {
 	}
 
 	/**
-	 * Find a sequence whose approximation ratio lies between 1 and maxRatio
+	 * Find a sorting sequence whose approximation ratio lies between 1 and
+	 * <code>maxRatio</code>.
 	 */
-	public static List<byte[]> findSequence(byte[] pi, MulticyclePermutation mu, Stack<byte[]> rhos,
+	public static List<byte[]> findSortingSequence(byte[] pi, MulticyclePermutation mu, Stack<byte[]> rhos,
 			int initalNumberOfEvenCycles, float maxRatio) {
+		return findSortingSequence(pi, mu, rhos, initalNumberOfEvenCycles, 1, maxRatio);
+	}
+
+	/**
+	 * Find a sorting sequence whose approximation ratio lies between
+	 * <code>minRatio</code> and <code>maxRatio</code>.
+	 */
+	public static List<byte[]> findSortingSequence(byte[] pi, MulticyclePermutation mu, Stack<byte[]> rhos,
+			int initalNumberOfEvenCycles, float minRatio, float maxRatio) {
 		int n = pi.length;
 
 		int lowerBound = (n - mu.getNumberOfEvenCycles()) / 2;
 		float minAchievableRatio = (float) (rhos.size() + lowerBound) / ((n - initalNumberOfEvenCycles) / 2);
 
-		// Does not allow it to exceed the upper bound
+		// Do not allow it to exceed the upper bound
 		if (minAchievableRatio <= maxRatio) {
 			int delta = (mu.getNumberOfEvenCycles() - initalNumberOfEvenCycles);
 			float instantRatio = delta > 0
 					? (float) (rhos.size() * 2) / (mu.getNumberOfEvenCycles() - initalNumberOfEvenCycles)
 					: 0;
-			if (0 < instantRatio && instantRatio <= maxRatio) {
+			if (0 < instantRatio && minRatio <= instantRatio && instantRatio <= maxRatio) {
 				return rhos;
 			} else {
 				Set<Byte> fixedSymbols = new HashSet<>();
@@ -251,9 +261,9 @@ public class Util {
 				for (byte[] rho : searchAllApp3Cycles(Arrays.copyOfRange(newOmega.elements(), 0, newOmega.size()))) {
 					if (is0Or2Move(rho, mu)) {
 						rhos.push(rho);
-						List<byte[]> solution = findSequence(Util.applyTransposition(rho, pi),
-								PermutationGroups.computeProduct(mu, new Cycle(rho).getInverse()), rhos,
-								initalNumberOfEvenCycles, maxRatio);
+						List<byte[]> solution = findSortingSequence(Util.applyTransposition(rho, pi),
+								PermutationGroups.computeProduct(mu, new Cycle(rho).getInverse()), rhos, initalNumberOfEvenCycles,
+								minRatio, maxRatio);
 						if (!solution.isEmpty()) {
 							return rhos;
 						}
@@ -264,6 +274,11 @@ public class Util {
 		}
 
 		return Collections.emptyList();
+	}
+
+	public static boolean is2Move(byte[] rho, MulticyclePermutation mu) {
+		return PermutationGroups.computeProduct(mu, new Cycle(rho).getInverse())
+				.getNumberOfEvenCycles() == mu.getNumberOfEvenCycles() + 2;
 	}
 
 	private static boolean is0Or2Move(byte[] rho, MulticyclePermutation mu) {
@@ -307,8 +322,8 @@ public class Util {
 					sigma[i] = (byte) i;
 				}
 
-				desimplify(PermutationGroups.computeProduct(new Cycle(sigma), new Cycle(newPi).getInverse()),
-						new Cycle(newPi), depth + 1);
+				desimplify(PermutationGroups.computeProduct(new Cycle(sigma), new Cycle(newPi).getInverse()), new Cycle(newPi),
+						depth + 1);
 			}
 		}
 	}
@@ -353,5 +368,50 @@ public class Util {
 
 	public static <T> Generator<T> combinations(Collection<T> collection, int k) {
 		return Factory.createSimpleCombinationGenerator(Factory.createVector(collection), k);
+	}
+
+	public static Cycle searchFor2Move(MulticyclePermutation sigmaPiInverse, Cycle pi) {
+		List<Cycle> oddCycles = sigmaPiInverse.stream().filter(c -> !c.isEven()).collect(Collectors.toList());
+		for (Cycle c1 : oddCycles)
+			for (Cycle c2 : oddCycles)
+				if (c1 != c2) {
+					for (Cycle a : get2CyclesSegments(c1))
+						for (Byte b : c2.getSymbols()) {
+							for (ICombinatoricsVector<Byte> rho : Util.combinations(Arrays.asList(a.get(0), a.get(1), b), 3)) {
+								Cycle rho1 = new Cycle(rho.getVector().stream().mapToInt(i -> i).toArray());
+								if (pi.areSymbolsInCyclicOrder(rho1.getSymbols())) {
+									return rho1;
+								}
+							}
+						}
+				}
+
+		for (Cycle cycle : sigmaPiInverse.stream().filter(c -> !pi.getInverse().isFactor(c)).collect(Collectors.toList())) {
+			int before = cycle.isEven() ? 1 : 0;
+			for (int i = 0; i < cycle.size() - 2; i++) {
+				for (int j = i + 1; j < cycle.size() - 1; j++) {
+					for (int k = j + 1; k < cycle.size(); k++) {
+						byte a = cycle.get(i), b = cycle.get(j), c = cycle.get(k);
+						if (pi.areSymbolsInCyclicOrder(a, b, c)) {
+							int after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
+							after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
+							after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
+							if (after - before == 2)
+								return new Cycle(a, b, c);
+						}
+					}
+				}
+			}
+		}
+
+		return null;
+	}
+
+	public static List<Cycle> get2CyclesSegments(Cycle cycle) {
+		List<Cycle> result = new ArrayList<>();
+		for (int i = 0; i < cycle.size(); i++) {
+			result.add(new Cycle(cycle.get(i), cycle.image(cycle.get(i))));
+		}
+		return result;
 	}
 }

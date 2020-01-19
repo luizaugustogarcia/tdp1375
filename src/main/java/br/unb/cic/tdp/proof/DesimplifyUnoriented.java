@@ -1,36 +1,30 @@
 package br.unb.cic.tdp.proof;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.Reader;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.ehcache.Cache;
-import org.ehcache.PersistentCacheManager;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.CacheManagerBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.config.units.MemoryUnit;
 import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
-import org.paukov.combinatorics.ICombinatoricsVector;
 
 import com.google.common.base.Throwables;
 import com.google.common.primitives.Bytes;
@@ -39,161 +33,156 @@ import br.unb.cic.tdp.Util;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
-import br.unb.cic.tdp.permutation.MulticyclePermutation.ByteArrayRepresentation;
+import br.unb.cic.tdp.permutation.MulticyclePermutation.CyclicRepresentation;
 import cern.colt.list.ByteArrayList;
 
 public class DesimplifyUnoriented {
 
-	private static final String INPUT_DIR = "/home/luiz/Desktop/SBT1375_proof/";
-	private static final String OUTPUT_DIR = "/home/luiz/Desktop/SBT1375_proof/cases/unoriented/";
-	
-	private static final Set<String> VISITED_FILES = new HashSet<>();
-	private static final Pattern SIGMA_PI_INVERSE_PATTERN = Pattern.compile(".*\"(.*)\".*");
+	protected static final Pattern spiPattern = Pattern.compile(".*\"(.*)\".*");
 	private static final Pattern SORTING_PATTERN = Pattern.compile(".*a = (\\d+).*b = (\\d+).*c = (\\d+).*");
-	private static Cache<ByteArrayRepresentation, Serializable> cache;
-	private static Serializable FAKE_OBJECT = new Serializable() {};
+	protected static Serializable FAKE_OBJECT = new Serializable() {
+	};
 
-	public static void main(String[] args) throws IOException {
-		PersistentCacheManager persistentCacheManager = CacheManagerBuilder.newCacheManagerBuilder()
-				.with(CacheManagerBuilder.persistence("/home/luiz/cache/mydata"))
-				.withCache("cache",
-						CacheConfigurationBuilder.newCacheConfigurationBuilder(ByteArrayRepresentation.class,
-								Serializable.class, ResourcePoolsBuilder.newResourcePoolsBuilder().heap(1, MemoryUnit.GB)
-										.offheap(2, MemoryUnit.GB).disk(1, MemoryUnit.TB)))
+	public static List<Case> generate(final String inputDir) {
+		final var persistentCacheManager = CacheManagerBuilder.newCacheManagerBuilder()
+				.withCache("cache", CacheConfigurationBuilder.newCacheConfigurationBuilder(CyclicRepresentation.class,
+						Serializable.class, ResourcePoolsBuilder.newResourcePoolsBuilder().heap(500, MemoryUnit.GB)))
 				.build(true);
 
-		cache = persistentCacheManager.getCache("cache", ByteArrayRepresentation.class, Serializable.class);
+		final var cache = persistentCacheManager.getCache("cache", CyclicRepresentation.class, Serializable.class);
 
-		System.out.println("/* unoriented interleaving pair */");
-		translate("bfs_files/", "[3](0_4_2)[3](1_5_3).html", OUTPUT_DIR + "(0,4,2)(1,5,3)");
-		System.out.println("/* unoriented intersecting pair */");
-		translate("bfs_files/", "[3](0_3_1)[3](2_5_4).html", OUTPUT_DIR + "(0,3,1)(2,5,4)");
+		final var visitedFiles = new HashSet<String>();
 
-		System.out.println("/* BAD SMALL COMPONENTS */");
+		final var cases = new ArrayList<Case>();
 
-		System.out.println("/* the unoriented interleaving pair */");
-		translate("comb_files/", "[3](0_4_2)[3](1_5_3).html", OUTPUT_DIR + "bad-small-(0,4,2)(1,5,3)");
-		System.out.println("/* the unoriented necklaces of size 4 */");
-		translate("comb_files/", "[3](0_10_2)[3](1_5_3)[3](4_8_6)[3](7_11_9).html",
-				OUTPUT_DIR + "bad-small-(0,10,2)(1,5,3)(4,8,6)(7,11,9)");
-		System.out.println("/* the twisted necklace of size 4 */");
-		translate("comb_files/", "[3](0_7_5)[3](1_11_9)[3](2_6_4)[3](3_10_8).html",
-				OUTPUT_DIR + "bad-small-(0,7,5)(1,11,9)(2,6,4)(3,10,8)");
-		System.out.println("/* the unoriented necklaces of size 5 */");
-		translate("comb_files/", "[3](0_4_2)[3](1_14_12)[3](3_7_5)[3](6_10_8)[3](9_13_11).html",
-				OUTPUT_DIR + "bad-small-(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)");
-		System.out.println("/* the unoriented necklaces of size 6 */");
-		translate("comb_files/", "[3](0_16_2)[3](1_5_3)[3](4_8_6)[3](7_11_9)[3](10_14_12)[3](13_17_15).html",
-				OUTPUT_DIR + "bad-small-(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)");
+		// unoriented interleaving pair
+		cases.addAll(generate(cache, inputDir + "bfs_files/", "[3](0_4_2)[3](1_5_3).html", visitedFiles));
+		// unoriented intersecting pair
+		cases.addAll(generate(cache, inputDir + "bfs_files/", "[3](0_3_1)[3](2_5_4).html", visitedFiles));
+
+		// BAD SMALL COMPONENTS
+
+		// the unoriented interleaving pair
+		cases.addAll(generate(cache, inputDir + "comb_files/", "[3](0_4_2)[3](1_5_3).html", visitedFiles));
+		// the unoriented necklaces of size 4
+		cases.addAll(
+				generate(cache, inputDir + "comb_files/", "[3](0_10_2)[3](1_5_3)[3](4_8_6)[3](7_11_9).html", visitedFiles));
+		// the twisted necklace of size 4
+		cases.addAll(
+				generate(cache, inputDir + "comb_files/", "[3](0_7_5)[3](1_11_9)[3](2_6_4)[3](3_10_8).html", visitedFiles));
+		// the unoriented necklaces of size 5
+		cases.addAll(generate(cache, inputDir + "comb_files/",
+				"[3](0_4_2)[3](1_14_12)[3](3_7_5)[3](6_10_8)[3](9_13_11).html", visitedFiles));
+		// the unoriented necklaces of size 6
+		cases.addAll(generate(cache, inputDir + "comb_files/",
+				"[3](0_16_2)[3](1_5_3)[3](4_8_6)[3](7_11_9)[3](10_14_12)[3](13_17_15).html", visitedFiles));
+
+		return cases;
 	}
 
-	private static void translate(String baseFolder, String file, String output) {
-		File translated = new File(output);
-		try (FileWriter fileWriter = new FileWriter(translated)) {
-			try (BufferedWriter bufferedWriter = new BufferedWriter(fileWriter, 10 * 1024 * 1024)) {
-				_translate(baseFolder, file, bufferedWriter);
-			}
-		} catch (IOException e) {
-			Throwables.propagate(e);
-		}
-	}
+	private static List<Case> generate(final Cache<CyclicRepresentation, Serializable> cache, String baseFolder,
+			String file, final Set<String> visitedFiles) {
+		if (visitedFiles.contains(baseFolder + file))
+			return Collections.emptyList();
 
-	private static void _translate(String baseFolder, String file, BufferedWriter bufferedWriter) throws IOException {
-		if (VISITED_FILES.contains(baseFolder + file))
-			return;
-
-		List<byte[]> rhos = getSorting(baseFolder, file);
+		final var cases = new ArrayList<Case>();
+		final var rhos = getSorting(baseFolder + file);
 
 		if (!rhos.isEmpty()) {
-			MulticyclePermutation sigmaPiInverse = getSigmaPiInverse(file);
-
-			int n = sigmaPiInverse.stream().mapToInt(c -> c.size()).sum();
-
-			byte[] pi = new byte[n];
-			for (int i = 0; i < n; i++) {
+			final var spi = getSigmaPiInverse(file);
+			final var n = spi.stream().mapToInt(c -> c.size()).sum();
+			final var pi = new byte[n];
+			for (var i = 0; i < n; i++) {
 				pi[i] = (byte) i;
 			}
 
-			if (is11_8(sigmaPiInverse, pi, rhos)) {
-				bufferedWriter.write(sigmaPiInverse + ";"
-						+ rhos.stream().map(r -> Arrays.toString(r).intern()).collect(Collectors.joining("-")) + "\n");
-			} else
+			if (is11_8(spi, pi, rhos)) {
+				cases.add(new Case(pi, spi, rhos));
+			} else {
 				throw new RuntimeException("ERROR");
+			}
 
-			desimplify(bufferedWriter, sigmaPiInverse, pi, rhos, 1);
-		} else
-			try (Reader fr = new BufferedReader(new FileReader(INPUT_DIR + baseFolder + file), 100000)) {
-				try (Scanner scanner = new Scanner(fr)) {
+			cases.addAll(desimplify(cache, spi, pi, rhos));
+		} else {
+			try (final var fr = new BufferedReader(new FileReader(baseFolder + file), 100000)) {
+				try (final var scanner = new Scanner(fr)) {
 					scanner.useDelimiter("\\n");
 
 					while (scanner.hasNext()) {
-						String line = scanner.next();
+						final var line = scanner.next();
 
 						if (line.startsWith("View")) {
-							Matcher matcher = SIGMA_PI_INVERSE_PATTERN.matcher(line);
+							final var matcher = spiPattern.matcher(line);
 							if (matcher.matches())
-								_translate(baseFolder, matcher.group(1), bufferedWriter);
+								cases.addAll(generate(cache, baseFolder, matcher.group(1), visitedFiles));
 						}
 					}
 				}
+			} catch (Exception e) {
+				Throwables.propagate(e);
 			}
+		}
 
-		VISITED_FILES.add(baseFolder + file);
+		visitedFiles.add(baseFolder + file);
+
+		return cases;
 	}
 
-	private static void desimplify(BufferedWriter writer, MulticyclePermutation sigmaPiInverse, byte[] pi,
-			List<byte[]> rhos, int depth) throws IOException {
-		for (ICombinatoricsVector<Cycle> combination : combinations(sigmaPiInverse, 2)) {
+	private static List<Case> desimplify(final Cache<CyclicRepresentation, Serializable> cache,
+			final MulticyclePermutation spi, final byte[] pi, final List<byte[]> rhos) {
+		final var cases = new ArrayList<Case>();
+
+		for (final var combination : combinations(spi, 2)) {
 			if (areNotIntersecting(combination.getVector(), pi)) {
-				List<byte[]> joiningPairs = getJoiningPairs(combination.getVector(), pi);
+				final var joiningPairs = getJoiningPairs(combination.getVector(), pi);
 
-				for (byte[] joiningPair : joiningPairs) {
-					byte[] _pi = removeSymbol(pi, joiningPair[1]);
+				for (final var joiningPair : joiningPairs) {
+					final var _pi = removeSymbol(pi, joiningPair[1]);
 
-					MulticyclePermutation _sigmaPiInverse = new MulticyclePermutation(sigmaPiInverse);
+					var _spi = new MulticyclePermutation(spi);
 
 					// clone
-					List<byte[]> _rhos = new ArrayList<>();
-					for (byte[] rho : rhos) {
+					final var _rhos = new ArrayList<byte[]>();
+					for (final var rho : rhos) {
 						_rhos.add(Arrays.copyOf(rho, rho.length));
 					}
 
-					joinCyclesAndReplaceRhos(_sigmaPiInverse, joiningPair, pi, _rhos);
+					joinCyclesAndReplaceRhos(_spi, joiningPair, pi, _rhos);
 
-					_sigmaPiInverse = Util.canonicalize(_sigmaPiInverse, _pi, _rhos);
+					_spi = Util.canonicalize(_spi, _pi, _rhos);
 
-					ByteArrayRepresentation byteArrayRepresentation = _sigmaPiInverse.byteArrayRepresentation();
-					if (!cache.containsKey(byteArrayRepresentation)) {
-						cache.put(byteArrayRepresentation, FAKE_OBJECT);
+					final var cyclicRepresentation = _spi.cyclicRepresentation();
+					if (!cache.containsKey(cyclicRepresentation)) {
+						cache.put(cyclicRepresentation, FAKE_OBJECT);
 
-						if (is11_8(_sigmaPiInverse, _pi, _rhos)) {
-							writer.write(StringUtils.repeat("\t", depth) + byteArrayRepresentation + ";"
-									+ _rhos.stream().map(r -> Arrays.toString(r)).collect(Collectors.joining("-"))
-									+ "\n");
-							desimplify(writer, _sigmaPiInverse, _pi, _rhos, depth + 1);
+						if (is11_8(_spi, _pi, _rhos)) {
+							cases.add(new Case(_pi, _spi, _rhos));
+							cases.addAll(desimplify(cache, _spi, _pi, _rhos));
 						} else
 							throw new RuntimeException("ERROR");
 					}
 				}
 			}
 		}
+
+		return cases;
 	}
 
-	protected static boolean is11_8(MulticyclePermutation sigmaPiInverse, byte[] pi, List<byte[]> rhos) {
-		int before = sigmaPiInverse.getNumberOfEvenCycles();
-		for (byte[] rho : rhos) {
+	protected static boolean is11_8(MulticyclePermutation spi, byte[] pi, List<byte[]> rhos) {
+		final var before = spi.getNumberOfEvenCycles();
+		for (final var rho : rhos) {
 			if (areSymbolsInCyclicOrder(rho, pi)) {
 				pi = Util.applyTransposition(rho, pi);
-				sigmaPiInverse = PermutationGroups.computeProduct(sigmaPiInverse, new Cycle(rho).getInverse());
+				spi = PermutationGroups.computeProduct(spi, new Cycle(rho).getInverse());
 			} else {
 				return false;
 			}
 		}
-		int after = sigmaPiInverse.getNumberOfEvenCycles();
+		final var after = spi.getNumberOfEvenCycles();
 		return after > before && (float) rhos.size() / ((after - before) / 2) <= ((float) 11 / 8);
 	}
 
-	private static boolean areSymbolsInCyclicOrder(byte[] rho, byte[] pi) {
+	protected static boolean areSymbolsInCyclicOrder(final byte[] rho, final byte[] pi) {
 		int a = 0, b = 0, c = 0;
 		for (int i = 0; i < pi.length; i++) {
 			if (pi[i] == rho[0])
@@ -206,40 +195,39 @@ public class DesimplifyUnoriented {
 		return a < b && b < c || c < a && a < b || b < c && c < a;
 	}
 
-	protected static void joinCyclesAndReplaceRhos(MulticyclePermutation sigmaPiInverse, byte[] joiningPair,
-			byte[] originalPi, List<byte[]> rhos) {
-		Map<Byte, Cycle> symbolToCycle = new HashMap<>();
+	protected static void joinCyclesAndReplaceRhos(final MulticyclePermutation spi, final byte[] joiningPair,
+			final byte[] originalPi, final List<byte[]> rhos) {
+		final var symbolToCycle = new HashMap<Byte, Cycle>();
 
-		for (int i = 0; i < sigmaPiInverse.size(); i++) {
-			for (int j = 0; j < sigmaPiInverse.get(i).size(); j++) {
-				byte symbol = sigmaPiInverse.get(i).getSymbols()[j];
-				symbolToCycle.put(symbol, sigmaPiInverse.get(i));
+		for (int i = 0; i < spi.size(); i++) {
+			for (int j = 0; j < spi.get(i).size(); j++) {
+				final var symbol = spi.get(i).getSymbols()[j];
+				symbolToCycle.put(symbol, spi.get(i));
 			}
 		}
 
-		Cycle a = symbolToCycle.get(joiningPair[0]);
-		Cycle b = symbolToCycle.get(joiningPair[1]);
+		var a = symbolToCycle.get(joiningPair[0]);
+		var b = symbolToCycle.get(joiningPair[1]);
 
 		a = a.getInverse().getStartingBy(a.getInverse().image(joiningPair[0]));
 		b = b.getInverse().getStartingBy(joiningPair[1]);
 
-		byte[] cSymbols = new byte[a.size() + b.size() - 1];
+		final var cSymbols = new byte[a.size() + b.size() - 1];
 		System.arraycopy(a.getSymbols(), 0, cSymbols, 0, a.size());
 		System.arraycopy(b.getSymbols(), 1, cSymbols, a.size(), b.size() - 1);
 
-		Cycle c = new Cycle(cSymbols);
-		sigmaPiInverse.add(c.getInverse());
-		sigmaPiInverse.remove(symbolToCycle.get(joiningPair[0]));
-		sigmaPiInverse.remove(symbolToCycle.get(joiningPair[1]));
+		final var c = new Cycle(cSymbols);
+		spi.add(c.getInverse());
+		spi.remove(symbolToCycle.get(joiningPair[0]));
+		spi.remove(symbolToCycle.get(joiningPair[1]));
 
-		List<byte[]> _rhos = new ArrayList<>();
-		byte[] pi = originalPi;
-		for (byte[] rho : rhos) {
-			byte[] _pi = Util.applyTransposition(rho, pi);
-			MulticyclePermutation _rho = PermutationGroups.computeProduct(false,
+		final var _rhos = new ArrayList<byte[]>();
+		var pi = originalPi;
+		for (final var rho : rhos) {
+			final var _pi = Util.applyTransposition(rho, pi);
+			final var _rho = PermutationGroups.computeProduct(false,
 					new Cycle(Util.replace(removeSymbol(_pi, joiningPair[0]), joiningPair[1], joiningPair[0])),
-					new Cycle(Util.replace(removeSymbol(pi, joiningPair[0]), joiningPair[1], joiningPair[0]))
-							.getInverse());
+					new Cycle(Util.replace(removeSymbol(pi, joiningPair[0]), joiningPair[1], joiningPair[0])).getInverse());
 
 			pi = _pi;
 			// sometimes _rho = (),
@@ -251,32 +239,32 @@ public class DesimplifyUnoriented {
 		rhos.addAll(_rhos);
 	}
 
-	protected static byte[] removeSymbol(byte[] array, byte symbol) {
-		ByteArrayList temp = new ByteArrayList(Arrays.copyOf(array, array.length));
+	protected static byte[] removeSymbol(final byte[] array, final byte symbol) {
+		final var temp = new ByteArrayList(Arrays.copyOf(array, array.length));
 		temp.remove(temp.indexOf(symbol));
 		return Arrays.copyOfRange(temp.elements(), 0, temp.size());
 	}
 
-	protected static List<byte[]> getJoiningPairs(List<Cycle> cycles, byte[] pi) {
-		Set<Byte> symbols = new HashSet<>(Bytes.asList(pi));
+	protected static List<byte[]> getJoiningPairs(final List<Cycle> cycles, final byte[] pi) {
+		final var symbols = new HashSet<>(Bytes.asList(pi));
 
-		Map<Byte, Byte> symbolToLabel = new HashMap<>();
+		final var symbolToLabel = new HashMap<Byte, Byte>();
 
 		for (int i = 0; i < cycles.size(); i++) {
 			for (int j = 0; j < cycles.get(i).size(); j++) {
-				byte symbol = cycles.get(i).getSymbols()[j];
+				final var symbol = cycles.get(i).getSymbols()[j];
 				symbolToLabel.put(symbol, (byte) i);
 				symbols.remove(symbol);
 			}
 		}
 
-		ByteArrayList _pi = new ByteArrayList(Arrays.copyOf(pi, pi.length));
+		final var _pi = new ByteArrayList(Arrays.copyOf(pi, pi.length));
 		_pi.removeAll(new ByteArrayList(Bytes.toArray(symbols)));
 
-		List<byte[]> results = new ArrayList<>();
+		final var results = new ArrayList<byte[]>();
 		for (int i = 0; i < _pi.size(); i++) {
-			byte currentLabel = symbolToLabel.get(_pi.get(i));
-			byte nextLabel = symbolToLabel.get(_pi.get((i + 1) % _pi.size()));
+			final var currentLabel = symbolToLabel.get(_pi.get(i));
+			final var nextLabel = symbolToLabel.get(_pi.get((i + 1) % _pi.size()));
 			if (currentLabel != nextLabel && (_pi.get(i) + 1) % pi.length == _pi.get((i + 1) % _pi.size()))
 				results.add(new byte[] { _pi.get(i), _pi.get((i + 1) % _pi.size()) });
 		}
@@ -284,27 +272,27 @@ public class DesimplifyUnoriented {
 		return results;
 	}
 
-	private static boolean areNotIntersecting(List<Cycle> cycles, byte[] pi) {
-		Set<Byte> symbols = new HashSet<>(Bytes.asList(pi));
+	private static boolean areNotIntersecting(final List<Cycle> cycles, final byte[] pi) {
+		final var symbols = new HashSet<>(Bytes.asList(pi));
 
-		Map<Byte, Byte> symbolToLabel = new HashMap<>();
+		final var symbolToLabel = new HashMap<Byte, Byte>();
 
 		for (int i = 0; i < cycles.size(); i++) {
 			for (int j = 0; j < cycles.get(i).size(); j++) {
-				byte symbol = cycles.get(i).getSymbols()[j];
+				final var symbol = cycles.get(i).getSymbols()[j];
 				symbolToLabel.put(symbol, (byte) i);
 				symbols.remove(symbol);
 			}
 		}
 
-		ByteArrayList _pi = new ByteArrayList(Arrays.copyOf(pi, pi.length));
+		final var _pi = new ByteArrayList(Arrays.copyOf(pi, pi.length));
 		_pi.removeAll(new ByteArrayList(Bytes.toArray(symbols)));
 
-		Map<Integer, Integer> states = new HashMap<>();
+		final var states = new HashMap<Integer, Integer>();
 		for (int i = 0; i < _pi.size(); i++) {
-			int currentLabel = symbolToLabel.get(_pi.get(i));
-			int state = !states.containsKey(currentLabel) ? 0 : states.get(currentLabel);
-			int nextLabel = symbolToLabel.get(_pi.get((i + 1) % _pi.size()));
+			final int currentLabel = symbolToLabel.get(_pi.get(i));
+			final int nextLabel = symbolToLabel.get(_pi.get((i + 1) % _pi.size()));
+			var state = !states.containsKey(currentLabel) ? 0 : states.get(currentLabel);
 			if (currentLabel != nextLabel)
 				state++;
 			if (state == 2)
@@ -315,19 +303,19 @@ public class DesimplifyUnoriented {
 		return true;
 	}
 
-	protected static List<byte[]> getSorting(String baseFolder, String file) {
-		MulticyclePermutation mu = getSigmaPiInverse(file);
-		byte[] pi = new byte[mu.getNumberOfSymbols()];
+	protected static List<byte[]> getSorting(final String file) {
+		final var mu = getSigmaPiInverse(file);
+		var pi = new byte[mu.getNumberOfSymbols()];
 		for (int i = 0; i < pi.length; i++) {
 			pi[i] = (byte) i;
 		}
 
-		boolean hasSorting = false;
+		var hasSorting = false;
 
-		List<byte[]> rhos = new ArrayList<>();
+		final var rhos = new ArrayList<byte[]>();
 
-		try (Reader fr = new BufferedReader(new FileReader(INPUT_DIR + baseFolder + file), 100000)) {
-			try (Scanner scanner = new Scanner(fr)) {
+		try (final var fr = new BufferedReader(new FileReader(file), 1024)) {
+			try (final var scanner = new Scanner(fr)) {
 				scanner.useDelimiter("\\n");
 
 				while (scanner.hasNext()) {
@@ -359,14 +347,15 @@ public class DesimplifyUnoriented {
 		return rhos;
 	}
 
-	protected static MulticyclePermutation getSigmaPiInverse(String file) {
-		String str = StringUtils.removeEnd(file.replace("_", ","), ".html");
+	protected static MulticyclePermutation getSigmaPiInverse(final String file) {
+		final var _file = new File(file);
+		var str = StringUtils.removeEnd(_file.getName().replace("_", ","), ".html");
 		str = str.replaceAll("\\[.*?\\]", "");
 		str = str.replace(" ", ",");
 		return new MulticyclePermutation(str);
 	}
 
-	public static <T> Generator<T> combinations(Collection<T> collection, int k) {
+	public static <T> Generator<T> combinations(final Collection<T> collection, final int k) {
 		return Factory.createSimpleCombinationGenerator(Factory.createVector(collection), k);
 	}
 }

@@ -1,161 +1,138 @@
 package br.unb.cic.tdp.proof;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Reader;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
 import org.ehcache.Cache;
-import org.ehcache.PersistentCacheManager;
 import org.ehcache.config.builders.CacheConfigurationBuilder;
 import org.ehcache.config.builders.CacheManagerBuilder;
 import org.ehcache.config.builders.ResourcePoolsBuilder;
 import org.ehcache.config.units.MemoryUnit;
-import org.paukov.combinatorics.ICombinatoricsVector;
 
 import com.google.common.base.Throwables;
 
 import br.unb.cic.tdp.Util;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.permutation.MulticyclePermutation.ByteArrayRepresentation;
+import br.unb.cic.tdp.permutation.MulticyclePermutation.CyclicRepresentation;
 
 public class DesimplifyOriented extends DesimplifyUnoriented {
 
-	private static final String INPUT_DIR = "/home/luiz/Desktop/SBT1375_proof/";
-	private static final String OUTPUT_DIR = "/home/luiz/Desktop/SBT1375_proof/cases/oriented/";
-
-	private static final Set<String> VISITED_FILES = new HashSet<>();
-	private static final Pattern SIGMA_PI_INVERSE_PATTERN = Pattern.compile(".*\"(.*)\".*");
-	private static Cache<ByteArrayRepresentation, Serializable> cache;
-	private static Serializable FAKE_OBJECT = new Serializable() {
-	};
-
-	public static void main(String[] args) throws IOException {
-		PersistentCacheManager persistentCacheManager = CacheManagerBuilder.newCacheManagerBuilder()
-				.with(CacheManagerBuilder.persistence("/home/luiz/Temp/cache/mydata"))
-				.withCache("cache",
-						CacheConfigurationBuilder.newCacheConfigurationBuilder(ByteArrayRepresentation.class,
-								Serializable.class, ResourcePoolsBuilder.newResourcePoolsBuilder()
-										.heap(1, MemoryUnit.GB).offheap(2, MemoryUnit.GB).disk(1, MemoryUnit.TB)))
+	public static List<Case> generate(final String inputDir) {
+		final var persistentCacheManager = CacheManagerBuilder.newCacheManagerBuilder()
+				.withCache("cache", CacheConfigurationBuilder.newCacheConfigurationBuilder(CyclicRepresentation.class,
+						Serializable.class, ResourcePoolsBuilder.newResourcePoolsBuilder().heap(500, MemoryUnit.GB)))
 				.build(true);
 
-		cache = persistentCacheManager.getCache("cache", ByteArrayRepresentation.class, Serializable.class);
+		final var cache = persistentCacheManager.getCache("cache", CyclicRepresentation.class, Serializable.class);
 
-		System.out.println("/* unoriented interleaving pair */");
-		translate("bfs_files/", "[3](0_4_2)[3](1_5_3).html", OUTPUT_DIR + "(0,4,2)(1,5,3)");
+		final var visitedFiles = new HashSet<String>();
 
-		System.out.println("/* BAD SMALL COMPONENTS */");
+		final var cases = new ArrayList<Case>();
+		// unoriented interleaving pair
+		cases.addAll(generate(cache, inputDir + "bfs_files/", "[3](0_4_2)[3](1_5_3).html", visitedFiles));
 
-		System.out.println("/* the unoriented interleaving pair */");
-		translate("comb_files/", "[3](0_4_2)[3](1_5_3).html", OUTPUT_DIR + "bad-small-(0,4,2)(1,5,3)");
+		// BAD SMALL COMPONENTS
+		// the unoriented interleaving pair
+		cases.addAll(generate(cache, inputDir + "comb_files/", "[3](0_4_2)[3](1_5_3).html", visitedFiles));
+
+		return cases;
 	}
 
-	private static void translate(String baseFolder, String file, String output) {
-		File translated = new File(output);
-		try (FileWriter fileWriter = new FileWriter(translated)) {
-			try (BufferedWriter bufferedWriter = new BufferedWriter(fileWriter, 1 * 1024 * 1024)) {
-				_translate(baseFolder, file, bufferedWriter);
-			}
-		} catch (IOException e) {
-			Throwables.propagate(e);
-		}
-	}
+	private static List<Case> generate(final Cache<CyclicRepresentation, Serializable> cache, final String baseFolder,
+			final String file, final Set<String> visitedFiles) {
+		if (visitedFiles.contains(baseFolder + file))
+			return Collections.emptyList();
 
-	private static void _translate(String baseFolder, String file, BufferedWriter bufferedWriter) throws IOException {
-		if (VISITED_FILES.contains(baseFolder + file))
-			return;
+		final var rhos = getSorting(baseFolder + file);
 
-		List<byte[]> rhos = getSorting(baseFolder, file);
+		final var cases = new ArrayList<Case>();
 
 		if (!rhos.isEmpty()) {
-			MulticyclePermutation sigmaPiInverse = getSigmaPiInverse(file);
-
-			int n = sigmaPiInverse.stream().mapToInt(c -> c.size()).sum();
-
-			byte[] pi = new byte[n];
-			for (int i = 0; i < n; i++) {
+			final var spi = getSigmaPiInverse(file);
+			final var n = spi.stream().mapToInt(c -> c.size()).sum();
+			final var pi = new byte[n];
+			for (var i = 0; i < n; i++) {
 				pi[i] = (byte) i;
 			}
 
-			desimplify(bufferedWriter, sigmaPiInverse, pi, rhos, 1);
-		} else
-			try (Reader fr = new BufferedReader(new FileReader(INPUT_DIR + baseFolder + file), 100000)) {
-				try (Scanner scanner = new Scanner(fr)) {
+			cases.addAll(desimplify(cache, spi, pi, rhos));
+		} else {
+			try (final var fr = new BufferedReader(new FileReader(baseFolder + file), 100000)) {
+				try (final var scanner = new Scanner(fr)) {
 					scanner.useDelimiter("\\n");
 
 					while (scanner.hasNext()) {
-						String line = scanner.next();
+						final var line = scanner.next();
 
 						if (line.startsWith("View")) {
-							Matcher matcher = SIGMA_PI_INVERSE_PATTERN.matcher(line);
+							final var matcher = spiPattern.matcher(line);
 							if (matcher.matches())
-								_translate(baseFolder, matcher.group(1), bufferedWriter);
+								cases.addAll(generate(cache, baseFolder, matcher.group(1), visitedFiles));
 						}
 					}
 				}
+			} catch (Exception e) {
+				Throwables.propagate(e);
 			}
+		}
 
-		VISITED_FILES.add(baseFolder + file);
+		visitedFiles.add(baseFolder + file);
+
+		return cases;
 	}
 
-	private static void desimplify(BufferedWriter writer, MulticyclePermutation sigmaPiInverse, byte[] pi,
-			List<byte[]> rhos, int depth) throws IOException {
-		byte[] _piInverse = Arrays.copyOf(pi, pi.length);
+	private static List<Case> desimplify(final Cache<CyclicRepresentation, Serializable> cache,
+			final MulticyclePermutation spi, final byte[] pi, final List<byte[]> rhos) {
+		final var cases = new ArrayList<Case>();
+
+		final var _piInverse = Arrays.copyOf(pi, pi.length);
 		ArrayUtils.reverse(_piInverse);
-		Cycle piInverse = new Cycle(_piInverse);
+		final var piInverse = new Cycle(_piInverse);
 
-		for (ICombinatoricsVector<Cycle> combination : combinations(sigmaPiInverse, 2)) {
+		for (final var combination : combinations(spi, 2)) {
+			for (final var joiningPair : getJoiningPairs(combination.getVector(), pi)) {
+				final var _pi = removeSymbol(pi, joiningPair[1]);
 
-			for (byte[] joiningPair : getJoiningPairs(combination.getVector(), pi)) {
-				byte[] _pi = removeSymbol(pi, joiningPair[1]);
+				var _spi = new MulticyclePermutation(spi);
 
-				MulticyclePermutation _sigmaPiInverse = new MulticyclePermutation(sigmaPiInverse);
-
-				// clone
-				List<byte[]> _rhos = new ArrayList<>();
-				for (byte[] rho : rhos) {
+				// clone rhos
+				final var _rhos = new ArrayList<byte[]>();
+				for (final var rho : rhos) {
 					_rhos.add(Arrays.copyOf(rho, rho.length));
 				}
 
-				joinCyclesAndReplaceRhos(_sigmaPiInverse, joiningPair, pi, _rhos);
+				joinCyclesAndReplaceRhos(_spi, joiningPair, pi, _rhos);
 
-				_sigmaPiInverse = Util.canonicalize(_sigmaPiInverse, _pi, _rhos);
+				_spi = Util.canonicalize(_spi, _pi, _rhos);
 
-				ByteArrayRepresentation byteArrayRepresentation = _sigmaPiInverse.byteArrayRepresentation();
+				final var cyclicRepresentation = _spi.cyclicRepresentation();
 
-				if (!cache.containsKey(byteArrayRepresentation)) {
-					cache.put(byteArrayRepresentation, FAKE_OBJECT);
+				if (!cache.containsKey(cyclicRepresentation)) {
+					cache.put(cyclicRepresentation, FAKE_OBJECT);
 
 					// skipping cycles > 5, since all 7-cycle accept (4,3)-sequence
-					boolean isThereOrientedCycleGreaterThan5 = _sigmaPiInverse.stream()
-							.filter(c -> !piInverse.areSymbolsInCyclicOrder(c.getSymbols()) && c.size() > 5)
-							.count() > 0;
+					final var isThereOrientedCycleGreaterThan5 = _spi.stream()
+							.filter(c -> !piInverse.areSymbolsInCyclicOrder(c.getSymbols()) && c.size() > 5).count() > 0;
 
 					if (!isThereOrientedCycleGreaterThan5) {
-						boolean isThereOriented5Cycle = false;
-						boolean isThereOriented3Segment = false;
-						for (Cycle cycle : _sigmaPiInverse) {
-							isThereOriented5Cycle |= cycle.size() == 5
-									&& !piInverse.areSymbolsInCyclicOrder(cycle.getSymbols());
+						var isThereOriented5Cycle = false;
+						var isThereOriented3Segment = false;
+						for (final var cycle : _spi) {
+							isThereOriented5Cycle |= cycle.size() == 5 && !piInverse.areSymbolsInCyclicOrder(cycle.getSymbols());
 							for (int i = 0; i < cycle.size(); i++) {
 								byte a = cycle.get(i), b = cycle.image(a), c = cycle.image(b);
-								if (isApplicable(new byte[] { a, b, c }, _pi)) {
+								// if rho (a,b,c) is applicable
+								if (areSymbolsInCyclicOrder(new byte[] { a, b, c }, _pi)) {
 									// there is a valid 2-move
 									isThereOriented3Segment = true;
 									break;
@@ -163,31 +140,20 @@ public class DesimplifyOriented extends DesimplifyUnoriented {
 							}
 						}
 
-						if (is11_8(_sigmaPiInverse, _pi, _rhos)) {
-							if (!isThereOriented3Segment && isThereOriented5Cycle)
-								writer.write(StringUtils.repeat("\t", depth) + byteArrayRepresentation + ";"
-										+ _rhos.stream().map(r -> Arrays.toString(r)).collect(Collectors.joining("-"))
-										+ "\n");
+						if (is11_8(_spi, _pi, _rhos)) {
+							if (!isThereOriented3Segment && isThereOriented5Cycle) {
+								cases.add(new Case(_pi, _spi, _rhos));
+							}
 
-							desimplify(writer, _sigmaPiInverse, _pi, _rhos, depth + 1);
-						} else
+							cases.addAll(desimplify(cache, _spi, _pi, _rhos));
+						} else {
 							throw new RuntimeException("ERROR");
+						}
 					}
 				}
 			}
 		}
-	}
 
-	private static boolean isApplicable(byte[] rho, byte[] pi) {
-		int a = 0, b = 0, c = 0;
-		for (int i = 0; i < pi.length; i++) {
-			if (pi[i] == rho[0])
-				a = i;
-			if (pi[i] == rho[1])
-				b = i;
-			if (pi[i] == rho[2])
-				c = i;
-		}
-		return a < b && b < c || c < a && a < b || b < c && c < a;
+		return cases;
 	}
 }
