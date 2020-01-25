@@ -16,6 +16,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 	private byte maxSymbol = -1;
 	private Cycle inverse;
 	private int label = -1;
+    private Integer hashCode;
 
 	public Cycle(ByteArrayList lSymbols) {
 		byte[] content = new byte[lSymbols.size()];
@@ -90,18 +91,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 		hashCode = null;
 	}
 
-	public void redefine(Cycle cycle) {
-		redefine(cycle.symbols);
-	}
-
-	public boolean is3Cycle() {
-		return size() == 3;
-	}
-
-	public boolean is2Cycle() {
-		return size() == 2;
-	}
-
 	public boolean isLong() {
 		return size() > 2;
 	}
@@ -126,7 +115,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 		return this.size() - 1;
 	}
 
-	public String defaultStringRepresentation() {
+	private String defaultStringRepresentation() {
 		Cycle _default = this.getStartingBy(minSymbol);
 
 		StringBuilder representation = new StringBuilder().append("(");
@@ -142,24 +131,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 		return representation.toString();
 	}
 
-	public static String toString(int[] a) {
-		int iMax = a.length - 1;
-		if (iMax == -1) {
-			return "";
-		}
-
-		StringBuilder b = new StringBuilder();
-		for (int i = 0;; i++) {
-			b.append(a[i]);
-			if (i == iMax) {
-				return b.toString();
-			}
-			b.append(",");
-		}
-	}
-
-	private Integer hashCode;
-	
 	@Override
 	public int hashCode() {
 		if (hashCode == null)
@@ -253,13 +224,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 	@Override
 	public int getNumberOfEvenCycles() {
 		return size() % 2;
-	}
-
-	public Cycle defaultCycleRepresentation() {
-		if (size() > 0) {
-			return getStartingBy(minSymbol);
-		}
-		return this;
 	}
 
 	@Override

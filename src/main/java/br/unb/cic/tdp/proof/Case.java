@@ -4,26 +4,28 @@ import java.util.List;
 
 import br.unb.cic.tdp.Util;
 import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
 
 public class Case {
 
 	private int[] cycleSizes;
 	private byte[] signature;
 	private List<byte[]> rhos;
-	private List<Cycle> sigmaPiInverse;
+	private MulticyclePermutation spi;
 	private Cycle pi;
 
-	public Case(byte[] pi, List<Cycle> sigmaPiInverse, List<byte[]> rhos) {
-		signature = Util.signature(pi, sigmaPiInverse);
-		cycleSizes = new int[sigmaPiInverse.size()];
-		for (int i = 0; i < pi.length; i++) {
-			int cycleLabel = signature[i] - 1;
-			cycleSizes[cycleLabel] += 1;
-		}
+	public Case(final byte[] pi, final MulticyclePermutation spi, final List<byte[]> rhos) {
+		final var cr = Util.canonicalize(spi, pi, rhos);
+		this.pi = new Cycle(cr.getValue1());
+		this.spi = cr.getValue0();
+		this.rhos = cr.getValue2();
 
-		this.pi = new Cycle(pi);
-		this.sigmaPiInverse = sigmaPiInverse;
-		this.rhos = rhos;
+		this.signature = Util.signature(this.pi.getSymbols(), this.spi);
+		this.cycleSizes = new int[this.spi.size()];
+		for (int i = 0; i < this.pi.size(); i++) {
+			int cycleLabel = signature[i] - 1;
+			this.cycleSizes[cycleLabel] += 1;
+		}
 	}
 
 	public Cycle getPi() {
@@ -43,15 +45,15 @@ public class Case {
 	}
 
 	public List<Cycle> getSigmaPiInverse() {
-		return sigmaPiInverse;
+		return spi;
 	}
 
 	public int getCyclesCount() {
-		return sigmaPiInverse.size();
+		return spi.size();
 	}
 
 	@Override
 	public String toString() {
-		return "Case [rhos=" + rhos + ", sigmaPiInverse=" + sigmaPiInverse + "]";
+		return "Case [rhos=" + rhos + ", sigmaPiInverse=" + spi + "]";
 	}
 }

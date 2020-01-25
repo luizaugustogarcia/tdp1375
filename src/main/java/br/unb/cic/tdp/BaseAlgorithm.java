@@ -51,7 +51,7 @@ abstract class BaseAlgorithm {
 	protected void loadCases(String casesFolder) {
 		// Generates the 2-moves to be applied when we have one odd cycle in sigma
 		// pi^{-1}
-		_1_1OddCyclesCases.addAll(OddCyclesCases.generate1_1Cases());
+		_1_1OddCyclesCases.addAll(OddCyclesCases.generate());
 
 		// Generates the (2,2)-sequences to be applied when we have four odd cycles in
 		// sigma pi^{-1}

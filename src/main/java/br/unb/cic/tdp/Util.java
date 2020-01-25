@@ -12,12 +12,10 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.StringUtils;
+import org.javatuples.Triplet;
 import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
 import org.paukov.combinatorics.ICombinatoricsVector;
-
-import com.google.common.primitives.Bytes;
 
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
@@ -27,7 +25,7 @@ import cern.colt.list.FloatArrayList;
 
 public class Util {
 
-	public static Cycle simplify(Cycle pi) {
+	static Cycle simplify(Cycle pi) {
 		FloatArrayList _pi = new FloatArrayList();
 		for (int i = 0; i < pi.getSymbols().length; i++) {
 			_pi.add(pi.getSymbols()[i]);
@@ -128,7 +126,7 @@ public class Util {
 	}
 
 	// O(n)
-	public static boolean isOpenGate(int left, int right, Cycle[] symbolToMuCycles, Collection<Cycle> mu,
+	static boolean isOpenGate(int left, int right, Cycle[] symbolToMuCycles, Collection<Cycle> mu,
 			Cycle piInverse) {
 		int gates = left < right ? right - left : piInverse.size() - (left - right);
 		for (int i = 1; i < gates; i++) {
@@ -172,40 +170,52 @@ public class Util {
 		return replaced;
 	}
 
-	public static byte[] replace(byte[] array, byte[] substitution) {
+	static byte[] replace(byte[] array, byte[] substitution) {
 		for (int i = 0; i < array.length; i++) {
 			array[i] = substitution[array[i]];
 		}
 		return array;
 	}
 
-	public static MulticyclePermutation canonicalize(MulticyclePermutation sigmaPiInverse, byte[] pi, List<byte[]> rhos) {
-		int max = 0;
-		for (int i = 0; i < pi.length; i++)
-			if (pi[i] > max)
-				max = pi[i];
+	public static Triplet<MulticyclePermutation, byte[], List<byte[]>> canonicalize(final MulticyclePermutation spi, final byte[] pi) {
+		return canonicalize(spi, pi, null);
+	}
 
-		byte[] substitution = new byte[max + 1];
+	public static Triplet<MulticyclePermutation, byte[], List<byte[]>> canonicalize(final MulticyclePermutation spi, final byte[] pi,
+			final List<byte[]> rhos) {
+		int maxSymbol = 0;
+		for (int i = 0; i < pi.length; i++)
+			if (pi[i] > maxSymbol)
+				maxSymbol = pi[i];
+
+		final var substitutionMatrix = new byte[maxSymbol + 1];
 
 		for (int i = 0; i < pi.length; i++) {
-			substitution[pi[i]] = (byte) i;
+			substitutionMatrix[pi[i]] = (byte) i;
 		}
 
-		replace(pi, substitution);
+		final var _pi = Arrays.copyOf(pi, pi.length);
 
-		for (byte[] rho : rhos) {
-			replace(rho, substitution);
+		replace(_pi, substitutionMatrix);
+
+		final var _rhos = new ArrayList<byte[]>();
+		if (rhos != null) {
+			for (byte[] rho : rhos) {
+				final var _rho = Arrays.copyOf(rho, rho.length);
+				replace(_rho, substitutionMatrix);
+				_rhos.add(_rho);
+			}
 		}
 
-		MulticyclePermutation mu = new MulticyclePermutation();
+		final var _spi = new MulticyclePermutation();
 
-		for (Cycle cycle : sigmaPiInverse) {
-			byte[] symbols = Arrays.copyOf(cycle.getSymbols(), cycle.size());
-			replace(symbols, substitution);
-			mu.add(new Cycle(symbols));
+		for (Cycle cycle : spi) {
+			final var _cycle = Arrays.copyOf(cycle.getSymbols(), cycle.size());
+			replace(_cycle, substitutionMatrix);
+			_spi.add(new Cycle(_cycle));
 		}
 
-		return mu;
+		return new Triplet<>(_spi, _pi, _rhos);
 	}
 
 	/**
@@ -221,7 +231,7 @@ public class Util {
 	 * Find a sorting sequence whose approximation ratio lies between
 	 * <code>minRatio</code> and <code>maxRatio</code>.
 	 */
-	public static List<byte[]> findSortingSequence(byte[] pi, MulticyclePermutation mu, Stack<byte[]> rhos,
+	private static List<byte[]> findSortingSequence(byte[] pi, MulticyclePermutation mu, Stack<byte[]> rhos,
 			int initalNumberOfEvenCycles, float minRatio, float maxRatio) {
 		int n = pi.length;
 
@@ -276,11 +286,6 @@ public class Util {
 		return Collections.emptyList();
 	}
 
-	public static boolean is2Move(byte[] rho, MulticyclePermutation mu) {
-		return PermutationGroups.computeProduct(mu, new Cycle(rho).getInverse())
-				.getNumberOfEvenCycles() == mu.getNumberOfEvenCycles() + 2;
-	}
-
 	private static boolean is0Or2Move(byte[] rho, MulticyclePermutation mu) {
 		return PermutationGroups.computeProduct(mu, new Cycle(rho).getInverse()).getNumberOfEvenCycles() >= mu
 				.getNumberOfEvenCycles();
@@ -301,72 +306,7 @@ public class Util {
 		return result;
 	}
 
-	public static void desimplify(MulticyclePermutation sigmaPiInverse, Cycle pi, int depth) {
-		System.out.println(StringUtils.repeat("\t", depth) + pi);
-
-		for (ICombinatoricsVector<Cycle> combination : combinations(sigmaPiInverse, 2)) {
-			List<byte[]> joiningPairs = getJoiningPairs(combination.getVector(), pi);
-			for (byte[] joiningPair : joiningPairs) {
-				if (joiningPair[0] == 0)
-					continue;
-
-				byte[] _newPi = removeAndReplace(pi, joiningPair);
-
-				ByteArrayList copy = new ByteArrayList(Arrays.copyOf(_newPi, _newPi.length));
-				copy.sort();
-
-				byte[] sigma = new byte[copy.size()];
-				byte[] newPi = new byte[_newPi.length];
-				for (int i = 0; i < copy.size(); i++) {
-					newPi[i] = (byte) copy.indexOf(_newPi[i]);
-					sigma[i] = (byte) i;
-				}
-
-				desimplify(PermutationGroups.computeProduct(new Cycle(sigma), new Cycle(newPi).getInverse()), new Cycle(newPi),
-						depth + 1);
-			}
-		}
-	}
-
-	private static byte[] removeAndReplace(Cycle pi, byte[] pair) {
-		ByteArrayList temp = new ByteArrayList(Arrays.copyOf(pi.getSymbols(), pi.size()));
-		temp.remove(temp.indexOf(pair[1]));
-		temp.set(temp.indexOf(pair[0]), pair[1]);
-		return Arrays.copyOfRange(temp.elements(), 0, temp.size());
-	}
-
-	private static List<byte[]> getJoiningPairs(List<Cycle> cycles, Cycle pi) {
-		Set<Byte> symbols = new HashSet<>(Bytes.asList(pi.getSymbols()));
-
-		Map<Byte, Byte> symbolToLabel = new HashMap<>();
-
-		for (int i = 0; i < cycles.size(); i++) {
-			for (int j = 0; j < cycles.get(i).size(); j++) {
-				byte symbol = cycles.get(i).getSymbols()[j];
-				symbolToLabel.put(symbol, (byte) i);
-				symbols.remove(symbol);
-			}
-		}
-
-		ByteArrayList _pi = new ByteArrayList(Arrays.copyOf(pi.getSymbols(), pi.size()));
-		_pi.removeAll(new ByteArrayList(Bytes.toArray(symbols)));
-
-		Cycle piCycle = new Cycle(pi.getSymbols());
-
-		List<byte[]> results = new ArrayList<>();
-		for (int i = 0; i < _pi.size(); i++) {
-			byte currentLabel = symbolToLabel.get(_pi.get(i));
-			byte nextLabel = symbolToLabel.get(_pi.get((i + 1) % _pi.size()));
-			int currentSymbolIndex = piCycle.indexOf(_pi.get(i));
-			int nextSymbolIndex = piCycle.indexOf(_pi.get((i + 1) % _pi.size()));
-			if (currentLabel != nextLabel && nextSymbolIndex == (currentSymbolIndex + 1) % piCycle.size())
-				results.add(new byte[] { _pi.get(i), _pi.get((i + 1) % _pi.size()) });
-		}
-
-		return results;
-	}
-
-	public static <T> Generator<T> combinations(Collection<T> collection, int k) {
+	static <T> Generator<T> combinations(Collection<T> collection, int k) {
 		return Factory.createSimpleCombinationGenerator(Factory.createVector(collection), k);
 	}
 
@@ -407,7 +347,7 @@ public class Util {
 		return null;
 	}
 
-	public static List<Cycle> get2CyclesSegments(Cycle cycle) {
+	static List<Cycle> get2CyclesSegments(Cycle cycle) {
 		List<Cycle> result = new ArrayList<>();
 		for (int i = 0; i < cycle.size(); i++) {
 			result.add(new Cycle(cycle.get(i), cycle.image(cycle.get(i))));

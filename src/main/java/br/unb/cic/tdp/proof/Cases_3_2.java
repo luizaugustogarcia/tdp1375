@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Stack;
-import java.util.TreeSet;
 
 import org.paukov.combinatorics.Factory;
 
@@ -15,7 +14,7 @@ import br.unb.cic.tdp.Util;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 
-public class Cases_3_2 {
+class Cases_3_2 {
 
 	/**
 	 * Generate the (3,2)-sequences to apply when we have either two interleaving
@@ -23,7 +22,7 @@ public class Cases_3_2 {
 	 *
 	 * @return a list of cases.
 	 */
-	public static List<Case> generate() {
+	static List<Case> generate() {
 		final var result = new ArrayList<Case>();
 		result.add(new Case(new byte[] { 0, 1, 2, 3, 4, 5 }, new MulticyclePermutation("(0,4,2)(1,5,3)"),
 				Arrays.asList(new byte[] { 0, 2, 4 }, new byte[] { 3, 1, 5 }, new byte[] { 2, 4, 0 })));
@@ -34,13 +33,10 @@ public class Cases_3_2 {
 	private static List<Case> generate(final MulticyclePermutation spi) {
 		final var result = new ArrayList<Case>();
 
-		final var symbols = new ArrayList<Byte>();
-		spi.stream().forEach(c -> symbols.addAll(Bytes.asList(c.getSymbols())));
-
-		final var initialVector = Factory.createVector(symbols);
+		final var initialVector = Factory.createVector(spi.getSymbols());
 		final var gen = Factory.createPermutationGenerator(initialVector);
 
-		final var cache = new HashSet<String>();
+		final var verifiedConfigurations = new HashSet<Configuration>();
 
 		for (final var permutation : gen) {
 			var pi = new Cycle(Bytes.toArray(permutation.getVector()));
@@ -59,21 +55,10 @@ public class Cases_3_2 {
 					final var rhos = Util.findSortingSequence(pi.getSymbols(), spi, new Stack<>(), 3, 1.5F);
 
 					if (rhos != null) {
-						final var signature = new TreeSet<String>();
-						for (byte symbol : pi.getSymbols()) {
-							pi = pi.getStartingBy(symbol);
-							final var __pi = Arrays.copyOf(pi.getSymbols(), pi.size());
-							final var __spi = Util.canonicalize(spi, __pi, rhos);
-							final var cyclicRepresentation = __spi.cyclicRepresentation();
-							signature.add(cyclicRepresentation.toString());
-						}
-
-						if (!cache.contains(signature.toString())) {
-							cache.add(signature.toString());
-							final var __pi = Arrays.copyOf(pi.getSymbols(), pi.size());
-							final var __spi = Util.canonicalize(spi, __pi, rhos);
-							final var _case = new Case(__pi, __spi, rhos);
-							result.add(_case);
+						final var configuration = new Configuration(pi, spi);
+						if (!verifiedConfigurations.contains(configuration)) {
+							result.add(new Case(pi.getSymbols(), spi, rhos));
+							verifiedConfigurations.add(configuration);
 						}
 					} else
 						throw new RuntimeException("ERROR");

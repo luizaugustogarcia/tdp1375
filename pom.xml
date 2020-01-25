@@ -31,6 +31,11 @@
 			<artifactId>guava</artifactId>
 		</dependency>
 		<dependency>
+				<groupId>org.javatuples</groupId>
+				<artifactId>javatuples</artifactId>
+				<version>1.2</version>
+		</dependency>
+		<dependency>
 			<groupId>com.googlecode.combinatoricslib</groupId>
 			<artifactId>combinatoricslib</artifactId>
 			<version>2.1</version>
@@ -44,7 +49,7 @@
             <groupId>cc.redberry</groupId>
             <artifactId>core</artifactId>
             <version>1.1.10</version>
-        </dependency>		
+        </dependency>
 		<dependency>
 			<groupId>commons-lang</groupId>
 			<artifactId>commons-lang</artifactId>

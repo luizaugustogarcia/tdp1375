@@ -1,26 +1,27 @@
 package br.unb.cic.tdp.permutation;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.primitives.Bytes;
 
 import cern.colt.list.ByteArrayList;
 
 public class MulticyclePermutation extends ArrayList<Cycle> implements Permutation {
 
+	private static final long serialVersionUID = -249634481357599063L;
+
 	public MulticyclePermutation() {
 	}
 
-	public MulticyclePermutation(String permutation) {
-		super();
-
+	public MulticyclePermutation(final String permutation) {
 		ByteArrayList cycle = new ByteArrayList();
 		byte symbol = 0;
 		for (int i = 0; i < permutation.length(); i++) {
@@ -41,50 +42,11 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
 		}
 	}
 
-	public CyclicRepresentation cyclicRepresentation() {
-		byte[][] representation = new byte[this.size()][];
-		for (int i = 0; i < representation.length; i++) {
-			byte[] r = new byte[this.get(i).getSymbols().length];
-			for (int j = 0; j < r.length; j++) {
-				r[j] = (byte) this.get(i).getSymbols()[j];
-			}
-			representation[i] = r;
-		}
-
-		for (int i = 0; i < representation.length; i++) {
-			byte min = representation[i][0];
-			int index = 0;
-			for (int j = 0; j < representation[i].length; j++) {
-				if (representation[i][j] < min) {
-					min = representation[i][j];
-					index = j;
-				}
-			}
-
-			byte[] _representation = new byte[representation[i].length];
-			System.arraycopy(representation[i], index, _representation, 0, _representation.length - index);
-			System.arraycopy(representation[i], 0, _representation, _representation.length - index, index);
-
-			representation[i] = _representation;
-		}
-
-		Arrays.sort(representation, (a, b) -> Byte.compare(a[0], b[0]));
-
-		return new CyclicRepresentation(representation);
-	}
-
 	public MulticyclePermutation(Cycle cycle) {
-		super();
 		this.add(cycle);
 	}
 
-	public MulticyclePermutation(Cycle... cycles) {
-		super();
-		addAll(Arrays.asList(cycles));
-	}
-
 	public MulticyclePermutation(Collection<Cycle> cycles) {
-		super();
 		addAll(cycles);
 	}
 
@@ -157,10 +119,6 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
 		return factorization;
 	}
 
-	public boolean hasLongCycles() {
-		return this.stream().anyMatch((cycle) -> cycle.isLong());
-	}
-
 	@Override
 	public int getNumberOfEvenCycles() {
 		return (int) this.stream().filter((cycle) -> cycle.size() % 2 == 1).count();
@@ -179,49 +137,19 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
 		return (int) stream().filter(cycle -> cycle.size() > 0).count();
 	}
 
-	public static class CyclicRepresentation implements Serializable {
+	public List<Byte> getSymbols() {
+		return this.stream().flatMap(cycle -> Bytes.asList(cycle.getSymbols()).stream()).collect(Collectors.toList());
+	}
 
-		private byte[][] cyclicRepresentation;
-
-		public CyclicRepresentation(byte[][] cyclicRepresentation) {
-			this.cyclicRepresentation = cyclicRepresentation;
+	public boolean isSameCycleType(final MulticyclePermutation other) {
+		if (this.size() != other.size()) {
+			return false;
 		}
 
-		@Override
-		public String toString() {
-			StringBuilder sb = new StringBuilder();
-			for (byte[] cycle : cyclicRepresentation) {
-				sb.append("(");
-				for (int i = 0; i < cycle.length; i++) {
-					sb.append(cycle[i]);
-					if (i < cycle.length - 1)
-						sb.append(",");
-				}
-				sb.append(")");
-			}
-			return sb.toString();
-		}
+		final var difference = Maps.difference(
+				this.stream().collect(Collectors.groupingBy(c -> c.size(), Collectors.counting())),
+				other.stream().collect(Collectors.groupingBy(c -> c.size(), Collectors.counting())));
 
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + Arrays.deepHashCode(cyclicRepresentation);
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			CyclicRepresentation other = (CyclicRepresentation) obj;
-			if (!Arrays.deepEquals(cyclicRepresentation, other.cyclicRepresentation))
-				return false;
-			return true;
-		}
+		return difference.areEqual();
 	}
 }

@@ -1,7 +1,6 @@
 package br.unb.cic.tdp.proof;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -16,11 +15,11 @@ import br.unb.cic.tdp.Util;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 
-public class Oriented5Cycle {
+class Oriented5Cycle {
 
-	private static Set<String> cache = new HashSet<>();
+	private static Set<String> verifiedConfigurations = new HashSet<>();
 
-	public static List<Case> generate() {
+	static List<Case> generate() {
 		final var orientedCycle = new Cycle("(0,3,1,4,2)");
 		return generate(orientedCycle, new byte[] { 0, 1, 2 });
 	}
@@ -47,25 +46,20 @@ public class Oriented5Cycle {
 
 				if (rhos != null && !rhos.isEmpty()) {
 					if (rhos.size() > 1) {
-						final var signature = new TreeSet<String>();
+						final var signatures = new TreeSet<String>();
 						for (final var symbol : pi.getSymbols()) {
-							pi = pi.getStartingBy(symbol);
-							final var __pi = Arrays.copyOf(pi.getSymbols(), pi.size());
-							final var __spi = Util.canonicalize(spi, __pi, rhos);
-							final var cyclicRepresentation = __spi.cyclicRepresentation();
-							signature.add(cyclicRepresentation.toString());
+							final var cr = Util.canonicalize(spi, pi.getStartingBy(symbol).getSymbols());
+							signatures.add(cr.getValue0().toString());
 						}
 
-						if (!cache.contains(signature.toString())) {
-							cache.add(signature.toString());
-							final var __pi = Arrays.copyOf(pi.getSymbols(), pi.size());
-							final var __sigmaPiInverse = Util.canonicalize(spi, __pi, rhos);
-							final var _case = new Case(__pi, __sigmaPiInverse, rhos);
-							result.add(_case);
+						if (!verifiedConfigurations.contains(signatures.toString())) {
+							result.add(new Case(pi.getSymbols(), spi, rhos));
+							verifiedConfigurations.add(signatures.toString());
 						}
 					}
-				} else
-					throw new RuntimeException("ERROR");
+				} else {
+				    throw new RuntimeException("ERROR");
+				}
 			}
 		}
 

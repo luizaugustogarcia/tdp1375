@@ -1,5 +1,6 @@
 package br.unb.cic.tdp.proof;
 
+import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -8,7 +9,7 @@ import java.util.stream.Collectors;
 
 public class Proof {
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws FileNotFoundException {
     generateProof(System.out);
   }
 
@@ -25,7 +26,7 @@ public class Proof {
     printer.println("- Proposition 17 -");
     printer.println("------------------");
 
-    OddCyclesCases.generate1_1Cases().forEach(printCase);
+    OddCyclesCases.generate().forEach(printCase);
     printer.println();
 
     /**
