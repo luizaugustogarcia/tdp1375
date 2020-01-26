@@ -4,13 +4,11 @@ import java.util.List;
 
 public interface Permutation {
 
-	public Permutation getInverse();
+    Permutation getInverse();
 
-	public List<Cycle> default2CycleFactorization();
+    List<Cycle> default2CycleFactorization();
 
-	public int getNumberOfEvenCycles();
+    int getNumberOfEvenCycles();
 
-	public int getNumberOfEvenCycles(int n);
-
-	public int size();
+    int size();
 }

@@ -1,155 +1,113 @@
 package br.unb.cic.tdp.permutation;
 
+import cern.colt.list.ByteArrayList;
+import com.google.common.collect.Maps;
+import com.google.common.primitives.Bytes;
+import org.apache.commons.lang.StringUtils;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.StringUtils;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.primitives.Bytes;
-
-import cern.colt.list.ByteArrayList;
-
 public class MulticyclePermutation extends ArrayList<Cycle> implements Permutation {
 
-	private static final long serialVersionUID = -249634481357599063L;
+    public MulticyclePermutation() {
+    }
 
-	public MulticyclePermutation() {
-	}
+    public MulticyclePermutation(final String permutation) {
+        var cycle = new ByteArrayList();
+        byte symbol = 0;
+        for (var i = 0; i < permutation.length(); i++) {
+            final var current = permutation.charAt(i);
+            if (current != '(') {
+                if (current == ')') {
+                    cycle.add(symbol);
+                    symbol = 0;
+                    this.add(new Cycle(cycle));
+                    cycle = new ByteArrayList();
+                } else if (current == ',') {
+                    cycle.add(symbol);
+                    symbol = 0;
+                } else {
+                    symbol = (byte) (symbol * 10 + Character.getNumericValue(current));
+                }
+            }
+        }
+    }
 
-	public MulticyclePermutation(final String permutation) {
-		ByteArrayList cycle = new ByteArrayList();
-		byte symbol = 0;
-		for (int i = 0; i < permutation.length(); i++) {
-			char current = permutation.charAt(i);
-			if (current == '(') {
-				continue;
-			} else if (current == ')') {
-				cycle.add(symbol);
-				symbol = 0;
-				this.add(new Cycle(cycle));
-				cycle = new ByteArrayList();
-			} else if (current == ',') {
-				cycle.add(symbol);
-				symbol = 0;
-			} else {
-				symbol = (byte) (symbol * 10 + Character.getNumericValue(current));
-			}
-		}
-	}
+    public MulticyclePermutation(final Cycle cycle) {
+        this.add(cycle);
+    }
 
-	public MulticyclePermutation(Cycle cycle) {
-		this.add(cycle);
-	}
+    public MulticyclePermutation(final Collection<Cycle> cycles) {
+        addAll(cycles);
+    }
 
-	public MulticyclePermutation(Collection<Cycle> cycles) {
-		addAll(cycles);
-	}
+    @Override
+    public String toString() {
+        if (this.isEmpty()) {
+            return "()";
+        }
+        return StringUtils.join(this, "");
+    }
 
-	public List<Cycle> getLongCycles() {
-		List<Cycle> longCycles = Lists.newArrayList();
-		for (Cycle cycle : this) {
-			if (cycle.isLong()) {
-				longCycles.add(cycle);
-			}
-		}
-		return longCycles;
-	}
+    public int getNorm() {
+        return this.stream().mapToInt(Cycle::getNorm).sum();
+    }
 
-	public List<Cycle> getBigCycles() {
-		List<Cycle> bigCycles = Lists.newArrayList();
-		for (Cycle cycle : this) {
-			if (cycle.size() >= 4) {
-				bigCycles.add(cycle);
-			}
-		}
-		return bigCycles;
-	}
+    @Override
+    public MulticyclePermutation getInverse() {
+        final var permutation = new MulticyclePermutation();
 
-	@Override
-	public String toString() {
-		if (this.isEmpty()) {
-			return "()";
-		}
-		return StringUtils.join(this, "");
-	}
+        this.forEach((cycle) -> permutation.add(cycle.getInverse()));
 
-	public int getNorm() {
-		return this.stream().mapToInt(c -> c.getNorm()).sum();
-	}
+        return permutation;
+    }
 
-	@Override
-	public MulticyclePermutation getInverse() {
-		MulticyclePermutation permutation = new MulticyclePermutation();
+    public Cycle asNCycle() {
+        if (this.size() > 1) {
+            throw new RuntimeException("NONCYCLICPERMUTATION");
+        }
+        return this.get(0);
+    }
 
-		this.stream().forEach((cycle) -> {
-			permutation.add(cycle.getInverse());
-		});
+    public boolean isIdentity() {
+        return this.isEmpty() || (stream().filter((cycle) -> cycle.size() == 1).count() == this.size());
+    }
 
-		return permutation;
-	}
+    @Override
+    public List<Cycle> default2CycleFactorization() {
+        final List<Cycle> factorization = new LinkedList<>();
 
-	public boolean isNCycle() {
-		return this.size() == 1;
-	}
+        this.forEach((cycle) -> factorization.addAll(cycle.default2CycleFactorization()));
 
-	public Cycle asNCycle() {
-		if (this.size() > 1) {
-			throw new RuntimeException("NONCYCLICPERMUTATION");
-		}
-		return this.get(0);
-	}
+        return factorization;
+    }
 
-	public boolean isIdentity() {
-		return this.isEmpty() || (stream().filter((cycle) -> cycle.size() == 1).count() == this.size());
-	}
+    @Override
+    public int getNumberOfEvenCycles() {
+        return (int) this.stream().filter((cycle) -> cycle.size() % 2 == 1).count();
+    }
 
-	@Override
-	public List<Cycle> default2CycleFactorization() {
-		List<Cycle> factorization = new LinkedList<>();
+    public int getNumberOfSymbols() {
+        return this.stream().mapToInt(Cycle::size).sum();
+    }
 
-		this.stream().forEach((cycle) -> {
-			factorization.addAll(cycle.default2CycleFactorization());
-		});
+    public List<Byte> getSymbols() {
+        return this.stream().flatMap(cycle -> Bytes.asList(cycle.getSymbols()).stream()).collect(Collectors.toList());
+    }
 
-		return factorization;
-	}
+    public boolean isSameCycleType(final MulticyclePermutation other) {
+        if (this.size() != other.size()) {
+            return false;
+        }
 
-	@Override
-	public int getNumberOfEvenCycles() {
-		return (int) this.stream().filter((cycle) -> cycle.size() % 2 == 1).count();
-	}
+        final var difference = Maps.difference(
+                this.stream().collect(Collectors.groupingBy(Cycle::size, Collectors.counting())),
+                other.stream().collect(Collectors.groupingBy(Cycle::size, Collectors.counting())));
 
-	@Override
-	public int getNumberOfEvenCycles(int n) {
-		return (int) this.stream().filter((cycle) -> cycle.size() % 2 == 1).count() + (n - getNumberOfSymbols());
-	}
-
-	public int getNumberOfSymbols() {
-		return this.stream().mapToInt(c -> c.size()).sum();
-	}
-
-	public int getNumberNonEmptyCycles() {
-		return (int) stream().filter(cycle -> cycle.size() > 0).count();
-	}
-
-	public List<Byte> getSymbols() {
-		return this.stream().flatMap(cycle -> Bytes.asList(cycle.getSymbols()).stream()).collect(Collectors.toList());
-	}
-
-	public boolean isSameCycleType(final MulticyclePermutation other) {
-		if (this.size() != other.size()) {
-			return false;
-		}
-
-		final var difference = Maps.difference(
-				this.stream().collect(Collectors.groupingBy(c -> c.size(), Collectors.counting())),
-				other.stream().collect(Collectors.groupingBy(c -> c.size(), Collectors.counting())));
-
-		return difference.areEqual();
-	}
+        return difference.areEqual();
+    }
 }
