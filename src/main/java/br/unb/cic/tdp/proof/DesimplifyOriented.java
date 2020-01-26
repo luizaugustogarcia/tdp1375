@@ -83,39 +83,24 @@ class DesimplifyOriented extends DesimplifyUnoriented {
                 final var _spi = cr.getValue0();
                 final var _rhos = cr.getValue2();
 
-                // skipping configuration containing cycles > 5, since all oriented 7-cycle
-                // accept (4,3)-sequence
-                final var isThereOrientedCycleGreaterThan5 = _spi.stream()
-                        .filter(c -> !piInverse.areSymbolsInCyclicOrder(c.getSymbols()) && c.size() > 5).count() > 0;
+                // Skipping configuration containing cycles > 5, since all oriented 7-cycle accept (4,3)-sequence
+                final var isThereOrientedCycleGreaterThan5 = _spi.stream().anyMatch(c -> !piInverse.areSymbolsInCyclicOrder(c.getSymbols()) && c.size() > 5);
+                // Skipping configurations not containing an oriented 5-cycle
+                final var isThereOriented5Cycle = _spi.stream().anyMatch(c -> c.size() == 5 && !piInverse.areSymbolsInCyclicOrder(c.getSymbols()));
+                // Skipping configurations containing 2-moves
+                final var isThereOriented3Segment = CommonOperations.searchFor2MoveFromOrientedCycle(_spi, new Cycle(_pi)) != null;
 
-                if (!isThereOrientedCycleGreaterThan5) {
-                    var isThereOriented5Cycle = false;
-                    var isThereOriented3Segment = false;
-                    for (final var cycle : _spi) {
-                        isThereOriented5Cycle |= cycle.size() == 5 && !piInverse.areSymbolsInCyclicOrder(cycle.getSymbols());
-                        for (int i = 0; i < cycle.size(); i++) {
-                            byte a = cycle.get(i), b = cycle.image(a), c = cycle.image(b);
-                            // if rho (a,b,c) is applicable
-                            if (CommonOperations.areSymbolsInCyclicOrder(new byte[] { a, b, c }, _pi)) {
-                                // there is a valid 2-move
-                                isThereOriented3Segment = true;
-                                break;
-                            }
+                if (!isThereOrientedCycleGreaterThan5 && isThereOriented5Cycle && !isThereOriented3Segment) {
+                    if (CommonOperations.is11_8(_spi, _pi, _rhos)) {
+                        final var configuration = new Configuration(_pi, _spi);
+
+                        if (!verifiedConfigurations.contains(configuration)) {
+                            verifiedConfigurations.add(configuration);
+                            cases.add(new Case(_pi, _spi, _rhos));
+                            desimplify(verifiedConfigurations, cases, _spi, _pi, _rhos);
                         }
-                    }
-
-                    if (isThereOriented5Cycle && !isThereOriented3Segment) {
-                        if (CommonOperations.is11_8(_spi, _pi, _rhos)) {
-                            final var configuration = new Configuration(_pi, _spi);
-
-                            if (!verifiedConfigurations.contains(configuration)) {
-                                verifiedConfigurations.add(configuration);
-                                cases.add(new Case(_pi, _spi, _rhos));
-                                desimplify(verifiedConfigurations, cases, _spi, _pi, _rhos);
-                            }
-                        } else {
-                            throw new RuntimeException("ERROR");
-                        }
+                    } else {
+                        throw new RuntimeException("ERROR");
                     }
                 }
             }
