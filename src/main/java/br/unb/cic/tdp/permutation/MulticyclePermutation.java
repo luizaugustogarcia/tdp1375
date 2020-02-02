@@ -78,15 +78,6 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
     }
 
     @Override
-    public List<Cycle> default2CycleFactorization() {
-        final List<Cycle> factorization = new LinkedList<>();
-
-        this.forEach((cycle) -> factorization.addAll(cycle.default2CycleFactorization()));
-
-        return factorization;
-    }
-
-    @Override
     public int getNumberOfEvenCycles() {
         return (int) this.stream().filter((cycle) -> cycle.size() % 2 == 1).count();
     }
@@ -109,5 +100,9 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
                 other.stream().collect(Collectors.groupingBy(Cycle::size, Collectors.counting())));
 
         return difference.areEqual();
+    }
+
+    public int get3Norm() {
+        return (this.getNumberOfSymbols() - getNumberOfEvenCycles()) / 2;
     }
 }

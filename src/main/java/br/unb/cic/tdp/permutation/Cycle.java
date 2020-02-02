@@ -1,12 +1,11 @@
 package br.unb.cic.tdp.permutation;
 
-import br.unb.cic.tdp.CommonOperations;
 import cern.colt.list.ByteArrayList;
 import org.apache.commons.lang.ArrayUtils;
 
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+
+import static br.unb.cic.tdp.CommonOperations.areSymbolsInCyclicOrder;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
 
@@ -15,7 +14,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     private byte minSymbol = -1;
     private byte maxSymbol = -1;
     private Cycle inverse;
-    private int label = -1;
     private Integer hashCode;
 
     public Cycle(final ByteArrayList lSymbols) {
@@ -136,10 +134,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     @Override
     public boolean equals(final Object obj) {
-        if (this.symbols.length == 0 && ((Cycle) obj).symbols.length == 0) {
-            return true;
-        }
-
         if (obj == null) {
             return false;
         }
@@ -156,42 +150,19 @@ public class Cycle implements Permutation, Comparable<Cycle> {
                 ((Cycle) obj).getStartingBy(((Cycle) obj).getMinSymbol()).getSymbols());
     }
 
-    @Override
-    public List<Cycle> default2CycleFactorization() {
-        final List<Cycle> factorization = new LinkedList<>();
-
-        for (var i = this.size() - 1; i > 0; i--) {
-            final var factor = new Cycle(this.get(0), this.get(i));
-            factorization.add(factor);
-        }
-        return factorization;
-    }
-
     public boolean isEven() {
         return this.size() % 2 == 1;
     }
 
     public byte image(final byte a) {
-        if (this.indexOf(a) == -1) {
-            return a;
-        }
-        return this.get((this.indexOf(a) + 1) % this.size());
+        return symbols[(symbolIndexes[a] + 1) % symbols.length];
     }
 
     public byte pow(final byte a, final int power) {
-        if (this.indexOf(a) == -1) {
-            return a;
-        }
-        if (power == 0) {
-            return a;
-        }
-        return this.get((((this.indexOf(a) + power) % this.size()) + this.size()) % this.size());
+        return symbols[(symbolIndexes[a] + power) % symbols.length];
     }
 
     public int getK(final byte a, final byte b) {
-        if (!contains(a) || !contains(b)) {
-            throw new IllegalArgumentException();
-        }
         final var aIndex = indexOf(a);
         final var bIndex = indexOf(b);
 
@@ -202,11 +173,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public Cycle getStartingBy(final byte symbol) {
-        if (!contains(symbol)) {
-            throw new IllegalArgumentException();
-        }
-
-        if (get(0) == symbol) {
+        if (this.symbols[0] == symbol) {
             return this;
         }
 
@@ -214,6 +181,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         final var symbols = new byte[this.symbols.length];
         System.arraycopy(this.symbols, index, symbols, 0, symbols.length - index);
         System.arraycopy(this.symbols, 0, symbols, symbols.length - index, index);
+
         return new Cycle(symbols);
     }
 
@@ -239,20 +207,16 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return symbol <= symbolIndexes.length - 1 && symbolIndexes[symbol] != -1;
     }
 
-    public boolean areSymbolsInCyclicOrder(final byte... symbols) {
-        return CommonOperations.areSymbolsInCyclicOrder(symbols, this.getSymbols());
+    public boolean isApplicable(final Cycle rho) {
+        return areSymbolsInCyclicOrder(rho.getSymbols(), this.getSymbols());
+    }
+
+    public boolean isOrientedTriple(final byte... symbols) {
+        return areSymbolsInCyclicOrder(symbols, this.getSymbols());
     }
 
     @Override
     public int size() {
         return symbols.length;
-    }
-
-    public int getLabel() {
-        return label;
-    }
-
-    public void setLabel(final int label) {
-        this.label = label;
     }
 }

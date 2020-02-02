@@ -4,11 +4,14 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.Case;
 import cern.colt.list.ByteArrayList;
+import com.google.common.primitives.Bytes;
 import org.apache.commons.collections.ListUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static br.unb.cic.tdp.util.ByteArrayOperations.replace;
+import static br.unb.cic.tdp.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 public class Silvaetal extends BaseAlgorithm {
@@ -53,45 +56,45 @@ public class Silvaetal extends BaseAlgorithm {
 
         final var sigma = new Cycle(array);
 
-        var sigmaPiInverse = computeProduct(true, n, sigma, pi.getInverse());
+        var spi = computeProduct(true, n, sigma, pi.getInverse());
 
         var distance = 0;
 
         // O(n^6)
-        final var _2_2Seq = searchFor2_2Seq(sigmaPiInverse, pi);
+        final var _2_2Seq = searchFor2_2Seq(spi, pi);
         if (_2_2Seq != null) {
             pi = computeProduct(_2_2Seq.getSecond(), _2_2Seq.getFirst(), pi).asNCycle();
             distance += 2;
-            sigmaPiInverse = computeProduct(true, sigma, pi.getInverse());
+            spi = computeProduct(true, sigma, pi.getInverse());
         }
 
         // O(n^2)
-        while (thereAreOddCycles(sigmaPiInverse)) {
-            apply2MoveTwoOddCycles(sigmaPiInverse, pi);
+        while (thereAreOddCycles(spi)) {
+            apply2MoveTwoOddCycles(spi, pi);
             distance += 1;
-            sigmaPiInverse = computeProduct(true, sigma, pi.getInverse());
+            spi = computeProduct(true, sigma, pi.getInverse());
         }
 
         final List<Collection<Cycle>> badSmallComponents = new ArrayList<>();
 
         // O(n^4)
-        List<Cycle> sigmaPiInverseWithoOutBadSmallComponents;
-        while (!sigmaPiInverse.isIdentity() && !(sigmaPiInverseWithoOutBadSmallComponents = ListUtils.subtract(
-                sigmaPiInverse.stream().filter(c -> c.size() > 1).collect(Collectors.toList()),
+        List<Cycle> spiWithoOutBadSmallComponents;
+        while (!spi.isIdentity() && !(spiWithoOutBadSmallComponents = ListUtils.subtract(
+                spi.stream().filter(c -> c.size() > 1).collect(Collectors.toList()),
                 badSmallComponents.stream().flatMap(Collection::stream).collect(Collectors.toList()))).isEmpty()) {
             // O(n^3)
-            final var _2move = CommonOperations.searchFor2MoveFromOrientedCycle(sigmaPiInverse, pi);
+            final var _2move = searchFor2MoveFromOrientedCycle(spi, pi);
             if (_2move != null) {
                 pi = computeProduct(_2move, pi).asNCycle();
                 distance += 1;
             } else {
-                final var orientedCycle = searchForOrientedCycleBiggerThan5(sigmaPiInverse, pi);
+                final var orientedCycle = searchForOrientedCycleBiggerThan5(spi, pi);
                 if (orientedCycle != null) {
                     // O(n^3)
-                    distance += apply11_8SeqOrientedCase(orientedCycle, sigmaPiInverse, pi);
+                    distance += apply11_8SeqOrientedCase(orientedCycle, spi, pi);
                 } else {
-                    Set<Cycle> mu = new HashSet<>();
-                    final var initialFactor = sigmaPiInverseWithoOutBadSmallComponents.stream().filter(c -> c.size() > 1)
+                    List<Cycle> mu = new ArrayList<>();
+                    final var initialFactor = spiWithoOutBadSmallComponents.stream().filter(c -> c.size() > 1)
                             .findFirst().get();
                     mu.add(new Cycle(initialFactor.get(0), initialFactor.get(1), initialFactor.get(2)));
 
@@ -100,17 +103,17 @@ public class Silvaetal extends BaseAlgorithm {
                     for (var i = 0; i < 8; i++) {
                         final var norm = getNorm(mu);
 
-                        mu = extend(mu, sigmaPiInverse, pi);
+                        mu = extend(mu, spi, pi);
 
                         if (norm == getNorm(mu)) {
                             badSmallComponent = true;
                             break;
                         }
 
-                        final var _11_8Seq = searchFor11_8Seq(mu, sigmaPiInverse, pi);
+                        final var _11_8Seq = searchFor11_8Seq(mu, spi, pi);
                         if (_11_8Seq != null) {
                             for (final var rho : _11_8Seq)
-                                pi = computeProduct(new Cycle(rho), pi).asNCycle();
+                                pi = computeProduct(rho, pi).asNCycle();
                             distance += _11_8Seq.length;
                             break;
                         }
@@ -120,63 +123,60 @@ public class Silvaetal extends BaseAlgorithm {
                         badSmallComponents.add(mu);
                 }
             }
-            sigmaPiInverse = computeProduct(true, sigma, pi.getInverse());
+            spi = computeProduct(true, sigma, pi.getInverse());
         }
 
         // Bad small components
-        final Collection<Cycle> mu = new ArrayList<>();
+        final List<Cycle> mu = new ArrayList<>();
         final var iterator = badSmallComponents.iterator();
         while (iterator.hasNext()) {
             mu.addAll(iterator.next());
             iterator.remove();
             if (getNorm(mu) >= 16) {
-                final var _11_8Seq = searchFor11_8Seq(mu, sigmaPiInverse, pi);
+                final var _11_8Seq = searchFor11_8Seq(mu, spi, pi);
                 for (final var rho : _11_8Seq) {
-                    pi = computeProduct(new Cycle(rho), pi).asNCycle();
+                    pi = computeProduct(rho, pi).asNCycle();
                 }
                 distance += _11_8Seq.length;
-                sigmaPiInverse = computeProduct(true, sigma, pi.getInverse());
+                spi = computeProduct(true, sigma, pi.getInverse());
             }
         }
 
         // O(n)
-        while (!sigmaPiInverse.isIdentity()) {
-            final var _2move = CommonOperations.searchFor2MoveFromOrientedCycle(sigmaPiInverse, pi);
+        while (!spi.isIdentity()) {
+            final var _2move = searchFor2MoveFromOrientedCycle(spi, pi);
             if (_2move != null) {
                 pi = computeProduct(_2move, pi).asNCycle();
                 distance += 1;
             } else {
-                apply3_2(sigmaPiInverse, pi);
+                apply3_2(spi, pi);
                 distance += 3;
             }
-            sigmaPiInverse = computeProduct(true, sigma, pi.getInverse());
+            spi = computeProduct(true, sigma, pi.getInverse());
         }
 
         return distance;
     }
 
-    private byte[][] searchFor11_8Seq(final Collection<Cycle> mu, final MulticyclePermutation sigmaPiInverse, final Cycle pi) {
-        byte[][] rhos = null;
+    private Cycle[] searchFor11_8Seq(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
+        Cycle[] rhos = null;
 
-        if (mu.stream().anyMatch(c -> c.size() == 5 && !pi.getInverse().areSymbolsInCyclicOrder(c.getSymbols())))
-            rhos = searchForSeq(mu, sigmaPiInverse, pi, _11_8OrientedCases.get(mu.size()));
+        if (mu.stream().anyMatch(c -> c.size() == 5 && isOriented(pi, c)))
+            rhos = searchForSeq(mu, spi, pi, _11_8OrientedCases.get(mu.size()));
 
         if (rhos == null)
-            rhos = searchForSeq(mu, sigmaPiInverse, pi, _11_8UnorientedCases.get(mu.size()));
+            rhos = searchForSeq(mu, spi, pi, _11_8UnorientedCases.get(mu.size()));
 
         return rhos;
     }
 
-    Set<Cycle> extend(final Set<Cycle> mu, final MulticyclePermutation sigmaPiInverse, final Cycle pi) {
+    List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
         final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
-        final Set<Byte> muSymbols = new HashSet<>();
+        final Set<Byte> muSymbols = mu.stream().flatMap(c -> Bytes.asList(c.getSymbols()).stream())
+                .collect(Collectors.toSet());
 
-        final var symbolToMuCycles = CommonOperations.mapSymbolsToCycles(mu, pi);
-
-        final var symbolToSigmaPiInverseCycles = new Cycle[piInverse.size()];
-        for (final var cycle : sigmaPiInverse)
-            for (var i = 0; i < cycle.getSymbols().length; i++)
-                symbolToSigmaPiInverseCycles[cycle.getSymbols()[i]] = cycle;
+        final var muCycleIndex = createCycleIndex(mu, pi);
+        final var spiCycleIndex = createCycleIndex(spi, pi);
 
         // Type 1 extension
         // These two outer loops are O(1), since at this point, ||mu|| never
@@ -186,15 +186,15 @@ public class Silvaetal extends BaseAlgorithm {
                 final var left = piInverse.indexOf(muCycle.get(i));
                 final var right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
                 // O(n)
-                if (CommonOperations.isOpenGate(left, right, symbolToMuCycles, mu, piInverse)) {
-                    final var intersectingCycle = getIntersectingCycle(left, right, symbolToSigmaPiInverseCycles,
+                if (isOpenGate(mu, piInverse, muCycleIndex, right, left)) {
+                    final var intersectingCycle = getIntersectingCycle(left, right, spiCycleIndex,
                             piInverse);
                     if (intersectingCycle != null
-                            && !contains(muSymbols, symbolToSigmaPiInverseCycles[intersectingCycle.get(0)])) {
+                            && !contains(muSymbols, spiCycleIndex[intersectingCycle.get(0)])) {
                         final var a = intersectingCycle.get(0);
                         final var b = intersectingCycle.image(a);
                         final var c = intersectingCycle.image(b);
-                        final Set<Cycle> newMu = new HashSet<>(mu);
+                        final List<Cycle> newMu = new ArrayList<>(mu);
                         newMu.add(new Cycle(a, b, c));
                         return newMu;
                     }
@@ -211,15 +211,15 @@ public class Silvaetal extends BaseAlgorithm {
                 final var gates = left < right ? right - left : piInverse.size() - (left - right);
                 for (var j = 1; j < gates; j++) {
                     final var index = (j + left) % piInverse.size();
-                    if (symbolToMuCycles[piInverse.get(index)] == null) {
-                        final var intersectingCycle = symbolToSigmaPiInverseCycles[piInverse.get(index)];
+                    if (muCycleIndex[piInverse.get(index)] == null) {
+                        final var intersectingCycle = spiCycleIndex[piInverse.get(index)];
                         if (intersectingCycle != null && intersectingCycle.size() > 1
-                                && !contains(muSymbols, symbolToSigmaPiInverseCycles[intersectingCycle.get(0)])) {
+                                && !contains(muSymbols, spiCycleIndex[intersectingCycle.get(0)])) {
                             final var a = piInverse.get(index);
                             final var b = intersectingCycle.image(a);
                             if (isOutOfInterval(piInverse.indexOf(b), left, right)) {
                                 final var c = intersectingCycle.image(b);
-                                final Set<Cycle> newMu = new HashSet<>(mu);
+                                final List<Cycle> newMu = new ArrayList<>(mu);
                                 newMu.add(new Cycle(a, b, c));
                                 return newMu;
                             }
@@ -232,20 +232,20 @@ public class Silvaetal extends BaseAlgorithm {
         // Type 3 extension
         // The outer loop is O(1) since, at this point, ||mu|| never exceeds 16
         for (var muCycle : mu) {
-            if (muCycle.size() < symbolToSigmaPiInverseCycles[muCycle.get(0)].size()) {
-                final var sigmaPiInverseCycle = align(symbolToSigmaPiInverseCycles[muCycle.get(0)], muCycle);
-                muCycle = muCycle.getStartingBy(sigmaPiInverseCycle.get(0));
+            if (muCycle.size() < spiCycleIndex[muCycle.get(0)].size()) {
+                final var spiCycle = align(spiCycleIndex[muCycle.get(0)], muCycle);
+                muCycle = muCycle.getStartingBy(spiCycle.get(0));
                 final var newSymbols = Arrays.copyOf(muCycle.getSymbols(), muCycle.getSymbols().length + 2);
-                newSymbols[muCycle.getSymbols().length] = sigmaPiInverseCycle
+                newSymbols[muCycle.getSymbols().length] = spiCycle
                         .image(muCycle.get(muCycle.getSymbols().length - 1));
-                newSymbols[muCycle.getSymbols().length + 1] = sigmaPiInverseCycle
+                newSymbols[muCycle.getSymbols().length + 1] = spiCycle
                         .image(newSymbols[muCycle.getSymbols().length]);
 
-                final Set<Cycle> newMu = new HashSet<>(mu);
+                final List<Cycle> newMu = new ArrayList<>(mu);
                 newMu.remove(muCycle);
                 newMu.add(new Cycle(newSymbols));
 
-                final var openGates = CommonOperations.openGatesPerCycle(newMu, piInverse);
+                final var openGates = openGatesPerCycle(newMu, piInverse);
                 if (openGates.values().stream().mapToInt(j -> j).sum() <= 2)
                     return newMu;
             }
@@ -255,32 +255,32 @@ public class Silvaetal extends BaseAlgorithm {
     }
 
     // O(n)
-    private Cycle align(final Cycle sigmaPiInverseCycle, final Cycle segment) {
+    private Cycle align(final Cycle spiCycle, final Cycle segment) {
         for (var i = 0; i < segment.size(); i++) {
             var symbol = segment.get(i);
-            final var index = sigmaPiInverseCycle.indexOf(symbol);
+            final var index = spiCycle.indexOf(symbol);
             var match = true;
             for (var j = 1; j < segment.size(); j++) {
-                if (segment.get((i + j) % segment.size()) != sigmaPiInverseCycle
-                        .get((index + j) % sigmaPiInverseCycle.size())) {
+                if (segment.get((i + j) % segment.size()) != spiCycle
+                        .get((index + j) % spiCycle.size())) {
                     match = false;
                     break;
                 }
                 symbol = segment.image(symbol);
             }
             if (match)
-                return sigmaPiInverseCycle.getStartingBy(segment.get(i));
+                return spiCycle.getStartingBy(segment.get(i));
         }
         return null;
     }
 
-    private Cycle searchForOrientedCycleBiggerThan5(final MulticyclePermutation sigmaPiInverse, final Cycle pi) {
-        return sigmaPiInverse.stream().filter(c -> c.size() > 5 && !pi.getInverse().areSymbolsInCyclicOrder(c.getSymbols())).findFirst()
+    private Cycle searchForOrientedCycleBiggerThan5(final MulticyclePermutation spi, final Cycle pi) {
+        return spi.stream().filter(c -> c.size() > 5 && isOriented(pi, c)).findFirst()
                 .orElse(null);
     }
 
     // O(n^3)
-    private int apply11_8SeqOrientedCase(final Cycle orientedCycle, final MulticyclePermutation sigmaPiInverse, final Cycle pi) {
+    private int apply11_8SeqOrientedCase(final Cycle orientedCycle, final MulticyclePermutation spi, final Cycle pi) {
         for (var j = 0; j < orientedCycle.size(); j++) {
             final var a = orientedCycle.get(j);
             final var d = orientedCycle.image(a);
@@ -297,20 +297,20 @@ public class Silvaetal extends BaseAlgorithm {
                     final var factor = new Cycle(a, d, e, b, f, c, g);
 
                     for (final var _case : _11_8OrientedCycle) {
-                        final var _orientedCycleCase = _case.getSigmaPiInverse().get(0);
+                        final var _orientedCycleCase = _case.getSpi().get(0);
 
                         final var substitution = new byte[7];
                         for (var k = 0; k < substitution.length; k++)
                             substitution[_orientedCycleCase.getSymbols()[k]] = factor.get(k);
 
-                        final var rhos = new byte[_case.getRhos().size()][];
+                        final var rhos = new Cycle[_case.getRhos().size()];
                         for (var k = 0; k < rhos.length; k++) {
-                            final var _rho = Arrays.copyOf(_case.getRhos().get(k), 3);
-                            CommonOperations.replace(_rho, substitution);
-                            rhos[k] = _rho;
+                            final var _rho = Arrays.copyOf(_case.getRhos().get(k).getSymbols(), 3);
+                            replace(_rho, substitution);
+                            rhos[k] = new Cycle(_rho);
                         }
 
-                        if (CommonOperations.is11_8(sigmaPiInverse, pi.getSymbols(), Arrays.asList(rhos))) {
+                        if (is11_8(spi, pi, Arrays.asList(rhos))) {
                             applyMoves(pi, rhos);
                             return rhos.length;
                         }
@@ -322,17 +322,17 @@ public class Silvaetal extends BaseAlgorithm {
         throw new RuntimeException("ERROR");
     }
 
-    byte[][] searchForSeq(final Collection<Cycle> mu, final MulticyclePermutation sigmaPiInverse, final Cycle pi,
-                          final List<Case> cases) {
+    Cycle[] searchForSeq(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi,
+                         final List<Case> cases) {
         if (cases != null) {
-            final var symbolToMuCycle = CommonOperations.mapSymbolsToCycles(mu, pi);
+            final var cycleIndex = createCycleIndex(mu, pi);
 
             final var symbolsCount = mu.stream().mapToInt(Cycle::size).sum();
 
             final var _piArrayList = new ByteArrayList(symbolsCount);
             // O(n)
             for (var i = 0; i < pi.getSymbols().length; i++) {
-                final var muCycle = symbolToMuCycle[pi.getSymbols()[i]];
+                final var muCycle = cycleIndex[pi.getSymbols()[i]];
                 if (muCycle != null)
                     _piArrayList.add(pi.getSymbols()[i]);
             }
@@ -348,27 +348,27 @@ public class Silvaetal extends BaseAlgorithm {
 
                         final Map<Cycle, Integer> labels = new HashMap<>();
                         for /* O(1) */ (var j = 0; j < _piSymbols.length; j++) {
-                            final var muCycle = symbolToMuCycle[_piSymbols[j]];
+                            final var muCycle = cycleIndex[_piSymbols[j]];
                             if (muCycle != null && !labels.containsKey(muCycle))
                                 labels.put(muCycle, labels.size() + 1);
                         }
 
                         for (final var entry : labels.entrySet())
-                            if (entry.getKey().size() != _case.getSigmaPiInverse().get(entry.getValue() - 1).size()
+                            if (entry.getKey().size() != _case.getSpi().get(entry.getValue() - 1).size()
                                     || isOriented(pi, entry.getKey()) != isOriented(_case.getPi(),
-                                    _case.getSigmaPiInverse().get(entry.getValue() - 1)))
+                                    _case.getSpi().get(entry.getValue() - 1)))
                                 continue rotation;
 
                         for (var j = 0; j < _piSymbols.length; j++) {
-                            if (_case.getSignature()[j] != labels.get(symbolToMuCycle[_piSymbols[j]]))
+                            if (_case.getSignature()[j] != labels.get(cycleIndex[_piSymbols[j]]))
                                 continue rotation;
                             else {
                                 if (j == _case.getSignature().length - 1) {
-                                    final var rhos = new byte[_case.getRhos().size()][];
+                                    final var rhos = new Cycle[_case.getRhos().size()];
                                     for (var k = 0; k < rhos.length; k++) {
-                                        final var _rho = Arrays.copyOf(_case.getRhos().get(k), 3);
-                                        CommonOperations.replace(_rho, _piSymbols);
-                                        rhos[k] = _rho;
+                                        final var _rho = Arrays.copyOf(_case.getRhos().get(k).getSymbols(), 3);
+                                        replace(_rho, _piSymbols);
+                                        rhos[k] = new Cycle(_rho);
                                     }
 
                                     return rhos;
@@ -382,23 +382,19 @@ public class Silvaetal extends BaseAlgorithm {
         return null;
     }
 
-    private boolean isOriented(final Cycle pi, final Cycle cycle) {
-        return !pi.getInverse().areSymbolsInCyclicOrder(cycle.getSymbols());
-    }
-
-    private void apply3_2(final MulticyclePermutation sigmaPiInverse, final Cycle pi) {
-        final var orientedCycle = sigmaPiInverse.stream().filter(c -> c.size() == 5 && !pi.getInverse().areSymbolsInCyclicOrder(c.getSymbols()))
+    private void apply3_2(final MulticyclePermutation spi, final Cycle pi) {
+        final var orientedCycle = spi.stream().filter(c -> c.size() == 5 && isOriented(pi, c))
                 .findFirst().orElse(null);
 
         if (orientedCycle != null) {
-            apply3_2OrientedCase(orientedCycle, sigmaPiInverse, pi);
+            apply3_2OrientedCase(orientedCycle, spi, pi);
         } else {
-            final var initialFactor = sigmaPiInverse.stream().filter(c -> c.size() > 1).findFirst().get();
-            Set<Cycle> mu = new HashSet<>();
+            final var initialFactor = spi.stream().filter(c -> c.size() > 1).findFirst().get();
+            List<Cycle> mu = new ArrayList<>();
             mu.add(new Cycle(initialFactor.get(0), initialFactor.get(1), initialFactor.get(2)));
             for (var i = 0; i < 2; i++) {
-                mu = extend(mu, sigmaPiInverse, pi);
-                final var rhos = searchForSeq(mu, sigmaPiInverse, pi, _3_2Cases);
+                mu = extend(mu, spi, pi);
+                final var rhos = searchForSeq(mu, spi, pi, _3_2Cases);
                 if (rhos != null) {
                     applyMoves(pi, rhos);
                     return;
@@ -407,8 +403,8 @@ public class Silvaetal extends BaseAlgorithm {
         }
     }
 
-    private void apply3_2OrientedCase(final Cycle orientedCycle, final MulticyclePermutation sigmaPiInverse, final Cycle pi) {
-        final var even = sigmaPiInverse.getNumberOfEvenCycles();
+    private void apply3_2OrientedCase(final Cycle orientedCycle, final MulticyclePermutation spi, final Cycle pi) {
+        final var even = spi.getNumberOfEvenCycles();
 
         for (var i = 0; i <= orientedCycle.size() - 5; i++) {
             final var _0 = orientedCycle.get(0);
@@ -418,12 +414,12 @@ public class Silvaetal extends BaseAlgorithm {
             final var _4 = orientedCycle.get(i + 3);
             final var _2 = orientedCycle.image(_4);
 
-            final var rho1 = new byte[]{_0, _1, _2};
-            final var rho2 = new byte[]{_1, _2, _3};
-            final var rho3 = new byte[]{_2, _3, _4};
+            final var rho1 = new Cycle(_0, _1, _2);
+            final var rho2 = new Cycle(_1, _2, _3);
+            final var rho3 = new Cycle(_2, _3, _4);
 
-            if (computeProduct(true, sigmaPiInverse, new Cycle(rho1).getInverse(), new Cycle(rho2).getInverse(),
-                    new Cycle(rho3).getInverse()).getNumberOfEvenCycles() - even >= 4) {
+            if (computeProduct(true, spi, rho1.getInverse(), rho2.getInverse(),
+                    rho3.getInverse()).getNumberOfEvenCycles() - even >= 4) {
                 applyMoves(pi, rho1, rho2, rho3);
                 return;
             }

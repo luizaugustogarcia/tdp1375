@@ -27,13 +27,8 @@
 		</dependency>
 		<dependency>
 			<groupId>com.google.guava</groupId>
-			<version>13.0.1</version>
+			<version>14.0.1</version>
 			<artifactId>guava</artifactId>
-		</dependency>
-		<dependency>
-				<groupId>org.javatuples</groupId>
-				<artifactId>javatuples</artifactId>
-				<version>1.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.googlecode.combinatoricslib</groupId>
@@ -64,6 +59,18 @@
 			<groupId>commons-collections</groupId>
 			<artifactId>commons-collections</artifactId>
 			<version>3.2.1</version>
+		</dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>RELEASE</version>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 </project>

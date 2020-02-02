@@ -1,32 +1,34 @@
 package br.unb.cic.tdp.proof;
 
-import br.unb.cic.tdp.CommonOperations;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 
 import java.util.List;
 
+import static br.unb.cic.tdp.CommonOperations.canonicalize;
+import static br.unb.cic.tdp.CommonOperations.signature;
+
 public class Case {
 
     private byte[] signature;
-    private List<byte[]> rhos;
+    private List<Cycle> rhos;
     private MulticyclePermutation spi;
     private Cycle pi;
 
-    public Case(final byte[] pi, final MulticyclePermutation spi, final List<byte[]> rhos) {
-        final var cr = CommonOperations.canonicalize(spi, pi, rhos);
-        this.pi = new Cycle(cr.getValue1());
-        this.spi = cr.getValue0();
-        this.rhos = cr.getValue2();
+    public Case(final Cycle pi, final MulticyclePermutation spi, final List<Cycle> rhos) {
+        final var cr = canonicalize(spi, pi, rhos);
+        this.spi = cr.first;
+        this.pi = cr.second;
+        this.rhos = cr.third;
 
-        this.signature = CommonOperations.signature(this.pi.getSymbols(), this.spi);
+        this.signature = signature(this.spi, this.pi);
     }
 
     public Cycle getPi() {
         return pi;
     }
 
-    public List<byte[]> getRhos() {
+    public List<Cycle> getRhos() {
         return rhos;
     }
 
@@ -34,7 +36,7 @@ public class Case {
         return signature;
     }
 
-    public List<Cycle> getSigmaPiInverse() {
+    public MulticyclePermutation getSpi() {
         return spi;
     }
 
@@ -44,6 +46,6 @@ public class Case {
 
     @Override
     public String toString() {
-        return "Case [rhos=" + rhos + ", sigmaPiInverse=" + spi + "]";
+        return "Case [rhos=" + rhos + ", spi=" + spi + "]";
     }
 }

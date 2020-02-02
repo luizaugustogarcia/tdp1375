@@ -1,85 +1,86 @@
 package br.unb.cic.tdp.proof;
 
-import br.unb.cic.tdp.CommonOperations;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import cern.colt.list.ByteArrayList;
+import com.google.common.hash.HashCodes;
+import com.google.common.hash.Hashing;
 
-import java.util.HashMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
-class Configuration {
+import static br.unb.cic.tdp.CommonOperations.signature;
+import static br.unb.cic.tdp.util.ByteArrayOperations.compare;
 
-    private byte[] pi;
+public class Configuration {
 
-    private MulticyclePermutation spi;
+    private final Cycle pi;
+    private final MulticyclePermutation spi;
+    private final byte[] signature;
+    private TreeSet<byte[]> signatures;
+    private Integer hashCode;
 
-    private String cyclicSignature;
-
-    Configuration(final byte[] pi, final MulticyclePermutation spi) {
+    public Configuration(final Cycle pi, final MulticyclePermutation spi) {
         this.pi = pi;
         this.spi = spi;
+        this.signature = signature(spi, pi);
     }
 
-    Configuration(final Cycle pi, final MulticyclePermutation spi) {
-        this.pi = pi.getSymbols();
-        this.spi = spi;
-    }
-
-    private String cyclicSignature() {
-        if (cyclicSignature != null) {
-            return cyclicSignature;
+    private TreeSet<byte[]> getSignatures() {
+        if (signatures != null) {
+            return signatures;
         }
 
-        final var symbolToCycles = CommonOperations.mapSymbolsToCycles(spi, pi);
+        signatures = new TreeSet<>((a, b) -> compare(a, b));
 
-        final var representations = new TreeSet<String>();
-
-        for (var i = 0; i < pi.length; i++) {
-            // pi rotation
-            final var _pi = rotate(pi, i);
-
-            final var representation = new ByteArrayList(_pi.length);
-            final var labels = new HashMap<Cycle, Byte>();
-
-            for (byte b : _pi) {
-                final var label = labels.computeIfAbsent(symbolToCycles[b], cycle -> (byte) labels.size());
-                representation.add(label);
-            }
-
-            representations.add(representation.toString());
+        // shifting
+        for (var i = 0; i < pi.size(); i++) {
+            signatures.add(
+                    signature(spi, pi.getStartingBy(pi.get(i))));
         }
 
-        return cyclicSignature = String.join("\n", representations);
+        // mirroring
+        for (var i = 0; i < pi.getInverse().size(); i++) {
+            signatures.add(
+                    signature(spi, pi.getInverse().getStartingBy(pi.getInverse().get(i))));
+        }
+
+        return signatures;
     }
 
-    private byte[] rotate(final byte[] array, final int distance) {
-        final var rotation = new byte[array.length];
-        System.arraycopy(array, 0, rotation, distance, array.length - distance);
-        System.arraycopy(array, array.length - distance, rotation, 0, distance);
-        return rotation;
+    public Cycle getPi() {
+        return pi;
+    }
+
+    public MulticyclePermutation getSpi() {
+        return spi;
     }
 
     @Override
     public int hashCode() {
-        return cyclicSignature().hashCode();
+        if (this.hashCode == null) {
+            this.hashCode = Hashing.combineOrdered(getSignatures().stream().map(HashCodes::fromBytes)
+                    .collect(Collectors.toList())).hashCode();
+        }
+        return this.hashCode;
     }
 
     @Override
     public boolean equals(final Object obj) {
-        final var other = (Configuration) obj;
-
-        if (this.pi.length != other.pi.length || this.spi.size() != other.spi.size()
-                || !this.spi.isSameCycleType(other.spi)) {
+        if (!(obj instanceof Configuration)) {
             return false;
         }
 
-        // Two configurations are equal when, rotating pi, they produce the same
-        // configurations. The algorithm to generate the 'cyclic signature' is:
-        // 1. for each rotation of pi
-        // 1.2. rewrite spi changing the symbols according to the rotation
-        // 1.3. add the string representation of spi to a set
-        // 2. sort the set of representations and convert it into a string
-        return cyclicSignature().equals(other.cyclicSignature());
+        final var other = (Configuration) obj;
+
+        if (this.signature.length != other.signature.length || this.spi.size() != other.spi.size()) {
+            return false;
+        }
+
+        return getSignatures().contains(((Configuration) obj).signature);
+    }
+
+    @Override
+    public String toString() {
+        return "Configuration{ spi=" + spi + ", hashCode=" + hashCode() + " }";
     }
 }

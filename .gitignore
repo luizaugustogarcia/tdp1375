@@ -1,7 +1,10 @@
-cases*
 target
 .settings
 .classpath
 .project
-*.tar.gz
 .history
+/sbt1375_proof/
+/proof/
+/.vscode/
+/.idea/
+/tdp1375.iml

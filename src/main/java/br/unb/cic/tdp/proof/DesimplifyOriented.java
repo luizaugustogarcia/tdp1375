@@ -1,14 +1,14 @@
 package br.unb.cic.tdp.proof;
 
-import br.unb.cic.tdp.CommonOperations;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.base.Throwables;
-import org.apache.commons.lang.ArrayUtils;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.*;
+
+import static br.unb.cic.tdp.CommonOperations.*;
 
 class DesimplifyOriented extends DesimplifyUnoriented {
 
@@ -22,7 +22,10 @@ class DesimplifyOriented extends DesimplifyUnoriented {
         // unoriented interleaving pair
         generate(verifiedConfigurations, cases, inputDir + "bfs_files/", "[3](0_4_2)[3](1_5_3).html", visitedFiles);
 
+        // --------------------
         // BAD SMALL COMPONENTS
+        // --------------------
+
         // the unoriented interleaving pair
         generate(verifiedConfigurations, cases, inputDir + "comb_files/", "[3](0_4_2)[3](1_5_3).html", visitedFiles);
 
@@ -38,11 +41,7 @@ class DesimplifyOriented extends DesimplifyUnoriented {
 
         if (!rhos.isEmpty()) {
             final var spi = getSpi(file);
-            final var n = spi.stream().mapToInt(Cycle::size).sum();
-            final var pi = new byte[n];
-            for (var i = 0; i < n; i++) {
-                pi[i] = (byte) i;
-            }
+            final var pi = CANONICAL_PI[spi.getNumberOfSymbols()];
 
             desimplify(verifiedConfigurations, cases, spi, pi, rhos);
         } else {
@@ -54,7 +53,7 @@ class DesimplifyOriented extends DesimplifyUnoriented {
                         final var line = scanner.next();
 
                         if (line.startsWith("View")) {
-                            final var matcher = spiPattern.matcher(line);
+                            final var matcher = SPI_PATTERN.matcher(line);
                             if (matcher.matches())
                                 generate(verifiedConfigurations, cases, baseFolder, matcher.group(1), visitedFiles);
                         }
@@ -69,31 +68,26 @@ class DesimplifyOriented extends DesimplifyUnoriented {
     }
 
     private static void desimplify(final Set<Configuration> verifiedConfigurations, final List<Case> cases,
-                                   final MulticyclePermutation spi, final byte[] pi, final List<byte[]> rhos) {
-        final var _piInverse = Arrays.copyOf(pi, pi.length);
-        ArrayUtils.reverse(_piInverse);
-        final var piInverse = new Cycle(_piInverse);
-
-        for (final var combination : CommonOperations.combinations(spi, 2)) {
+                                   final MulticyclePermutation spi, final Cycle pi, final List<Cycle> rhos) {
+        for (final var combination : combinations(spi, 2)) {
             for (final var joinPair : getJoinPairs(combination.getVector(), pi)) {
-                final var join = join(joinPair, spi, pi, rhos);
+                final var join = join(spi, pi, rhos, joinPair);
 
-                final var cr = CommonOperations.canonicalize(join.getValue0(), join.getValue1(), join.getValue2());
-                final var _pi = cr.getValue1();
-                final var _spi = cr.getValue0();
-                final var _rhos = cr.getValue2();
+                final var cr = canonicalize(join.first, join.second, join.third);
+                final var _spi = cr.first;
+                final var _pi = cr.second;
+                final var _rhos = cr.third;
 
                 // Skipping configuration containing cycles > 5, since all oriented 7-cycle accept (4,3)-sequence
-                final var isThereOrientedCycleGreaterThan5 = _spi.stream().anyMatch(c -> !piInverse.areSymbolsInCyclicOrder(c.getSymbols()) && c.size() > 5);
+                final var isThereOrientedCycleGreaterThan5 = _spi.stream().anyMatch(cycle -> cycle.size() > 5 && isOriented(pi, cycle));
                 // Skipping configurations not containing an oriented 5-cycle
-                final var isThereOriented5Cycle = _spi.stream().anyMatch(c -> c.size() == 5 && !piInverse.areSymbolsInCyclicOrder(c.getSymbols()));
+                final var isThereOriented5Cycle = _spi.stream().anyMatch(cycle -> cycle.size() == 5 && isOriented(pi, cycle));
                 // Skipping configurations containing 2-moves
-                final var isThereOriented3Segment = CommonOperations.searchFor2MoveFromOrientedCycle(_spi, new Cycle(_pi)) != null;
+                final var isThereOriented3Segment = searchFor2MoveFromOrientedCycle(_spi, _pi) != null;
 
                 if (!isThereOrientedCycleGreaterThan5 && isThereOriented5Cycle && !isThereOriented3Segment) {
-                    if (CommonOperations.is11_8(_spi, _pi, _rhos)) {
+                    if (is11_8(_spi, _pi, _rhos)) {
                         final var configuration = new Configuration(_pi, _spi);
-
                         if (!verifiedConfigurations.contains(configuration)) {
                             verifiedConfigurations.add(configuration);
                             cases.add(new Case(_pi, _spi, _rhos));

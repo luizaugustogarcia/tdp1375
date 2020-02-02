@@ -3,33 +3,47 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
+import br.unb.cic.tdp.util.Triplet;
 import cern.colt.list.ByteArrayList;
 import cern.colt.list.FloatArrayList;
-import org.javatuples.Triplet;
+import com.google.common.primitives.Bytes;
 import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static br.unb.cic.tdp.util.ByteArrayOperations.removeSymbol;
+import static br.unb.cic.tdp.util.ByteArrayOperations.replace;
+
 public class CommonOperations {
 
-    static Cycle simplify(Cycle pi) {
+    public static final Cycle[] CANONICAL_PI;
+
+    static {
+        CANONICAL_PI = new Cycle[50];
+        for (var i = 1; i < 50; i++) {
+            final var pi = new byte[i];
+            for (var j = 0; j < i; j++) {
+                pi[j] = (byte) j;
+            }
+            CANONICAL_PI[i] = new Cycle(pi);
+        }
+    }
+
+    public static Cycle simplify(Cycle pi) {
         var _pi = new FloatArrayList();
         for (var i = 0; i < pi.getSymbols().length; i++) {
             _pi.add(pi.getSymbols()[i]);
         }
 
-        var sigma = new ByteArrayList();
-        for (var i = 0; i < _pi.size(); i++) {
-            sigma.add((byte) i);
-        }
+        var sigma = CANONICAL_PI[_pi.size()];
 
-        var sigmaPiInverse = PermutationGroups.computeProduct(new Cycle(sigma), pi.getInverse());
+        var spi = PermutationGroups.computeProduct(sigma, pi.getInverse());
 
         Cycle bigCycle;
-        while ((bigCycle = sigmaPiInverse.stream().filter(c -> c.size() > 3).findFirst().orElse(null)) != null) {
-            final var leftMostSymbol = leftMostSymbol(bigCycle, pi);
+        while ((bigCycle = spi.stream().filter(c -> c.size() > 3).findFirst().orElse(null)) != null) {
+            final var leftMostSymbol = leftMostSymbol(pi, bigCycle);
             final var newSymbol = _pi.get(_pi.indexOf(leftMostSymbol) - 1) + 0.001F;
             _pi.beforeInsert(_pi.indexOf(bigCycle.pow(leftMostSymbol, -2)), newSymbol);
 
@@ -41,12 +55,9 @@ public class CommonOperations {
                 newPi.add((byte) piCopy.indexOf(_pi.get(i)));
             }
 
-            sigma = new ByteArrayList();
-            for (var i = 0; i < newPi.size(); i++) {
-                sigma.add((byte) i);
-            }
+            sigma = CANONICAL_PI[newPi.size()];
 
-            sigmaPiInverse = PermutationGroups.computeProduct(new Cycle(sigma), new Cycle(newPi).getInverse());
+            spi = PermutationGroups.computeProduct(sigma, new Cycle(newPi).getInverse());
 
             _pi = new FloatArrayList();
             for (var i = 0; i < newPi.size(); i++) {
@@ -58,95 +69,186 @@ public class CommonOperations {
         return pi.getStartingBy((byte) 0);
     }
 
-    private static byte leftMostSymbol(final Cycle bigCycle, final Cycle pi) {
+    private static byte leftMostSymbol(final Cycle pi, final Cycle bigCycle) {
         for (var i = 1; i < pi.getSymbols().length; i++)
             if (bigCycle.contains(pi.get(i)))
                 return pi.get(i);
         return -1;
     }
 
-    public static byte[] applyTransposition(final byte[] rho, final byte[] pi) {
-        final var a = rho[0];
-        final var b = rho[1];
-        final var c = rho[2];
+    public static Cycle applyTransposition(final Cycle pi, final Cycle rho) {
+        final var a = rho.get(0);
+        final var b = rho.get(1);
+        final var c = rho.get(2);
+
         final var indexes = new int[3];
-        for (var i = 0; i < pi.length; i++) {
-            if (pi[i] == a)
+        for (var i = 0; i < pi.size(); i++) {
+            if (pi.get(i) == a)
                 indexes[0] = i;
-            if (pi[i] == b)
+            if (pi.get(i) == b)
                 indexes[1] = i;
-            if (pi[i] == c)
+            if (pi.get(i) == c)
                 indexes[2] = i;
         }
+
         Arrays.sort(indexes);
-        final var result = new byte[pi.length];
 
-        System.arraycopy(pi, 0, result, 0, indexes[0]);
-        System.arraycopy(pi, indexes[1], result, indexes[0], indexes[2] - indexes[1]);
-        System.arraycopy(pi, indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
-        System.arraycopy(pi, indexes[2], result, indexes[2], pi.length - indexes[2]);
+        final var result = new byte[pi.size()];
+        System.arraycopy(pi.getSymbols(), 0, result, 0, indexes[0]);
+        System.arraycopy(pi.getSymbols(), indexes[1], result, indexes[0], indexes[2] - indexes[1]);
+        System.arraycopy(pi.getSymbols(), indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
+        System.arraycopy(pi.getSymbols(), indexes[2], result, indexes[2], pi.size() - indexes[2]);
 
-        return result;
+        return new Cycle(result);
     }
 
-    public static Cycle[] mapSymbolsToCycles(final Collection<Cycle> spi, final Cycle pi) {
-        return mapSymbolsToCycles(spi, pi.getSymbols());
-    }
-
-    public static Cycle[] mapSymbolsToCycles(final Collection<Cycle> spi, final byte[] pi) {
-        final var symbolToMuCycle = new Cycle[pi.length];
+    /**
+     * Creates an array where the cycles in <code>spi</code> can be accessed by the symbols of <code>pi</code>
+     * (being the indexes of the resulting array).
+     */
+    public static Cycle[] createCycleIndex(final List<Cycle> spi, final Cycle pi) {
+        final var index = new Cycle[pi.size()];
         for (final var muCycle : spi) {
             for (final int symbol : muCycle.getSymbols()) {
-                symbolToMuCycle[symbol] = muCycle;
+                index[symbol] = muCycle;
             }
         }
-        return symbolToMuCycle;
+        return index;
     }
 
-    public static byte[] signature(final byte[] pi, final List<Cycle> mu) {
-        for (final var cycle : mu) {
-            cycle.setLabel(-1);
-        }
+    public static byte[] signature(final List<Cycle> spi, final Cycle pi) {
+        final var labelMap = new HashMap<Cycle, Byte>();
+        final var cycleIndex = createCycleIndex(spi, pi);
 
-        final var symbolToMuCycle = mapSymbolsToCycles(mu, pi);
+        final var signature = new byte[pi.size()];
 
-        final var signature = new byte[pi.length];
-        var lastLabel = 0;
         for (var i = 0; i < signature.length; i++) {
-            final int symbol = pi[i];
-            final var cycle = symbolToMuCycle[symbol];
-            if (cycle.getLabel() == -1) {
-                lastLabel++;
-                cycle.setLabel(lastLabel);
-            }
-            signature[i] = (byte) cycle.getLabel();
+            final int symbol = pi.get(i);
+            final var cycle = cycleIndex[symbol];
+            labelMap.computeIfAbsent(cycle, c -> (byte) (labelMap.size() + 1));
+            signature[i] = labelMap.get(cycle);
         }
 
         return signature;
     }
 
-    public static boolean isOpenGate(final int left, final int right, final Cycle[] symbolToMuCycles, final Collection<Cycle> mu,
-                                     final Cycle piInverse) {
+    /**
+     * Performs a join operation, producing new \spi, \pi and \rhos.
+     */
+    public static Triplet<MulticyclePermutation, Cycle, List<Cycle>> join(final MulticyclePermutation spi,
+                                                                          final Cycle pi, final List<Cycle> rhos,
+                                                                          final byte[] joinPair) {
+        final var cycleIndex = createCycleIndex(spi, pi);
+
+        final var _spi = new MulticyclePermutation(spi);
+
+        var a = cycleIndex[joinPair[0]];
+        var b = cycleIndex[joinPair[1]];
+
+        a = a.getInverse().getStartingBy(a.getInverse().image(joinPair[0]));
+        b = b.getInverse().getStartingBy(joinPair[1]);
+
+        final var cSymbols = new byte[a.size() + b.size() - 1];
+        System.arraycopy(a.getSymbols(), 0, cSymbols, 0, a.size());
+        System.arraycopy(b.getSymbols(), 1, cSymbols, a.size(), b.size() - 1);
+
+        final var c = new Cycle(cSymbols);
+        _spi.add(c.getInverse());
+        _spi.remove(cycleIndex[joinPair[0]]);
+        _spi.remove(cycleIndex[joinPair[1]]);
+
+        final var _rhos = new ArrayList<Cycle>();
+        var _pi = pi.getSymbols();
+        for (final var rho : rhos) {
+            final var __pi = applyTransposition(new Cycle(_pi), rho).getSymbols();
+            final var _rho = PermutationGroups.computeProduct(false,
+                    new Cycle(replace(removeSymbol(__pi, joinPair[0]), joinPair[1], joinPair[0])),
+                    new Cycle(replace(removeSymbol(_pi, joinPair[0]), joinPair[1], joinPair[0])).getInverse());
+
+            _pi = __pi;
+            // sometimes _rho = (),
+            if (_rho.size() != 0)
+                _rhos.add(_rho.asNCycle());
+        }
+
+        _pi = removeSymbol(pi.getSymbols(), joinPair[1]);
+
+        return new Triplet<>(_spi, new Cycle(_pi), _rhos);
+    }
+
+
+    public static List<byte[]> getJoinPairs(final List<Cycle> cycles, final Cycle pi) {
+        final var symbols = new HashSet<>(Bytes.asList(pi.getSymbols()));
+
+        final var symbolToLabel = new HashMap<Byte, Byte>();
+
+        for (var i = 0; i < cycles.size(); i++) {
+            for (var j = 0; j < cycles.get(i).size(); j++) {
+                final var symbol = cycles.get(i).getSymbols()[j];
+                symbolToLabel.put(symbol, (byte) i);
+                symbols.remove(symbol);
+            }
+        }
+
+        final var _pi = new ByteArrayList(Arrays.copyOf(pi.getSymbols(), pi.size()));
+        _pi.removeAll(new ByteArrayList(Bytes.toArray(symbols)));
+
+        final var results = new ArrayList<byte[]>();
+        for (var i = 0; i < _pi.size(); i++) {
+            final var currentLabel = symbolToLabel.get(_pi.get(i));
+            final var nextLabel = symbolToLabel.get(_pi.get((i + 1) % _pi.size()));
+            if (!currentLabel.equals(nextLabel) && (_pi.get(i) + 1) % pi.size() == _pi.get((i + 1) % _pi.size()))
+                results.add(new byte[]{_pi.get(i), _pi.get((i + 1) % _pi.size())});
+        }
+
+        return results;
+    }
+
+    public static boolean areNotIntersecting(final List<Cycle> cycles, final Cycle pi) {
+        final var cycleIndex = createCycleIndex(cycles, pi);
+        for (int i = 0; i < pi.size(); i++) {
+            int j = i;
+            Cycle a = null;
+            while (a == null) {
+                a = cycleIndex[pi.get((j++) % pi.size())];
+            }
+            Cycle b = null;
+            while (b == null) {
+                b = cycleIndex[pi.get((j++) % pi.size())];
+            }
+            Cycle c = null;
+            while (c == null) {
+                c = cycleIndex[pi.get((j++) % pi.size())];
+            }
+            if (a != b && a == c) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static boolean isOpenGate(final List<Cycle> cycles, final Cycle piInverse, final Cycle[] cyclesBySymbols,
+                                     final int right, final int left) {
         final var gates = left < right ? right - left : piInverse.size() - (left - right);
         for (var i = 1; i < gates; i++) {
             final var index = (i + left) % piInverse.size();
-            final var cycle = symbolToMuCycles[piInverse.get(index)];
-            if (cycle != null && mu.contains(cycle))
+            final var cycle = cyclesBySymbols[piInverse.get(index)];
+            if (cycle != null && cycles.contains(cycle))
                 return false;
         }
         return true;
     }
 
-    public static Map<Cycle, Integer> openGatesPerCycle(final Collection<Cycle> mu, final Cycle piInverse) {
-        final var symbolToMuCycles = CommonOperations.mapSymbolsToCycles(mu, piInverse);
+    public static Map<Cycle, Integer> openGatesPerCycle(final List<Cycle> cycles, final Cycle piInverse) {
+        final var cycleIndex = createCycleIndex(cycles, piInverse);
 
         final Map<Cycle, Integer> result = new HashMap<>();
-        for (final var muCycle : mu) {
+        for (final var muCycle : cycles) {
             for (var i = 0; i < muCycle.getSymbols().length; i++) {
                 final var left = piInverse.indexOf(muCycle.get(i));
                 final var right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
                 // O(n)
-                if (isOpenGate(left, right, symbolToMuCycles, mu, piInverse)) {
+                if (isOpenGate(cycles, piInverse, cycleIndex, right, left)) {
                     if (!result.containsKey(muCycle))
                         result.put(muCycle, 0);
                     result.put(muCycle, result.get(muCycle) + 1);
@@ -156,30 +258,16 @@ public class CommonOperations {
         return result;
     }
 
-    public static byte[] replace(final byte[] array, final byte a, final byte b) {
-        final var replaced = Arrays.copyOf(array, array.length);
-        for (var i = 0; i < replaced.length; i++) {
-            if (replaced[i] == a)
-                replaced[i] = b;
-        }
-        return replaced;
-    }
-
-    static void replace(final byte[] array, final byte[] substitutionMatrix) {
-        for (var i = 0; i < array.length; i++) {
-            array[i] = substitutionMatrix[array[i]];
-        }
-    }
 
     /**
      * Checks whether or not a given sequence of \rho's is a 11/8-sequence.
      */
-    public static boolean is11_8(MulticyclePermutation spi, byte[] pi, final List<byte[]> rhos) {
+    public static boolean is11_8(MulticyclePermutation spi, Cycle pi, final List<Cycle> rhos) {
         final var before = spi.getNumberOfEvenCycles();
         for (final var rho : rhos) {
-            if (areSymbolsInCyclicOrder(rho, pi)) {
-                pi = CommonOperations.applyTransposition(rho, pi);
-                spi = PermutationGroups.computeProduct(spi, new Cycle(rho).getInverse());
+            if (pi.isApplicable(rho)) {
+                pi = applyTransposition(pi, rho);
+                spi = PermutationGroups.computeProduct(spi, rho.getInverse());
             } else {
                 return false;
             }
@@ -191,64 +279,49 @@ public class CommonOperations {
     public static boolean areSymbolsInCyclicOrder(final byte[] symbols, final byte[] target) {
         final var symbolIndexes = new byte[target.length];
 
-        Arrays.fill(symbolIndexes, (byte) -1);
-
         for (var i = 0; i < target.length; i++) {
             symbolIndexes[target[i]] = (byte) i;
         }
 
-        int firstIndex = -1;
-        int lastIndex = -1;
-        int state = 0;
-
-        for (int symbol : symbols) {
-            if (state == 0 && symbolIndexes[symbol] < lastIndex) {
-                state = 1;
-            }
-            if (state == 1 || state == 2) {
-                if (symbolIndexes[symbol] > firstIndex || (state == 2 && symbolIndexes[symbol] < lastIndex)) {
+        boolean leap = false;
+        for (int i = 0; i < symbols.length; i++) {
+            if (symbolIndexes[symbols[i]] > symbolIndexes[symbols[(i + 1) % symbols.length]]) {
+                if (!leap) {
+                    leap = true;
+                } else {
                     return false;
                 }
-                if (state == 1) {
-                    state = 2;
-                }
-            }
-            lastIndex = symbolIndexes[symbol];
-            if (firstIndex == -1) {
-                firstIndex = lastIndex;
             }
         }
 
         return true;
     }
 
-    public static Triplet<MulticyclePermutation, byte[], List<byte[]>> canonicalize(final MulticyclePermutation spi, final byte[] pi) {
+    public static Triplet<MulticyclePermutation, Cycle, List<Cycle>> canonicalize(final MulticyclePermutation spi,
+                                                                                  final Cycle pi) {
         return canonicalize(spi, pi, null);
     }
 
-    public static Triplet<MulticyclePermutation, byte[], List<byte[]>> canonicalize(final MulticyclePermutation spi, final byte[] pi,
-                                                                                    final List<byte[]> rhos) {
-        var maxSymbol = 0;
-        for (byte b : pi)
-            if (b > maxSymbol)
-                maxSymbol = b;
+    public static Triplet<MulticyclePermutation, Cycle, List<Cycle>> canonicalize(final MulticyclePermutation spi,
+                                                                                  final Cycle pi, final List<Cycle> rhos) {
+        var maxSymbol = pi.getMaxSymbol();
 
         final var substitutionMatrix = new byte[maxSymbol + 1];
 
-        for (var i = 0; i < pi.length; i++) {
-            substitutionMatrix[pi[i]] = (byte) i;
+        for (var i = 0; i < pi.size(); i++) {
+            substitutionMatrix[pi.get(i)] = (byte) i;
         }
 
-        final var _pi = Arrays.copyOf(pi, pi.length);
+        final var _pi = Arrays.copyOf(pi.getSymbols(), pi.size());
 
         replace(_pi, substitutionMatrix);
 
-        final var _rhos = new ArrayList<byte[]>();
+        final var _rhos = new ArrayList<Cycle>();
         if (rhos != null) {
             for (final var rho : rhos) {
-                final var _rho = Arrays.copyOf(rho, rho.length);
+                final var _rho = Arrays.copyOf(rho.getSymbols(), 3);
                 replace(_rho, substitutionMatrix);
-                _rhos.add(_rho);
+                _rhos.add(new Cycle(_rho));
             }
         }
 
@@ -260,15 +333,15 @@ public class CommonOperations {
             _spi.add(new Cycle(_cycle));
         }
 
-        return new Triplet<>(_spi, _pi, _rhos);
+        return new Triplet<>(_spi, new Cycle(_pi), _rhos);
     }
 
     /**
      * Find a sorting sequence whose approximation ratio lies between 1 and
      * <code>maxRatio</code>.
      */
-    public static List<byte[]> findSortingSequence(final byte[] pi, final MulticyclePermutation mu, final Stack<byte[]> rhos,
-                                                   final int initialNumberOfEvenCycles, final float maxRatio) {
+    public static List<Cycle> findSortingSequence(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> rhos,
+                                                  final int initialNumberOfEvenCycles, final float maxRatio) {
         return findSortingSequence(pi, mu, rhos, initialNumberOfEvenCycles, 1, maxRatio);
     }
 
@@ -276,9 +349,9 @@ public class CommonOperations {
      * Find a sorting sequence whose approximation ratio lies between
      * <code>minRatio</code> and <code>maxRatio</code>.
      */
-    private static List<byte[]> findSortingSequence(final byte[] pi, final MulticyclePermutation mu, final Stack<byte[]> rhos,
-                                                    final int initialNumberOfEvenCycles, final float minRatio, final float maxRatio) {
-        final var n = pi.length;
+    private static List<Cycle> findSortingSequence(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> rhos,
+                                                   final int initialNumberOfEvenCycles, final float minRatio, final float maxRatio) {
+        final var n = pi.size();
 
         final var lowerBound = (n - mu.getNumberOfEvenCycles()) / 2;
         final var minAchievableRatio = (float) (rhos.size() + lowerBound) / ((n - initialNumberOfEvenCycles) / 2);
@@ -299,17 +372,17 @@ public class CommonOperations {
                 }
 
                 final var newOmega = new ByteArrayList(n - fixedSymbols.size());
-                for (final var symbol : pi) {
+                for (final var symbol : pi.getSymbols()) {
                     if (!fixedSymbols.contains(symbol)) {
                         newOmega.add(symbol);
                     }
                 }
 
-                for (final var rho : searchAllApp3Cycles(Arrays.copyOfRange(newOmega.elements(), 0, newOmega.size()))) {
-                    if (is0Or2Move(rho, mu)) {
+                for (final var rho : searchAllApp3Cycles(new Cycle(newOmega))) {
+                    if (is0Or2Move(mu, rho)) {
                         rhos.push(rho);
-                        final var solution = findSortingSequence(CommonOperations.applyTransposition(rho, pi),
-                                PermutationGroups.computeProduct(mu, new Cycle(rho).getInverse()), rhos, initialNumberOfEvenCycles,
+                        final var solution = findSortingSequence(applyTransposition(pi, rho),
+                                PermutationGroups.computeProduct(mu, rho.getInverse()), rhos, initialNumberOfEvenCycles,
                                 minRatio, maxRatio);
                         if (!solution.isEmpty()) {
                             return rhos;
@@ -327,7 +400,7 @@ public class CommonOperations {
      * Search for a 2-move given by an oriented cycle in \spi.
      */
     public static Cycle searchFor2MoveFromOrientedCycle(final MulticyclePermutation spi, final Cycle pi) {
-        for (final var cycle : spi.stream().filter(c -> !pi.getInverse().areSymbolsInCyclicOrder(c.getSymbols()))
+        for (final var cycle : spi.stream().filter(c -> isOriented(pi, c))
                 .collect(Collectors.toList())) {
             final var before = cycle.isEven() ? 1 : 0;
             for (var i = 0; i < cycle.size() - 2; i++) {
@@ -336,7 +409,7 @@ public class CommonOperations {
                         final var a = cycle.get(i);
                         final var b = cycle.get(j);
                         final var c = cycle.get(k);
-                        if (pi.areSymbolsInCyclicOrder(a, b, c)) {
+                        if (pi.isOrientedTriple(a, b, c)) {
                             var after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
                             after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
                             after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
@@ -354,21 +427,21 @@ public class CommonOperations {
     /**
      * Checks whether or not a given \rho is either a 0-move or a 2-move.
      */
-    private static boolean is0Or2Move(final byte[] rho, final MulticyclePermutation spi) {
-        return PermutationGroups.computeProduct(spi, new Cycle(rho).getInverse()).getNumberOfEvenCycles() >= spi
+    private static boolean is0Or2Move(final MulticyclePermutation spi, final Cycle rho) {
+        return PermutationGroups.computeProduct(spi, rho.getInverse()).getNumberOfEvenCycles() >= spi
                 .getNumberOfEvenCycles();
     }
 
     /**
      * Search for all applicable 3-cycles on \pi.
      */
-    public static List<byte[]> searchAllApp3Cycles(final byte[] pi) {
-        final List<byte[]> result = new ArrayList<>();
+    public static List<Cycle> searchAllApp3Cycles(final Cycle pi) {
+        final List<Cycle> result = new ArrayList<>();
 
-        for (var i = 0; i < pi.length - 2; i++) {
-            for (var j = i + 1; j < pi.length - 1; j++) {
-                for (var k = j + 1; k < pi.length; k++) {
-                    result.add(new byte[]{pi[i], pi[j], pi[k]});
+        for (var i = 0; i < pi.size() - 2; i++) {
+            for (var j = i + 1; j < pi.size() - 1; j++) {
+                for (var k = j + 1; k < pi.size(); k++) {
+                    result.add(new Cycle(pi.get(i), pi.get(j), pi.get(k)));
                 }
             }
         }
@@ -388,11 +461,11 @@ public class CommonOperations {
         for (final var c1 : oddCycles)
             for (final var c2 : oddCycles)
                 if (c1 != c2) {
-                    for (final var a : get2CyclesSegments(c1))
+                    for (final var a : getSegmentsOfLength2(c1))
                         for (final var b : c2.getSymbols()) {
-                            for (final var rho : CommonOperations.combinations(Arrays.asList(a.get(0), a.get(1), b), 3)) {
+                            for (final var rho : combinations(Arrays.asList(a.get(0), a.get(1), b), 3)) {
                                 final var rho1 = new Cycle(rho.getVector().stream().mapToInt(i -> i).toArray());
-                                if (pi.areSymbolsInCyclicOrder(rho1.getSymbols())) {
+                                if (pi.isApplicable(rho1)) {
                                     return rho1;
                                 }
                             }
@@ -402,11 +475,18 @@ public class CommonOperations {
         return searchFor2MoveFromOrientedCycle(spi, pi);
     }
 
-    static List<Cycle> get2CyclesSegments(final Cycle cycle) {
+    public static List<Cycle> getSegmentsOfLength2(final Cycle cycle) {
         final List<Cycle> result = new ArrayList<>();
         for (var i = 0; i < cycle.size(); i++) {
             result.add(new Cycle(cycle.get(i), cycle.image(cycle.get(i))));
         }
         return result;
+    }
+
+    /**
+     * Tells if a <code>cycle</code> is oriented or not having <code>pi</code> as reference.
+     */
+    public static boolean isOriented(final Cycle pi, final Cycle cycle) {
+        return !areSymbolsInCyclicOrder(cycle.getSymbols(), pi.getInverse().getSymbols());
     }
 }
