@@ -7,4 +7,10 @@ public interface Permutation {
     int getNumberOfEvenCycles();
 
     int size();
+
+    Cycle asNCycle();
+
+    default Permutation conjugateBy(final Permutation conjugator) {
+        return PermutationGroups.computeProduct(conjugator, this, conjugator.getInverse());
+    }
 }

@@ -7,12 +7,15 @@ import cern.colt.list.ByteArrayList;
 import com.google.common.primitives.Bytes;
 import org.apache.commons.collections.ListUtils;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.util.ByteArrayOperations.replace;
 import static br.unb.cic.tdp.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
+import static br.unb.cic.tdp.util.ByteArrayOperations.replace;
 
 public class Silvaetal extends BaseAlgorithm {
 
@@ -26,24 +29,25 @@ public class Silvaetal extends BaseAlgorithm {
 
     public Silvaetal(final String casesFolder) {
         super(casesFolder);
-        loadExtraCases(casesFolder);
+
+        final var cases = new ArrayList<Case>();
+        try {
+            Files.lines(Paths.get("C:\\Users\\USER-Admin\\workspace\\tdp1375\\proof\\" + "lemma-24.txt")).forEach(line -> {
+                final var lineSplit = line.split("-");
+                final var spi = new MulticyclePermutation(lineSplit[0]);
+                final var pi = CANONICAL_PI[spi.getNumberOfSymbols()];
+                final var rhos = Arrays.stream(lineSplit[1].split(";")).map(i -> new Cycle(i)).collect(Collectors.toList());
+                cases.add(new Case(spi, pi, rhos));
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        _11_8UnorientedCases = cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount));
     }
 
     public static void main(final String[] args) {
-        final var silvaetal = new Silvaetal(args[0]);
-        System.out.println(silvaetal.sort(new Cycle(args[1])));
-    }
-
-    private void loadExtraCases(final String casesFolder) {
-        final var cases = new ArrayList<Case>();
-
-        addCases(casesFolder, cases, ORTD_INTERLEAVING_PAIR, ORTD_BAD_SMAL_INTERLEAVING_PAIR);
-
-        _11_8OrientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
-
-        // Generates the (4,3)-sequences cases to be applied when we have an oriented
-        // cycle with length greater than 6
-        _11_8OrientedCycle.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, ORTD_GREATER_THAN_5)));
+        final var silvaetal = new Silvaetal("");
+        System.out.println(silvaetal.sort(new Cycle("0,9,8,7,6,5,4,3,2,1")));
     }
 
     @SuppressWarnings({"unchecked"})
@@ -54,7 +58,7 @@ public class Silvaetal extends BaseAlgorithm {
         for (var i = 0; i < pi.size(); i++)
             array[i] = (byte) i;
 
-        final var sigma = new Cycle(array);
+        final var sigma = CANONICAL_PI[10];
 
         var spi = computeProduct(true, n, sigma, pi.getInverse());
 
@@ -170,7 +174,7 @@ public class Silvaetal extends BaseAlgorithm {
         return rhos;
     }
 
-    List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
+    public static List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
         final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
         final Set<Byte> muSymbols = mu.stream().flatMap(c -> Bytes.asList(c.getSymbols()).stream())
                 .collect(Collectors.toSet());
@@ -255,7 +259,7 @@ public class Silvaetal extends BaseAlgorithm {
     }
 
     // O(n)
-    private Cycle align(final Cycle spiCycle, final Cycle segment) {
+    public static Cycle align(final Cycle spiCycle, final Cycle segment) {
         for (var i = 0; i < segment.size(); i++) {
             var symbol = segment.get(i);
             final var index = spiCycle.indexOf(symbol);

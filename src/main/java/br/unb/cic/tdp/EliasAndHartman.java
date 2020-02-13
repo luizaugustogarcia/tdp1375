@@ -128,7 +128,7 @@ public class EliasAndHartman extends BaseAlgorithm {
         return searchForSeq(mu, spi, pi, _11_8UnorientedCases.get(mu.size()));
     }
 
-    List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
+    static List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
         final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
         final Set<Byte> muSymbols = new HashSet<>();
 

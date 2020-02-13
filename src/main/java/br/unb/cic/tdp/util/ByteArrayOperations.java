@@ -21,10 +21,11 @@ public class ByteArrayOperations {
         return replaced;
     }
 
-    public static void replace(final byte[] array, final byte[] substitutionMatrix) {
+    public static byte[] replace(final byte[] array, final byte[] substitutionMatrix) {
         for (var i = 0; i < array.length; i++) {
             array[i] = substitutionMatrix[array[i]];
         }
+        return array;
     }
 
     public static int compare(final byte[] a, final byte[] b) {

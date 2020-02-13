@@ -1,13 +1,11 @@
 package br.unb.cic.tdp.permutation;
 
 import cern.colt.list.ByteArrayList;
-import com.google.common.collect.Maps;
 import com.google.common.primitives.Bytes;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -88,18 +86,6 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
 
     public List<Byte> getSymbols() {
         return this.stream().flatMap(cycle -> Bytes.asList(cycle.getSymbols()).stream()).collect(Collectors.toList());
-    }
-
-    public boolean isSameCycleType(final MulticyclePermutation other) {
-        if (this.size() != other.size()) {
-            return false;
-        }
-
-        final var difference = Maps.difference(
-                this.stream().collect(Collectors.groupingBy(Cycle::size, Collectors.counting())),
-                other.stream().collect(Collectors.groupingBy(Cycle::size, Collectors.counting())));
-
-        return difference.areEqual();
     }
 
     public int get3Norm() {

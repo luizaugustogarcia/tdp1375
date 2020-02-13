@@ -3,6 +3,7 @@ package br.unb.cic.tdp.proof;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
+import br.unb.cic.tdp.Configuration;
 import com.google.common.primitives.Bytes;
 import org.paukov.combinatorics.Factory;
 
@@ -11,7 +12,7 @@ import java.util.*;
 import static br.unb.cic.tdp.CommonOperations.applyTransposition;
 import static br.unb.cic.tdp.CommonOperations.searchAllApp3Cycles;
 
-public class OddCyclesCases {
+public class OddCycles {
 
     /**
      * Generate the 2-moves (i.e. (1,1)-sequences) to apply when we have two odd
@@ -47,9 +48,9 @@ public class OddCyclesCases {
 
                 if (_spi.getNumberOfEvenCycles() - spi.getNumberOfEvenCycles() == 2) {
                     if (moves == 1) {
-                        final var configuration = new Configuration(pi, spi);
+                        final var configuration = new Configuration(spi, pi);
                         if (!verifiedConfigurations.contains(configuration)) {
-                            result.add(new Case(pi, spi, Collections.singletonList(rho1)));
+                            result.add(new Case(spi, pi, Collections.singletonList(rho1)));
                             verifiedConfigurations.add(configuration);
                         }
 
@@ -58,9 +59,9 @@ public class OddCyclesCases {
                         for (final var rho2 : searchAllApp3Cycles(_pi)) {
                             if (PermutationGroups.computeProduct(_spi, rho2.getInverse()).getNumberOfEvenCycles()
                                     - _spi.getNumberOfEvenCycles() == 2) {
-                                final var configuration = new Configuration(pi, spi);
+                                final var configuration = new Configuration(spi, pi);
                                 if (!verifiedConfigurations.contains(configuration)) {
-                                    result.add(new Case(pi, spi, Arrays.asList(rho1, rho2)));
+                                    result.add(new Case(spi, pi, Arrays.asList(rho1, rho2)));
                                     verifiedConfigurations.add(configuration);
                                 }
 

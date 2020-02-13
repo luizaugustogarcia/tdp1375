@@ -258,7 +258,6 @@ public class CommonOperations {
         return result;
     }
 
-
     /**
      * Checks whether or not a given sequence of \rho's is a 11/8-sequence.
      */

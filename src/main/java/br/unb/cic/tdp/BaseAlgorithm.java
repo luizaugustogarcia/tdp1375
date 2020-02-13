@@ -4,7 +4,7 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.proof.Case;
-import br.unb.cic.tdp.proof.OddCyclesCases;
+import br.unb.cic.tdp.proof.OddCycles;
 import com.google.common.base.Throwables;
 import org.apache.commons.math3.util.Pair;
 
@@ -18,7 +18,7 @@ import static br.unb.cic.tdp.CommonOperations.applyTransposition;
 import static br.unb.cic.tdp.CommonOperations.isOriented;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
-abstract class BaseAlgorithm {
+public abstract class BaseAlgorithm {
 
     protected static final String UNRTD_3_2 = "unoriented/3_2";
     protected static final String UNRTD_INTERSECTING_PAIR = "unoriented/(0,3,1)(2,5,4)";
@@ -35,7 +35,7 @@ abstract class BaseAlgorithm {
     protected List<Case> _3_2Cases = new ArrayList<>();
 
     public BaseAlgorithm(final String casesFolder) {
-        loadCases(casesFolder);
+        //loadCases(casesFolder);
     }
 
     abstract int sort(Cycle pi);
@@ -43,11 +43,11 @@ abstract class BaseAlgorithm {
     protected void loadCases(final String casesFolder) {
         // Generates the 2-moves to be applied when we have one odd cycle in sigma
         // pi^{-1}
-        _1_1OddCyclesCases.addAll(OddCyclesCases.generate());
+        _1_1OddCyclesCases.addAll(OddCycles.generate());
 
         // Generates the (2,2)-sequences to be applied when we have four odd cycles in
         // sigma pi^{-1}
-        _2_2OddCyclesCases.addAll(OddCyclesCases.generate2_2Cases());
+        _2_2OddCyclesCases.addAll(OddCycles.generate2_2Cases());
 
         // Loads the (3,2)-sequences to be applied to the interleaving pair and to
         // the cases where three 3-cycles are intersecting
@@ -68,7 +68,7 @@ abstract class BaseAlgorithm {
         }
     }
 
-    protected int getNorm(final Collection<Cycle> mu) {
+    public static int getNorm(final Collection<Cycle> mu) {
         return mu.stream().mapToInt(Cycle::getNorm).sum();
     }
 
@@ -79,14 +79,14 @@ abstract class BaseAlgorithm {
         return _symbols;
     }
 
-    protected boolean isOutOfInterval(final int x, final int left, final int right) {
+    public static boolean isOutOfInterval(final int x, final int left, final int right) {
         if (left < right)
             return x < left || x > right;
         return false;
     }
 
     // O(n)
-    protected Cycle getIntersectingCycle(final int left, final int right, final Cycle[] cycleIndex,
+    public static Cycle getIntersectingCycle(final int left, final int right, final Cycle[] cycleIndex,
                                          final Cycle piInverse) {
         final var gates = left < right ? right - left : piInverse.size() - (left - right);
         for (var i = 1; i < gates; i++) {
@@ -128,7 +128,7 @@ abstract class BaseAlgorithm {
         return spi.stream().anyMatch(c -> !c.isEven());
     }
 
-    protected boolean contains(final Set<Byte> muSymbols, final Cycle cycle) {
+    public static boolean contains(final Set<Byte> muSymbols, final Cycle cycle) {
         for (final Byte symbol : cycle.getSymbols())
             if (muSymbols.contains(symbol))
                 return true;
@@ -220,7 +220,7 @@ abstract class BaseAlgorithm {
                     rho[2] = Byte.parseByte(symbols[2]);
                     rhos.add(new Cycle(rho));
                 }
-                _cases.add(new Case(new Cycle(pi), spi, rhos));
+                _cases.add(new Case(spi, new Cycle(pi), rhos));
             }
         } catch (final IOException e) {
             Throwables.propagate(e);
@@ -243,7 +243,9 @@ abstract class BaseAlgorithm {
         }
     }
 
-    abstract List<Cycle> extend(List<Cycle> mu, MulticyclePermutation spi, Cycle pi);
+    static List<Cycle> extend(List<Cycle> mu, MulticyclePermutation spi, Cycle pi) {
+        return null;
+    }
 
     abstract Cycle[] searchForSeq(List<Cycle> mu, MulticyclePermutation spi, Cycle pi, List<Case> cases);
 }

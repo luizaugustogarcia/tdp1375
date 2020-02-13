@@ -219,4 +219,9 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     public int size() {
         return symbols.length;
     }
+
+    @Override
+    public Cycle asNCycle() {
+        return this;
+    }
 }

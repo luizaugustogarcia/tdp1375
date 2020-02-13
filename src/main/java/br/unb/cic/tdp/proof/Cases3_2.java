@@ -2,6 +2,7 @@ package br.unb.cic.tdp.proof;
 
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.Configuration;
 import com.google.common.primitives.Bytes;
 import org.paukov.combinatorics.Factory;
 
@@ -19,7 +20,7 @@ public class Cases3_2 {
      */
     public static List<Case> generate() {
         final var result = new ArrayList<Case>();
-        result.add(new Case(new Cycle("0,1,2,3,4,5"), new MulticyclePermutation("(0,4,2)(1,5,3)"),
+        result.add(new Case(new MulticyclePermutation("(0,4,2)(1,5,3)"), new Cycle("0,1,2,3,4,5"),
                 Arrays.asList(new Cycle("0,2,4"), new Cycle("3,1,5"), new Cycle("2,4,0"))));
         result.addAll(generate(new MulticyclePermutation("(0,1,2)(3,4,5)(6,7,8)")));
         return result;
@@ -37,9 +38,9 @@ public class Cases3_2 {
                 if (openGates.values().stream().mapToInt(j -> j).sum() <= 2) {
                     final var rhos = findSortingSequence(pi, spi, new Stack<>(), 3, 1.5F);
 
-                    final var configuration = new Configuration(pi, spi);
+                    final var configuration = new Configuration(spi, pi);
                     if (!verifiedConfigurations.contains(configuration)) {
-                        result.add(new Case(pi, spi, rhos));
+                        result.add(new Case(spi, pi, rhos));
                         verifiedConfigurations.add(configuration);
                     }
                 }

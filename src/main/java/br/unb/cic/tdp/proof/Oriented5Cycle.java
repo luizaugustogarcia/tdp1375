@@ -9,7 +9,7 @@ import java.util.*;
 
 import static br.unb.cic.tdp.CommonOperations.*;
 
-class Oriented5Cycle {
+public class Oriented5Cycle {
 
     /**
      * Generate (3,2)-sequences to apply when there is a cycle in \spi with length
@@ -43,7 +43,7 @@ class Oriented5Cycle {
                         }
 
                         if (!verifiedConfigurations.contains(signatures.toString())) {
-                            result.add(new Case(pi, spi, rhos));
+                            result.add(new Case(spi, pi, rhos));
                             verifiedConfigurations.add(signatures.toString());
                         }
                     }

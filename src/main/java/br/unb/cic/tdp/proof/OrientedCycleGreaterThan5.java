@@ -10,7 +10,7 @@ import java.util.*;
 import static br.unb.cic.tdp.CommonOperations.canonicalize;
 import static br.unb.cic.tdp.CommonOperations.findSortingSequence;
 
-class OrientedCycleGreaterThan5 {
+public class OrientedCycleGreaterThan5 {
 
     /**
      * Generate (4,3)-sequences to apply when there is a cycle in \spi with length
@@ -44,7 +44,7 @@ class OrientedCycleGreaterThan5 {
                         }
 
                         if (!verifiedConfigurations.contains(signatures.toString())) {
-                            result.add(new Case(pi, spi, rhos));
+                            result.add(new Case(spi, pi, rhos));
                             verifiedConfigurations.add(signatures.toString());
                         }
                     }
