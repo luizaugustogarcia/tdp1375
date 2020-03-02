@@ -79,12 +79,14 @@ public abstract class EHProofTraverser {
             return;
         }
 
+        visitedFiles.add(baseFolder + startFile);
+
         final var rhos = getSorting(baseFolder + startFile);
 
         if (!rhos.isEmpty()) {
             readEHCase(configuration, rhos, printer, depth);
 
-            desimplify(configuration, rhos, verifiedConfigurations, printer, depth);
+            desimplify(configuration, rhos, verifiedConfigurations, printer, depth + 1);
         } else {
             printCase(configuration, Collections.emptyList(), printer, depth);
 
@@ -107,8 +109,6 @@ public abstract class EHProofTraverser {
                 Throwables.propagate(e);
             }
         }
-
-        visitedFiles.add(baseFolder + startFile);
     }
 
     protected void printCase(final Configuration configuration, List<Cycle> rhos, final PrintStream printer, int depth) {

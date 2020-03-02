@@ -7,11 +7,14 @@ import br.unb.cic.tdp.util.Triplet;
 import cern.colt.list.ByteArrayList;
 import cern.colt.list.FloatArrayList;
 import com.google.common.primitives.Bytes;
+import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.util.ByteArrayOperations.removeSymbol;
 import static br.unb.cic.tdp.util.ByteArrayOperations.replace;
@@ -339,23 +342,26 @@ public class CommonOperations {
      * Find a sorting sequence whose approximation ratio lies between 1 and
      * <code>maxRatio</code>.
      */
-    public static List<Cycle> findSortingSequence(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> rhos,
+    public static List<Cycle> searchForSortingSeq(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> rhos,
                                                   final int initialNumberOfEvenCycles, final float maxRatio) {
-        return findSortingSequence(pi, mu, rhos, initialNumberOfEvenCycles, 1, maxRatio);
+        return searchForSortingSeq(pi, mu, rhos, initialNumberOfEvenCycles, 1, maxRatio, -1);
     }
 
     /**
      * Find a sorting sequence whose approximation ratio lies between
      * <code>minRatio</code> and <code>maxRatio</code>.
      */
-    private static List<Cycle> findSortingSequence(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> rhos,
-                                                   final int initialNumberOfEvenCycles, final float minRatio, final float maxRatio) {
+    private static List<Cycle> searchForSortingSeq(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> rhos,
+                                                   final int initialNumberOfEvenCycles, final float minRatio,
+                                                   final float maxRatio, final int lastMove) {
         final var n = pi.size();
 
         final var lowerBound = (n - mu.getNumberOfEvenCycles()) / 2;
         final var minAchievableRatio = (float) (rhos.size() + lowerBound) / ((n - initialNumberOfEvenCycles) / 2);
 
-        // Do not allow it to exceed the upper bound
+        final var spiCycleIndex = createCycleIndex(mu, pi);
+
+        // Do not allow it to exceed the max ratio
         if (minAchievableRatio <= maxRatio) {
             final var delta = (mu.getNumberOfEvenCycles() - initialNumberOfEvenCycles);
             final var instantRatio = delta > 0
@@ -364,30 +370,23 @@ public class CommonOperations {
             if (0 < instantRatio && minRatio <= instantRatio && instantRatio <= maxRatio) {
                 return rhos;
             } else {
-                final Set<Byte> fixedSymbols = new HashSet<>();
-                for (final var c : mu) {
-                    if (c.size() == 1)
-                        fixedSymbols.add(c.get(0));
-                }
+                final var iterator = generateAll0_2Moves(pi, spiCycleIndex).iterator();
+                while (iterator.hasNext()) {
+                    final var pair = iterator.next();
+                    final var rho = pair.getFirst();
 
-                final var newOmega = new ByteArrayList(n - fixedSymbols.size());
-                for (final var symbol : pi.getSymbols()) {
-                    if (!fixedSymbols.contains(symbol)) {
-                        newOmega.add(symbol);
+                    if (pair.getSecond() == 0 && lastMove == 0) {
+                        continue;
                     }
-                }
-
-                for (final var rho : searchAllApp3Cycles(new Cycle(newOmega))) {
-                    if (is0Or2Move(mu, rho)) {
-                        rhos.push(rho);
-                        final var solution = findSortingSequence(applyTransposition(pi, rho),
-                                PermutationGroups.computeProduct(mu, rho.getInverse()), rhos, initialNumberOfEvenCycles,
-                                minRatio, maxRatio);
-                        if (!solution.isEmpty()) {
-                            return rhos;
-                        }
-                        rhos.pop();
+                    final var _mu = PermutationGroups.computeProduct(mu, rho.getInverse());
+                    rhos.push(rho);
+                    final var solution = searchForSortingSeq(applyTransposition(pi, rho),
+                            _mu, rhos, initialNumberOfEvenCycles,
+                            minRatio, maxRatio, pair.getSecond());
+                    if (!solution.isEmpty()) {
+                        return rhos;
                     }
+                    rhos.pop();
                 }
             }
         }
@@ -408,7 +407,7 @@ public class CommonOperations {
                         final var a = cycle.get(i);
                         final var b = cycle.get(j);
                         final var c = cycle.get(k);
-                        if (pi.isOrientedTriple(a, b, c)) {
+                        if (pi.isOriented(a, b, c)) {
                             var after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
                             after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
                             after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
@@ -424,28 +423,48 @@ public class CommonOperations {
     }
 
     /**
-     * Checks whether or not a given \rho is either a 0-move or a 2-move.
+     * Generates a stream containing all 0 and 2-moves applicable on \pi.
      */
-    private static boolean is0Or2Move(final MulticyclePermutation spi, final Cycle rho) {
-        return PermutationGroups.computeProduct(spi, rho.getInverse()).getNumberOfEvenCycles() >= spi
-                .getNumberOfEvenCycles();
-    }
+    public static Stream<Pair<Cycle, Integer>> generateAll0_2Moves(final Cycle pi, final Cycle[] spiCycleIndex) {
+        return IntStream.range(0, pi.size() - 2)
+                .boxed().flatMap(i -> IntStream.range(i + 1, pi.size() - 1)
+                        .boxed().flatMap(j -> IntStream.range(j + 1, pi.size())
+                                .boxed()
+                                .takeWhile(k -> !Thread.currentThread().isInterrupted())
+                                .map(k -> {
+                                    final var rho = new Cycle(pi.get(i), pi.get(j), pi.get(k));
+                                    byte a = rho.get(0), b = rho.get(1), c = rho.get(2);
 
-    /**
-     * Search for all applicable 3-cycles on \pi.
-     */
-    public static List<Cycle> searchAllApp3Cycles(final Cycle pi) {
-        final List<Cycle> result = new ArrayList<>();
+                                    final var is_2Move = spiCycleIndex[a] != spiCycleIndex[b] &&
+                                            spiCycleIndex[b] != spiCycleIndex[c] &&
+                                            spiCycleIndex[a] != spiCycleIndex[c];
 
-        for (var i = 0; i < pi.size() - 2; i++) {
-            for (var j = i + 1; j < pi.size() - 1; j++) {
-                for (var k = j + 1; k < pi.size(); k++) {
-                    result.add(new Cycle(pi.get(i), pi.get(j), pi.get(k)));
-                }
-            }
-        }
+                                    if (is_2Move) {
+                                        return new Pair<>(rho, -2);
+                                    }
 
-        return result;
+                                    final var is2Move = spiCycleIndex[a] == spiCycleIndex[b] &&
+                                            spiCycleIndex[a] == spiCycleIndex[c] &&
+                                            spiCycleIndex[a].isOriented(rho.getSymbols()) &&
+                                            spiCycleIndex[a].getK(a, b) % 2 == 1 && spiCycleIndex[a].getK(b, c) % 2 == 1 && spiCycleIndex[a].getK(c, a) % 2 == 1;
+
+                                    if (is2Move) {
+                                        return new Pair<>(rho, 2);
+                                    }
+
+                                    final var is0Move = ((spiCycleIndex[a] == spiCycleIndex[b] &&
+                                            spiCycleIndex[a] == spiCycleIndex[c] &&
+                                            !spiCycleIndex[a].isOriented(rho.getSymbols()))) ||
+                                            ((spiCycleIndex[a] == spiCycleIndex[b] && spiCycleIndex[a] != spiCycleIndex[c] && spiCycleIndex[a].getK(a, b) % 2 != 0) ||
+                                                    (spiCycleIndex[b] == spiCycleIndex[c] && spiCycleIndex[b] != spiCycleIndex[a] && spiCycleIndex[b].getK(b, c) % 2 != 0) ||
+                                                    (spiCycleIndex[c] == spiCycleIndex[a] && spiCycleIndex[c] != spiCycleIndex[b] && spiCycleIndex[c].getK(c, a) % 2 != 0));
+
+                                    if (is0Move) {
+                                        return new Pair<>(rho, 0);
+                                    }
+
+                                    return new Pair<Cycle, Integer>(rho, null);
+                                }).filter(move -> move.getValue() != null && move.getValue() >= 0)));
     }
 
     public static <T> Generator<T> combinations(final Collection<T> collection, final int k) {

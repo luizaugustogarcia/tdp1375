@@ -58,7 +58,7 @@ public class DesimplifyOriented extends EHProofTraverser {
                         if (!verifiedConfigurations.contains(_configuration)) {
                             verifiedConfigurations.add(_configuration);
                             printCase(_configuration, _rhos, printer, depth);
-                            desimplify(_configuration, _rhos, verifiedConfigurations, printer, depth +  1);
+                            desimplify(_configuration, _rhos, verifiedConfigurations, printer, depth + 1);
                         }
                     } else {
                         throw new RuntimeException("ERROR");

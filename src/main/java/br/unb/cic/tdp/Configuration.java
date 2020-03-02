@@ -2,13 +2,13 @@ package br.unb.cic.tdp;
 
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import com.google.common.primitives.Bytes;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.CommonOperations.CANONICAL_PI;
 import static br.unb.cic.tdp.CommonOperations.signature;
@@ -28,7 +28,7 @@ public class Configuration {
     private final Signature signature;
 
     @ToString.Exclude
-    private Set<Signature> signatures;
+    private Set<Signature> equivalentSignatures;
 
     @ToString.Exclude
     private Integer hashCode;
@@ -39,26 +39,38 @@ public class Configuration {
         this.signature = new Signature(signature(spi, pi));
     }
 
-    private Set<Signature> getSignatures() {
-        if (signatures != null) {
-            return signatures;
+    public static Configuration fromSignature(byte[] signature) {
+        final var pi = CANONICAL_PI[signature.length];
+        final var cyclesMap = new HashMap<Byte, List<Byte>>();
+        for (int i = signature.length - 1; i >= 0; i--) {
+            cyclesMap.computeIfAbsent(signature[i], key -> new ArrayList<>());
+            cyclesMap.get(signature[i]).add((byte) i);
+        }
+        final var spi = cyclesMap.values().stream().map(c -> new Cycle(Bytes.toArray(c)))
+                .collect(Collectors.toCollection(MulticyclePermutation::new));
+        return new Configuration(spi, pi);
+    }
+
+    private Set<Signature> getEquivalentSignatures() {
+        if (equivalentSignatures != null) {
+            return equivalentSignatures;
         }
 
-        signatures = new HashSet<>();
+        equivalentSignatures = new HashSet<>();
 
         // shifting
         for (var i = 0; i < pi.size(); i++) {
-            signatures.add(new Signature(
+            equivalentSignatures.add(new Signature(
                     signature(spi, pi.getStartingBy(pi.get(i)))));
         }
 
         // mirroring
         for (var i = 0; i < pi.getInverse().size(); i++) {
-            signatures.add(new Signature(
+            equivalentSignatures.add(new Signature(
                     signature(spi, pi.getInverse().getStartingBy(pi.getInverse().get(i)))));
         }
 
-        return signatures;
+        return equivalentSignatures;
     }
 
     @ToString.Include
@@ -72,6 +84,11 @@ public class Configuration {
     }
 
     @ToString.Include
+    public int get3Norm() {
+        return this.spi.get3Norm();
+    }
+
+    @ToString.Include
     public int numberOfOpenGates() {
         var numberOfOpenGates = 0;
         for (int i = 0; i < signature.content.length; i++) {
@@ -82,11 +99,22 @@ public class Configuration {
         return numberOfOpenGates;
     }
 
+    public Map<Byte, Byte> getOpenGatesByCycleLabel() {
+        final var map = new HashMap<Byte, Byte>();
+        for (int i = 0; i < signature.content.length; i++) {
+            if (signature.content[i] == signature.content[(i + 1) % signature.content.length]) {
+                map.computeIfAbsent(signature.content[i], key -> (byte) 0);
+                map.computeIfPresent(signature.content[i], (key, value) -> (byte) (value + 1));
+            }
+        }
+        return map;
+    }
+
     @Override
     @ToString.Include
     public int hashCode() {
         if (this.hashCode == null) {
-            this.hashCode = getSignatures().stream().mapToInt(Signature::hashCode).min().getAsInt();
+            this.hashCode = getEquivalentSignatures().stream().mapToInt(Signature::hashCode).min().getAsInt();
         }
         return this.hashCode;
     }
@@ -103,12 +131,12 @@ public class Configuration {
             return false;
         }
 
-        return getSignatures().contains(((Configuration) obj).signature);
+        return getEquivalentSignatures().contains(((Configuration) obj).signature);
     }
 
     /**
-     * Returns a configuration with the symbols changed as \sigma were (0,1,2,..,n).
-     * Only works with full configurations.
+     * Returns a configuration with the symbols changed as \sigma=(0,1,2,..,n).
+     * Only applicable to full configurations.
      */
     public Configuration getNormalConfiguration() {
         if (!isFull()) {
@@ -128,7 +156,7 @@ public class Configuration {
     }
 
     @AllArgsConstructor
-    private static class Signature {
+    public static class Signature {
 
         @Getter
         private byte[] content;
@@ -149,6 +177,11 @@ public class Configuration {
         @Override
         public int hashCode() {
             return Arrays.hashCode(content);
+        }
+
+        @Override
+        public String toString() {
+            return Arrays.toString(content);
         }
     }
 }

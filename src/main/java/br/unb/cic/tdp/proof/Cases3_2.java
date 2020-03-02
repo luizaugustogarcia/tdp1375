@@ -1,8 +1,8 @@
 package br.unb.cic.tdp.proof;
 
+import br.unb.cic.tdp.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.Configuration;
 import com.google.common.primitives.Bytes;
 import org.paukov.combinatorics.Factory;
 
@@ -36,7 +36,7 @@ public class Cases3_2 {
             if (spi.stream().noneMatch(cycle -> isOriented(pi, cycle))) {
                 final var openGates = openGatesPerCycle(spi, pi.getInverse());
                 if (openGates.values().stream().mapToInt(j -> j).sum() <= 2) {
-                    final var rhos = findSortingSequence(pi, spi, new Stack<>(), 3, 1.5F);
+                    final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), 3, 1.5F);
 
                     final var configuration = new Configuration(spi, pi);
                     if (!verifiedConfigurations.contains(configuration)) {

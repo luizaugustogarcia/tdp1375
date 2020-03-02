@@ -1,16 +1,15 @@
 package br.unb.cic.tdp.proof;
 
+import br.unb.cic.tdp.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.permutation.PermutationGroups;
-import br.unb.cic.tdp.Configuration;
 import com.google.common.primitives.Bytes;
 import org.paukov.combinatorics.Factory;
 
 import java.util.*;
 
-import static br.unb.cic.tdp.CommonOperations.applyTransposition;
-import static br.unb.cic.tdp.CommonOperations.searchAllApp3Cycles;
+import static br.unb.cic.tdp.CommonOperations.createCycleIndex;
+import static br.unb.cic.tdp.CommonOperations.generateAll0_2Moves;
 
 public class OddCycles {
 
@@ -37,16 +36,17 @@ public class OddCycles {
         final var result = new ArrayList<Case>();
 
         final var verifiedConfigurations = new HashSet<Configuration>();
-
         permutation:
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
             final var pi = new Cycle(Bytes.toArray(permutation.getVector())).getInverse();
+            final var spiCycleIndex = createCycleIndex(spi, pi);
 
-            for (final var rho1 : searchAllApp3Cycles(pi)) {
-                final var _spi = PermutationGroups.computeProduct(spi, rho1.getInverse());
-                final var _pi = applyTransposition(pi, rho1);
+            final var iterator = generateAll0_2Moves(pi, spiCycleIndex).iterator();
+            while (iterator.hasNext()) {
+                final var move = iterator.next();
+                final var rho1 = move.getKey();
 
-                if (_spi.getNumberOfEvenCycles() - spi.getNumberOfEvenCycles() == 2) {
+                if (move.getValue() == 2) {
                     if (moves == 1) {
                         final var configuration = new Configuration(spi, pi);
                         if (!verifiedConfigurations.contains(configuration)) {
@@ -56,9 +56,11 @@ public class OddCycles {
 
                         continue permutation;
                     } else {
-                        for (final var rho2 : searchAllApp3Cycles(_pi)) {
-                            if (PermutationGroups.computeProduct(_spi, rho2.getInverse()).getNumberOfEvenCycles()
-                                    - _spi.getNumberOfEvenCycles() == 2) {
+                        final var _iterator = generateAll0_2Moves(pi, spiCycleIndex).iterator();
+                        while (_iterator.hasNext()) {
+                            final var move2 = _iterator.next();
+                            final var rho2 = move2.getKey();
+                            if (move2.getValue() == 2) {
                                 final var configuration = new Configuration(spi, pi);
                                 if (!verifiedConfigurations.contains(configuration)) {
                                     result.add(new Case(spi, pi, Arrays.asList(rho1, rho2)));

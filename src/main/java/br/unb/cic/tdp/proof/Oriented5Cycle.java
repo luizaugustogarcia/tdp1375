@@ -30,8 +30,8 @@ public class Oriented5Cycle {
 
             // It is the case to avoid combinations originating 2-moves because the symbols
             // in the only cycle of spi are indeed the symbols of the actual 5-cycle
-            if (pi.isOrientedTriple(triple) && searchFor2Move(spi, pi) == null) {
-                final var rhos = findSortingSequence(pi, spi, new Stack<>(), spi.getNumberOfEvenCycles(),
+            if (pi.isOriented(triple) && searchFor2Move(spi, pi) == null) {
+                final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), spi.getNumberOfEvenCycles(),
                         1.5F);
 
                 if (!rhos.isEmpty()) {

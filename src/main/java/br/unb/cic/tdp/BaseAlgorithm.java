@@ -72,7 +72,7 @@ public abstract class BaseAlgorithm {
         return mu.stream().mapToInt(Cycle::getNorm).sum();
     }
 
-    protected byte[] getStartingBy(final byte[] cycle, final int i) {
+    protected static byte[] getStartingBy(final byte[] cycle, final int i) {
         final var _symbols = new byte[cycle.length];
         System.arraycopy(cycle, i, _symbols, 0, _symbols.length - i);
         System.arraycopy(cycle, 0, _symbols, _symbols.length - i, i);
@@ -87,7 +87,7 @@ public abstract class BaseAlgorithm {
 
     // O(n)
     public static Cycle getIntersectingCycle(final int left, final int right, final Cycle[] cycleIndex,
-                                         final Cycle piInverse) {
+                                             final Cycle piInverse) {
         final var gates = left < right ? right - left : piInverse.size() - (left - right);
         for (var i = 1; i < gates; i++) {
             final var index = (i + left) % piInverse.size();
@@ -167,7 +167,7 @@ public abstract class BaseAlgorithm {
                         final var a = cycle.get(i);
                         final var b = cycle.get(j);
                         final var c = cycle.get(k);
-                        if (pi.isOrientedTriple(a, b, c)) {
+                        if (pi.isOriented(a, b, c)) {
                             var after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
                             after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
                             after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
@@ -247,5 +247,7 @@ public abstract class BaseAlgorithm {
         return null;
     }
 
-    abstract Cycle[] searchForSeq(List<Cycle> mu, MulticyclePermutation spi, Cycle pi, List<Case> cases);
+    static Cycle[] searchForSeq(List<Cycle> mu, MulticyclePermutation spi, Cycle pi, List<Case> cases) {
+        return new Cycle[0];
+    }
 }

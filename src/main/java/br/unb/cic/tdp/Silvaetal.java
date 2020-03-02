@@ -50,6 +50,232 @@ public class Silvaetal extends BaseAlgorithm {
         System.out.println(silvaetal.sort(new Cycle("0,9,8,7,6,5,4,3,2,1")));
     }
 
+    public static List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
+        final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
+        final Set<Byte> muSymbols = mu.stream().flatMap(c -> Bytes.asList(c.getSymbols()).stream())
+                .collect(Collectors.toSet());
+
+        final var muCycleIndex = createCycleIndex(mu, pi);
+        final var spiCycleIndex = createCycleIndex(spi, pi);
+
+        // Type 1 extension
+        // These two outer loops are O(1), since at this point, ||mu|| never
+        // exceeds 16
+        for (final var muCycle : mu) {
+            for (var i = 0; i < muCycle.getSymbols().length; i++) {
+                final var a = piInverse.indexOf(muCycle.get(i));
+                final var b = piInverse.indexOf(muCycle.image(muCycle.get(i)));
+
+                for (int j = 0; j < piInverse.size(); j++) {
+                    final var intersecting = spiCycleIndex[piInverse.get(j)];
+                    if (!intersecting.equals(muCycle) && !contains(muSymbols, intersecting)) {
+                        if (a < b && (a < j && j < b)) {
+                            for (final var symbol : intersecting.getStartingBy(piInverse.get(j)).getSymbols()) {
+                                final var nextSymbol = intersecting.image(symbol);
+                                final var index = piInverse.indexOf(nextSymbol);
+                                if (index > b || index < a) {
+                                    final List<Cycle> newMu = new ArrayList<>(mu);
+                                    newMu.add(new Cycle(symbol, nextSymbol, intersecting.image(nextSymbol)));
+                                    return newMu;
+                                }
+                            }
+                        } else if (a > b && (j > b && j < a)) {
+                            for (final var symbol : intersecting.getSymbols()) {
+                                final var nextSymbol = intersecting.image(symbol);
+                                final var index = piInverse.indexOf(nextSymbol);
+                                if (a < index || index < b) {
+                                    final List<Cycle> newMu = new ArrayList<>(mu);
+                                    newMu.add(new Cycle(symbol, nextSymbol, intersecting.image(nextSymbol)));
+                                    return newMu;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Type 2 extension
+        // O(n)
+        for (final var muCycle : mu) {
+            for (var i = 0; i < muCycle.getSymbols().length; i++) {
+                final var left = piInverse.indexOf(muCycle.get(i));
+                final var right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
+                final var gates = left < right ? right - left : piInverse.size() - (left - right);
+                for (var j = 1; j < gates; j++) {
+                    final var index = (j + left) % piInverse.size();
+                    if (muCycleIndex[piInverse.get(index)] == null) {
+                        final var intersectingCycle = spiCycleIndex[piInverse.get(index)];
+                        if (intersectingCycle != null && intersectingCycle.size() > 1
+                                && !contains(muSymbols, spiCycleIndex[intersectingCycle.get(0)])) {
+                            final var a = piInverse.get(index);
+                            final var b = intersectingCycle.image(a);
+                            if (isOutOfInterval(piInverse.indexOf(b), left, right)) {
+                                final var c = intersectingCycle.image(b);
+                                final List<Cycle> newMu = new ArrayList<>(mu);
+                                newMu.add(new Cycle(a, b, c));
+                                return newMu;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Type 3 extension
+        // The outer loop is O(1) since, at this point, ||mu|| never exceeds 16
+        for (var muCycle : mu) {
+            if (muCycle.size() < spiCycleIndex[muCycle.get(0)].size()) {
+                final var spiCycle = align(spiCycleIndex[muCycle.get(0)], muCycle);
+                muCycle = muCycle.getStartingBy(spiCycle.get(0));
+                final var newSymbols = Arrays.copyOf(muCycle.getSymbols(), muCycle.getSymbols().length + 2);
+                newSymbols[muCycle.getSymbols().length] = spiCycle
+                        .image(muCycle.get(muCycle.getSymbols().length - 1));
+                newSymbols[muCycle.getSymbols().length + 1] = spiCycle
+                        .image(newSymbols[muCycle.getSymbols().length]);
+
+                final List<Cycle> newMu = new ArrayList<>(mu);
+                newMu.remove(muCycle);
+                newMu.add(new Cycle(newSymbols));
+
+                final var openGates = openGatesPerCycle(newMu, piInverse);
+                if (openGates.values().stream().mapToInt(j -> j).sum() <= 2)
+                    return newMu;
+            }
+        }
+
+        return mu;
+    }
+
+    // O(n)
+    public static Cycle align(final Cycle spiCycle, final Cycle segment) {
+        for (var i = 0; i < segment.size(); i++) {
+            var symbol = segment.get(i);
+            final var index = spiCycle.indexOf(symbol);
+            var match = true;
+            for (var j = 1; j < segment.size(); j++) {
+                if (segment.get((i + j) % segment.size()) != spiCycle
+                        .get((index + j) % spiCycle.size())) {
+                    match = false;
+                    break;
+                }
+                symbol = segment.image(symbol);
+            }
+            if (match)
+                return spiCycle.getStartingBy(segment.get(i));
+        }
+        return null;
+    }
+
+    public static Cycle[] searchForSeq(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi,
+                                       final List<Case> cases) {
+        if (cases != null) {
+            final var cycleIndex = createCycleIndex(mu, pi);
+
+            final var symbolsCount = mu.stream().mapToInt(Cycle::size).sum();
+
+            final var _piArrayList = new ByteArrayList(symbolsCount);
+            // O(n)
+            for (var i = 0; i < pi.getSymbols().length; i++) {
+                final var muCycle = cycleIndex[pi.getSymbols()[i]];
+                if (muCycle != null)
+                    _piArrayList.add(pi.getSymbols()[i]);
+            }
+
+            // |_pi| is constant, since ||mu|| is constant
+            final var piSymbols = _piArrayList.elements();
+
+            for /* O(1) */ (final var _case : cases)
+                if (symbolsCount == _case.getSignature().length) {
+                    rotation:
+                    for /* O(1) */ (var i = 0; i < piSymbols.length; i++) {
+                        final var _piSymbols = getStartingBy(piSymbols, i);
+
+                        final Map<Cycle, Integer> labels = new HashMap<>();
+                        for /* O(1) */ (var j = 0; j < _piSymbols.length; j++) {
+                            final var muCycle = cycleIndex[_piSymbols[j]];
+                            if (muCycle != null && !labels.containsKey(muCycle))
+                                labels.put(muCycle, labels.size() + 1);
+                        }
+
+                        for (final var entry : labels.entrySet())
+                            if (entry.getKey().size() != _case.getSpi().get(entry.getValue() - 1).size()
+                                    || isOriented(pi, entry.getKey()) != isOriented(_case.getPi(),
+                                    _case.getSpi().get(entry.getValue() - 1)))
+                                continue rotation;
+
+                        for (var j = 0; j < _piSymbols.length; j++) {
+                            if (_case.getSignature()[j] != labels.get(cycleIndex[_piSymbols[j]]))
+                                continue rotation;
+                            else {
+                                if (j == _case.getSignature().length - 1) {
+                                    final var rhos = new Cycle[_case.getRhos().size()];
+                                    for (var k = 0; k < rhos.length; k++) {
+                                        final var _rho = Arrays.copyOf(_case.getRhos().get(k).getSymbols(), 3);
+                                        replace(_rho, _piSymbols);
+                                        rhos[k] = new Cycle(_rho);
+                                    }
+
+                                    return rhos;
+                                }
+                            }
+                        }
+                    }
+                }
+        }
+
+        return null;
+    }
+
+    // TODO remove
+    public static Cycle[] tempSearchForSeq(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi,
+                                           final Collection<Configuration> cases) {
+        if (cases != null) {
+            final var cycleIndex = createCycleIndex(mu, pi);
+
+            final var symbolsCount = mu.stream().mapToInt(Cycle::size).sum();
+
+            final var _piArrayList = new ByteArrayList(symbolsCount);
+            // O(n)
+            for (var i = 0; i < pi.getSymbols().length; i++) {
+                final var muCycle = cycleIndex[pi.getSymbols()[i]];
+                if (muCycle != null)
+                    _piArrayList.add(pi.getSymbols()[i]);
+            }
+
+            // |_pi| is constant, since ||mu|| is constant
+            final var piSymbols = _piArrayList.elements();
+
+            for /* O(1) */ (final var __case : cases)
+                if (symbolsCount == __case.getSignature().getContent().length)
+                    for (final var _case : Arrays.asList(__case, new Configuration(__case.getSpi(), __case.getPi().getInverse())))
+                        rotation:
+                                for /* O(1) */ (var i = 0; i < piSymbols.length; i++) {
+                                    final var _piSymbols = getStartingBy(piSymbols, i);
+
+                                    final Map<Cycle, Integer> labels = new HashMap<>();
+                                    for /* O(1) */ (var j = 0; j < _piSymbols.length; j++) {
+                                        final var muCycle = cycleIndex[_piSymbols[j]];
+                                        if (muCycle != null && !labels.containsKey(muCycle))
+                                            labels.put(muCycle, labels.size() + 1);
+                                    }
+
+                                    for (var j = 0; j < _piSymbols.length; j++) {
+                                        if (_case.getSignature().getContent()[j] != labels.get(cycleIndex[_piSymbols[j]]))
+                                            continue rotation;
+                                        else {
+                                            if (j == _case.getSignature().getContent().length - 1) {
+                                                return new Cycle[1];
+                                            }
+                                        }
+                                    }
+                                }
+
+        }
+
+        return null;
+    }
+
     @SuppressWarnings({"unchecked"})
     public int sort(Cycle pi) {
         final var n = pi.size();
@@ -174,110 +400,6 @@ public class Silvaetal extends BaseAlgorithm {
         return rhos;
     }
 
-    public static List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
-        final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
-        final Set<Byte> muSymbols = mu.stream().flatMap(c -> Bytes.asList(c.getSymbols()).stream())
-                .collect(Collectors.toSet());
-
-        final var muCycleIndex = createCycleIndex(mu, pi);
-        final var spiCycleIndex = createCycleIndex(spi, pi);
-
-        // Type 1 extension
-        // These two outer loops are O(1), since at this point, ||mu|| never
-        // exceeds 16
-        for (final var muCycle : mu) {
-            for (var i = 0; i < muCycle.getSymbols().length; i++) {
-                final var left = piInverse.indexOf(muCycle.get(i));
-                final var right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
-                // O(n)
-                if (isOpenGate(mu, piInverse, muCycleIndex, right, left)) {
-                    final var intersectingCycle = getIntersectingCycle(left, right, spiCycleIndex,
-                            piInverse);
-                    if (intersectingCycle != null
-                            && !contains(muSymbols, spiCycleIndex[intersectingCycle.get(0)])) {
-                        final var a = intersectingCycle.get(0);
-                        final var b = intersectingCycle.image(a);
-                        final var c = intersectingCycle.image(b);
-                        final List<Cycle> newMu = new ArrayList<>(mu);
-                        newMu.add(new Cycle(a, b, c));
-                        return newMu;
-                    }
-                }
-            }
-        }
-
-        // Type 2 extension
-        // O(n)
-        for (final var muCycle : mu) {
-            for (var i = 0; i < muCycle.getSymbols().length; i++) {
-                final var left = piInverse.indexOf(muCycle.get(i));
-                final var right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
-                final var gates = left < right ? right - left : piInverse.size() - (left - right);
-                for (var j = 1; j < gates; j++) {
-                    final var index = (j + left) % piInverse.size();
-                    if (muCycleIndex[piInverse.get(index)] == null) {
-                        final var intersectingCycle = spiCycleIndex[piInverse.get(index)];
-                        if (intersectingCycle != null && intersectingCycle.size() > 1
-                                && !contains(muSymbols, spiCycleIndex[intersectingCycle.get(0)])) {
-                            final var a = piInverse.get(index);
-                            final var b = intersectingCycle.image(a);
-                            if (isOutOfInterval(piInverse.indexOf(b), left, right)) {
-                                final var c = intersectingCycle.image(b);
-                                final List<Cycle> newMu = new ArrayList<>(mu);
-                                newMu.add(new Cycle(a, b, c));
-                                return newMu;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        // Type 3 extension
-        // The outer loop is O(1) since, at this point, ||mu|| never exceeds 16
-        for (var muCycle : mu) {
-            if (muCycle.size() < spiCycleIndex[muCycle.get(0)].size()) {
-                final var spiCycle = align(spiCycleIndex[muCycle.get(0)], muCycle);
-                muCycle = muCycle.getStartingBy(spiCycle.get(0));
-                final var newSymbols = Arrays.copyOf(muCycle.getSymbols(), muCycle.getSymbols().length + 2);
-                newSymbols[muCycle.getSymbols().length] = spiCycle
-                        .image(muCycle.get(muCycle.getSymbols().length - 1));
-                newSymbols[muCycle.getSymbols().length + 1] = spiCycle
-                        .image(newSymbols[muCycle.getSymbols().length]);
-
-                final List<Cycle> newMu = new ArrayList<>(mu);
-                newMu.remove(muCycle);
-                newMu.add(new Cycle(newSymbols));
-
-                final var openGates = openGatesPerCycle(newMu, piInverse);
-                if (openGates.values().stream().mapToInt(j -> j).sum() <= 2)
-                    return newMu;
-            }
-        }
-
-        return mu;
-    }
-
-    // O(n)
-    public static Cycle align(final Cycle spiCycle, final Cycle segment) {
-        for (var i = 0; i < segment.size(); i++) {
-            var symbol = segment.get(i);
-            final var index = spiCycle.indexOf(symbol);
-            var match = true;
-            for (var j = 1; j < segment.size(); j++) {
-                if (segment.get((i + j) % segment.size()) != spiCycle
-                        .get((index + j) % spiCycle.size())) {
-                    match = false;
-                    break;
-                }
-                symbol = segment.image(symbol);
-            }
-            if (match)
-                return spiCycle.getStartingBy(segment.get(i));
-        }
-        return null;
-    }
-
     private Cycle searchForOrientedCycleBiggerThan5(final MulticyclePermutation spi, final Cycle pi) {
         return spi.stream().filter(c -> c.size() > 5 && isOriented(pi, c)).findFirst()
                 .orElse(null);
@@ -324,66 +446,6 @@ public class Silvaetal extends BaseAlgorithm {
         }
 
         throw new RuntimeException("ERROR");
-    }
-
-    Cycle[] searchForSeq(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi,
-                         final List<Case> cases) {
-        if (cases != null) {
-            final var cycleIndex = createCycleIndex(mu, pi);
-
-            final var symbolsCount = mu.stream().mapToInt(Cycle::size).sum();
-
-            final var _piArrayList = new ByteArrayList(symbolsCount);
-            // O(n)
-            for (var i = 0; i < pi.getSymbols().length; i++) {
-                final var muCycle = cycleIndex[pi.getSymbols()[i]];
-                if (muCycle != null)
-                    _piArrayList.add(pi.getSymbols()[i]);
-            }
-
-            // |_pi| is constant, since ||mu|| is constant
-            final var piSymbols = _piArrayList.elements();
-
-            for /* O(1) */ (final var _case : cases)
-                if (symbolsCount == _case.getSignature().length) {
-                    rotation:
-                    for /* O(1) */ (var i = 0; i < piSymbols.length; i++) {
-                        final var _piSymbols = getStartingBy(piSymbols, i);
-
-                        final Map<Cycle, Integer> labels = new HashMap<>();
-                        for /* O(1) */ (var j = 0; j < _piSymbols.length; j++) {
-                            final var muCycle = cycleIndex[_piSymbols[j]];
-                            if (muCycle != null && !labels.containsKey(muCycle))
-                                labels.put(muCycle, labels.size() + 1);
-                        }
-
-                        for (final var entry : labels.entrySet())
-                            if (entry.getKey().size() != _case.getSpi().get(entry.getValue() - 1).size()
-                                    || isOriented(pi, entry.getKey()) != isOriented(_case.getPi(),
-                                    _case.getSpi().get(entry.getValue() - 1)))
-                                continue rotation;
-
-                        for (var j = 0; j < _piSymbols.length; j++) {
-                            if (_case.getSignature()[j] != labels.get(cycleIndex[_piSymbols[j]]))
-                                continue rotation;
-                            else {
-                                if (j == _case.getSignature().length - 1) {
-                                    final var rhos = new Cycle[_case.getRhos().size()];
-                                    for (var k = 0; k < rhos.length; k++) {
-                                        final var _rho = Arrays.copyOf(_case.getRhos().get(k).getSymbols(), 3);
-                                        replace(_rho, _piSymbols);
-                                        rhos[k] = new Cycle(_rho);
-                                    }
-
-                                    return rhos;
-                                }
-                            }
-                        }
-                    }
-                }
-        }
-
-        return null;
     }
 
     private void apply3_2(final MulticyclePermutation spi, final Cycle pi) {

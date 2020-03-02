@@ -9,9 +9,9 @@ import org.apache.commons.collections.ListUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.util.ByteArrayOperations.replace;
 import static br.unb.cic.tdp.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
+import static br.unb.cic.tdp.util.ByteArrayOperations.replace;
 
 public class EliasAndHartman extends BaseAlgorithm {
 
@@ -128,7 +128,7 @@ public class EliasAndHartman extends BaseAlgorithm {
         return searchForSeq(mu, spi, pi, _11_8UnorientedCases.get(mu.size()));
     }
 
-    static List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
+    public static List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
         final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
         final Set<Byte> muSymbols = new HashSet<>();
 
@@ -190,8 +190,8 @@ public class EliasAndHartman extends BaseAlgorithm {
     }
 
     // O(n)
-    Cycle[] searchForSeq(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi,
-                         final List<Case> cases) {
+    public static Cycle[] searchForSeq(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi,
+                                       final List<Case> cases) {
         if (cases != null) {
             final var cycleIndex = createCycleIndex(mu, pi);
 
@@ -235,7 +235,7 @@ public class EliasAndHartman extends BaseAlgorithm {
                                     for (var k = 0; k < rhos.length; k++) {
                                         final var _rho = Arrays.copyOf(_case.getRhos().get(k).getSymbols(), 3);
                                         replace(_rho, _piSymbols);
-                                        rhos[k] = new Cycle( _rho);
+                                        rhos[k] = new Cycle(_rho);
                                     }
 
                                     return rhos;

@@ -211,8 +211,19 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return areSymbolsInCyclicOrder(rho.getSymbols(), this.getSymbols());
     }
 
-    public boolean isOrientedTriple(final byte... symbols) {
-        return areSymbolsInCyclicOrder(symbols, this.getSymbols());
+    public boolean isOriented(final byte... symbols) {
+        boolean leap = false;
+        for (int i = 0; i < symbols.length; i++) {
+            if (symbolIndexes[symbols[i]] > symbolIndexes[symbols[(i + 1) % symbols.length]]) {
+                if (!leap) {
+                    leap = true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     @Override

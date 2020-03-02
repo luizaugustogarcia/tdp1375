@@ -8,7 +8,7 @@ import org.paukov.combinatorics.Factory;
 import java.util.*;
 
 import static br.unb.cic.tdp.CommonOperations.canonicalize;
-import static br.unb.cic.tdp.CommonOperations.findSortingSequence;
+import static br.unb.cic.tdp.CommonOperations.searchForSortingSeq;
 
 public class OrientedCycleGreaterThan5 {
 
@@ -29,8 +29,8 @@ public class OrientedCycleGreaterThan5 {
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(Bytes.asList(orientedCycle.getSymbols())))) {
             final var pi = new Cycle(Bytes.toArray(permutation.getVector()));
 
-            if (pi.isOrientedTriple(triple)) {
-                final var rhos = findSortingSequence(pi, spi, new Stack<>(), spi.getNumberOfEvenCycles(),
+            if (pi.isOriented(triple)) {
+                final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), spi.getNumberOfEvenCycles(),
                         1.375F);
 
                 if (!rhos.isEmpty()) {
