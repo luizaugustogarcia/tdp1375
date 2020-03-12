@@ -1,7 +1,8 @@
-package br.unb.cic.tdp;
+package br.unb.cic.tdp.base;
 
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import cern.colt.list.ByteArrayList;
 import com.google.common.primitives.Bytes;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -10,12 +11,12 @@ import lombok.ToString;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.CommonOperations.CANONICAL_PI;
-import static br.unb.cic.tdp.CommonOperations.signature;
+import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
+import static br.unb.cic.tdp.base.CommonOperations.createCycleIndex;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 @ToString
-public class Configuration {
+public class UnorientedConfiguration {
 
     @Getter
     @ToString.Exclude
@@ -33,13 +34,29 @@ public class Configuration {
     @ToString.Exclude
     private Integer hashCode;
 
-    public Configuration(final MulticyclePermutation spi, final Cycle pi) {
+    public UnorientedConfiguration(final MulticyclePermutation spi, final Cycle pi) {
         this.spi = spi;
         this.pi = pi;
-        this.signature = new Signature(signature(spi, pi));
+        this.signature = new Signature(false, pi, signature(spi, pi));
     }
 
-    public static Configuration fromSignature(byte[] signature) {
+    public static byte[] signature(final List<Cycle> spi, final Cycle pi) {
+        final var labelMap = new HashMap<Cycle, Byte>();
+        final var cycleIndex = createCycleIndex(spi, pi);
+
+        final var signature = new byte[pi.size()];
+
+        for (var i = 0; i < signature.length; i++) {
+            final int symbol = pi.get(i);
+            final var cycle = cycleIndex[symbol];
+            labelMap.computeIfAbsent(cycle, c -> (byte) (labelMap.size() + 1));
+            signature[i] = labelMap.get(cycle);
+        }
+
+        return signature;
+    }
+
+    public static UnorientedConfiguration fromSignature(byte[] signature) {
         final var pi = CANONICAL_PI[signature.length];
         final var cyclesMap = new HashMap<Byte, List<Byte>>();
         for (int i = signature.length - 1; i >= 0; i--) {
@@ -48,58 +65,65 @@ public class Configuration {
         }
         final var spi = cyclesMap.values().stream().map(c -> new Cycle(Bytes.toArray(c)))
                 .collect(Collectors.toCollection(MulticyclePermutation::new));
-        return new Configuration(spi, pi);
+        return new UnorientedConfiguration(spi, pi);
     }
 
-    private Set<Signature> getEquivalentSignatures() {
+    public Set<Signature> getEquivalentSignatures() {
         if (equivalentSignatures != null) {
             return equivalentSignatures;
         }
 
         equivalentSignatures = new HashSet<>();
 
-        // shifting
-        for (var i = 0; i < pi.size(); i++) {
-            equivalentSignatures.add(new Signature(
-                    signature(spi, pi.getStartingBy(pi.get(i)))));
-        }
+        final var sigma = computeProduct(spi, pi);
 
-        // mirroring
-        for (var i = 0; i < pi.getInverse().size(); i++) {
-            equivalentSignatures.add(new Signature(
-                    signature(spi, pi.getInverse().getStartingBy(pi.getInverse().get(i)))));
+        for (var i = 0; i < pi.size(); i++) {
+            final var shifting = pi.getStartingBy(pi.get(i));
+            equivalentSignatures.add(new Signature(false, shifting, signature(spi, shifting)));
+            final var mirroring = shifting.getInverse().getStartingBy(shifting.getInverse().get(i));
+            equivalentSignatures.add(new Signature(true, mirroring, signature(spi.getInverse(), mirroring)));
         }
 
         return equivalentSignatures;
     }
 
+    private MulticyclePermutation translate(final byte[] permutation) {
+        return spi.stream().map(c -> {
+            final var _c = new ByteArrayList(c.size());
+            for (final var s : c.getSymbols()) {
+                _c.add(pi.get(permutation[s]));
+            }
+            return new Cycle(_c);
+        }).collect(Collectors.toCollection(MulticyclePermutation::new));
+    }
+
     @ToString.Include
     public boolean isFull() {
-        for (int i = 0; i < signature.content.length; i++) {
-            if (signature.content[i] == signature.content[(i + 1) % signature.content.length]) {
+        for (int i = 0; i < signature.signature.length; i++) {
+            if (signature.signature[i] == signature.signature[(i + 1) % signature.signature.length]) {
                 return false;
             }
         }
         return true;
     }
-
+/*
     @ToString.Include
     public int get3Norm() {
         return this.spi.get3Norm();
-    }
+    }*/
 
     @ToString.Include
-    public int numberOfOpenGates() {
+    public int getNumberOfOpenGates() {
         var numberOfOpenGates = 0;
-        for (int i = 0; i < signature.content.length; i++) {
-            if (signature.content[i] == signature.content[(i + 1) % signature.content.length]) {
+        for (int i = 0; i < signature.signature.length; i++) {
+            if (signature.signature[i] == signature.signature[(i + 1) % signature.signature.length]) {
                 numberOfOpenGates++;
             }
         }
         return numberOfOpenGates;
     }
 
-    public Map<Byte, Byte> getOpenGatesByCycleLabel() {
+/*    public Map<Byte, Byte> getOpenGatesByCycleLabel() {
         final var map = new HashMap<Byte, Byte>();
         for (int i = 0; i < signature.content.length; i++) {
             if (signature.content[i] == signature.content[(i + 1) % signature.content.length]) {
@@ -108,7 +132,7 @@ public class Configuration {
             }
         }
         return map;
-    }
+    }*/
 
     @Override
     @ToString.Include
@@ -121,24 +145,29 @@ public class Configuration {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof Configuration)) {
+        if (!(obj instanceof UnorientedConfiguration)) {
             return false;
         }
 
-        final var other = (Configuration) obj;
+        final var other = (UnorientedConfiguration) obj;
 
-        if (this.signature.content.length != other.signature.content.length || this.spi.size() != other.spi.size()) {
+        if (this.signature.signature.length != other.signature.signature.length ||
+                this.spi.size() != other.spi.size()) {
             return false;
         }
 
-        return getEquivalentSignatures().contains(((Configuration) obj).signature);
+        return getEquivalentSignatures().contains(((UnorientedConfiguration) obj).signature);
     }
+    /*
+
+     */
 
     /**
      * Returns a configuration with the symbols changed as \sigma=(0,1,2,..,n).
      * Only applicable to full configurations.
-     */
-    public Configuration getNormalConfiguration() {
+     *//*
+
+    public UnorientedConfiguration getNormalConfiguration() {
         if (!isFull()) {
             return null;
         }
@@ -152,22 +181,29 @@ public class Configuration {
         final var pi = new Cycle(_pi);
         final var sigma = CANONICAL_PI[pi.size()];
         final var spi = computeProduct(sigma, pi.getInverse());
-        return new Configuration(spi, pi);
+        return new UnorientedConfiguration(spi, pi);
     }
+*/
 
     @AllArgsConstructor
-    public static class Signature {
+    public class Signature {
 
         @Getter
-        private byte[] content;
+        private final boolean mirror;
+
+        @Getter
+        private final Cycle pi;
+
+        @Getter
+        private final byte[] signature;
 
         @Override
         public boolean equals(final Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             final var other = (Signature) o;
-            for (int i = 0; i < other.content.length; i++) {
-                if (content[i] != other.content[i]) {
+            for (int i = 0; i < other.signature.length; i++) {
+                if (signature[i] != other.signature[i]) {
                     return false;
                 }
             }
@@ -176,12 +212,12 @@ public class Configuration {
 
         @Override
         public int hashCode() {
-            return Arrays.hashCode(content);
+            return Arrays.hashCode(signature);
         }
 
         @Override
         public String toString() {
-            return Arrays.toString(content);
+            return Arrays.toString(signature);
         }
     }
 }

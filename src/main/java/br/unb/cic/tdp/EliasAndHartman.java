@@ -9,7 +9,7 @@ import org.apache.commons.collections.ListUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.CommonOperations.*;
+import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.util.ByteArrayOperations.replace;
 

@@ -1,5 +1,6 @@
 package br.unb.cic.tdp;
 
+import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
@@ -14,8 +15,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.CommonOperations.applyTransposition;
-import static br.unb.cic.tdp.CommonOperations.isOriented;
+import static br.unb.cic.tdp.base.CommonOperations.applyTransposition;
+import static br.unb.cic.tdp.base.CommonOperations.isOriented;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 public abstract class BaseAlgorithm {

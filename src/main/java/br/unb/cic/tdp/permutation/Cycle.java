@@ -5,7 +5,7 @@ import org.apache.commons.lang.ArrayUtils;
 
 import java.util.Arrays;
 
-import static br.unb.cic.tdp.CommonOperations.areSymbolsInCyclicOrder;
+import static br.unb.cic.tdp.base.CommonOperations.areSymbolsInCyclicOrder;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
 
@@ -211,6 +211,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return areSymbolsInCyclicOrder(rho.getSymbols(), this.getSymbols());
     }
 
+    @Deprecated
     public boolean isOriented(final byte... symbols) {
         boolean leap = false;
         for (int i = 0; i < symbols.length; i++) {

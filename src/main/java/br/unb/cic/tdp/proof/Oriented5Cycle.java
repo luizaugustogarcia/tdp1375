@@ -7,7 +7,7 @@ import org.paukov.combinatorics.Factory;
 
 import java.util.*;
 
-import static br.unb.cic.tdp.CommonOperations.*;
+import static br.unb.cic.tdp.base.CommonOperations.*;
 
 public class Oriented5Cycle {
 

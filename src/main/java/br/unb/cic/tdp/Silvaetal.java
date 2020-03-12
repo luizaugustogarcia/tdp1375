@@ -13,7 +13,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.CommonOperations.*;
+import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static br.unb.cic.tdp.util.ByteArrayOperations.replace;
 
@@ -222,55 +222,6 @@ public class Silvaetal extends BaseAlgorithm {
                         }
                     }
                 }
-        }
-
-        return null;
-    }
-
-    // TODO remove
-    public static Cycle[] tempSearchForSeq(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi,
-                                           final Collection<Configuration> cases) {
-        if (cases != null) {
-            final var cycleIndex = createCycleIndex(mu, pi);
-
-            final var symbolsCount = mu.stream().mapToInt(Cycle::size).sum();
-
-            final var _piArrayList = new ByteArrayList(symbolsCount);
-            // O(n)
-            for (var i = 0; i < pi.getSymbols().length; i++) {
-                final var muCycle = cycleIndex[pi.getSymbols()[i]];
-                if (muCycle != null)
-                    _piArrayList.add(pi.getSymbols()[i]);
-            }
-
-            // |_pi| is constant, since ||mu|| is constant
-            final var piSymbols = _piArrayList.elements();
-
-            for /* O(1) */ (final var __case : cases)
-                if (symbolsCount == __case.getSignature().getContent().length)
-                    for (final var _case : Arrays.asList(__case, new Configuration(__case.getSpi(), __case.getPi().getInverse())))
-                        rotation:
-                                for /* O(1) */ (var i = 0; i < piSymbols.length; i++) {
-                                    final var _piSymbols = getStartingBy(piSymbols, i);
-
-                                    final Map<Cycle, Integer> labels = new HashMap<>();
-                                    for /* O(1) */ (var j = 0; j < _piSymbols.length; j++) {
-                                        final var muCycle = cycleIndex[_piSymbols[j]];
-                                        if (muCycle != null && !labels.containsKey(muCycle))
-                                            labels.put(muCycle, labels.size() + 1);
-                                    }
-
-                                    for (var j = 0; j < _piSymbols.length; j++) {
-                                        if (_case.getSignature().getContent()[j] != labels.get(cycleIndex[_piSymbols[j]]))
-                                            continue rotation;
-                                        else {
-                                            if (j == _case.getSignature().getContent().length - 1) {
-                                                return new Cycle[1];
-                                            }
-                                        }
-                                    }
-                                }
-
         }
 
         return null;

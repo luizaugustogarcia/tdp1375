@@ -1,14 +1,16 @@
 package br.unb.cic.tdp.proof;
 
-import br.unb.cic.tdp.Configuration;
+import br.unb.cic.tdp.base.CommonOperations;
+import br.unb.cic.tdp.base.UnorientedConfiguration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import cern.colt.list.ByteArrayList;
-import cern.colt.list.FloatArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
+import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Floats;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
@@ -21,17 +23,19 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
-import static br.unb.cic.tdp.CommonOperations.*;
+import static br.unb.cic.tdp.base.CommonOperations.*;
+import static br.unb.cic.tdp.base.Simplification.signature;
+import static br.unb.cic.tdp.base.Simplification.simplifications;
+import static br.unb.cic.tdp.base.UnorientedConfiguration.fromSignature;
+import static br.unb.cic.tdp.base.UnorientedConfiguration.signature;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static java.util.stream.Collectors.toCollection;
 
 public class ProofGenerator {
 
     private static PrintStream out;
-    private static Set<Configuration> visitedConfigs = new HashSet<>();
+    private static Set<UnorientedConfiguration> visitedConfigs = new HashSet<>();
 
     // mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.proof.ProofVerifier" -Dexec.args=".\\proof\\"
     public static void main(String[] args) throws Exception {
@@ -40,42 +44,30 @@ public class ProofGenerator {
         final var knownSortings = loadKnownSortings(args[0]);
 
         // interleaving pair
-        verify(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)"), new Cycle("0,1,2,3,4,5")),
+        verify(new UnorientedConfiguration(new MulticyclePermutation("(0,4,2)(1,5,3)"), new Cycle("0,1,2,3,4,5")),
                 knownSortings, 0);
 
         // intersecting pair
-        verify(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)"), new Cycle("0,1,2,3,4,5")),
+        verify(new UnorientedConfiguration(new MulticyclePermutation("(0,3,1)(2,5,4)"), new Cycle("0,1,2,3,4,5")),
                 knownSortings, 0);
     }
 
-    private static Set<Configuration> loadKnownSortings(final String proofFolder) {
-        return Stream.of("(0,3,1)(2,5,4)", //
-                "(0,4,2)(1,5,3)",  //
-                "bad-small-(0,10,2)(1,5,3)(4,8,6)(7,11,9)", //
-                "bad-small-(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)", //
-                "bad-small-(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)", //
-                "bad-small-(0,4,2)(1,5,3)", "bad-small-(0,7,5)(1,11,9)(2,6,4)(3,10,8)")
-                .flatMap(file -> toStreamOfLines(proofFolder + file))
-                .map(line -> readConfiguration(line))
-                .collect(Collectors.toSet());
+    private static Map<UnorientedConfiguration, List<Cycle>> loadKnownSortings(final String file) throws IOException {
+        final var knownSortings = new HashMap<UnorientedConfiguration, List<Cycle>>();
+
+        Files.lines(Paths.get(file)).forEach(line -> {
+            final var lineSplit = line.trim().split("->");
+            if (lineSplit.length > 1) {
+                final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1]);
+                knownSortings.put(new UnorientedConfiguration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]),
+                        Arrays.stream(lineSplit[1].split(";")).map(Cycle::new).collect(Collectors.toList()));
+            }
+        });
+
+        return knownSortings;
     }
 
-    private static Configuration readConfiguration(final String line) {
-        final var lineSplit = line.trim().split("=>");
-        final var spi = new MulticyclePermutation(lineSplit[0]);
-        final var pi = CANONICAL_PI[spi.getNumberOfSymbols()];
-        return new Configuration(spi, pi);
-    }
-
-    private static Stream<String> toStreamOfLines(final String file) {
-        try {
-            return Files.lines(Paths.get(file));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public static void verify(final Configuration config, final Set<Configuration> knownSortings,
+    public static void verify(final UnorientedConfiguration config, final Map<UnorientedConfiguration, List<Cycle>> knownSortings,
                               final int depth) {
         out.print("\n" + StringUtils.repeat("\t", depth) + config.hashCode() + "#" + config.getSpi().toString());
 
@@ -84,10 +76,12 @@ public class ProofGenerator {
             return;
         }
 
-        if (toConfiguration(config).anyMatch(simplification -> hasKnownSorting(simplification, knownSortings)) ||
-                isThere11_8Seq(config)) {
-            out.print(" -> HAS SORTING");
-            knownSortings.add(config);
+        visitedConfigs.add(config);
+
+        final var sorting = simplifications(toListOfListOfFloats(config.getSpi()), new HashSet<>())
+                .stream().map(s -> getSorting(config, s, knownSortings)).filter(Objects::nonNull).findFirst();
+        if (sorting.isPresent()) {
+            out.print(" -> HAS SORTING: " + sorting.get());
             return;
         }
 
@@ -117,145 +111,31 @@ public class ProofGenerator {
         for (final var extension : type3Extensions(config)) {
             verify(extension, knownSortings, depth + 1);
         }
-
-        visitedConfigs.add(config);
     }
 
-    private static boolean isThere11_8Seq(final Configuration config) {
-        return !searchFor11_8SortingSeq(config.getSpi(), config.getPi()).isEmpty();
-    }
+    private static List<Cycle> getSorting(final UnorientedConfiguration config, final List<List<Float>> simplificationSpi,
+                                          final Map<UnorientedConfiguration, List<Cycle>> knownSortings) {
+        final var simplifiedConfig = fromSignature(signature(simplificationSpi));
 
-    private static boolean hasKnownSorting(final Configuration config, final Set<Configuration> knownSortings) {
-        return knownSortings.contains(config) || subConfigurationHasSorting(config, knownSortings);
-    }
-
-    public static Stream<Configuration> toConfiguration(final Configuration config) {
-        if (isSimple(config.getSpi())) {
-            return Stream.of(config);
-        }
-
-        final List<List<Float>> _spi = config.getSpi().stream()
-                .map(cycle -> toListOfFloatsReversed(cycle))
-                .collect(Collectors.toList());
-
-        return _spi.stream().filter(cycle -> cycle.size() > 3).flatMap(longCycle ->
-                IntStream.range(0, longCycle.size()).boxed()
-                        .map(index -> toConfiguration(_spi, longCycle, index)));
-    }
-
-    private static Configuration toConfiguration(final List<List<Float>> spi, final List<Float> longCycle, final Integer startIndex) {
-        final var _spi = new ArrayList<>(spi);
-        final var newCycles = new ArrayList<List<Float>>();
-
-        _spi.remove(longCycle);
-
-        for (int j = 0; j < Math.ceil((double) longCycle.size() / 3); j++) {
-            final var head = new ArrayList<Float>();
-            for (int k = 0; k < (j == 0 ? 3 : 2); k++) {
-                head.add(longCycle.get((k + startIndex + j * 3) % longCycle.size()));
+        if (knownSortings.containsKey(simplifiedConfig)) {
+            final var simplificationPi = simplificationSpi.stream().flatMap(Collection::stream)
+                    .sorted().collect(Collectors.toList());
+            final var entry = knownSortings.entrySet().stream().filter(e -> e.getKey().equals(simplifiedConfig)).findFirst().get();
+            final var simplificationSorting = getSimplificationSorting(simplificationPi,
+                    simplifiedConfig, entry.getKey(), entry.getValue());
+            final var sorting = mimicSorting(simplificationPi, simplificationSorting);
+            if (!is11_8(config.getSpi(), sorting)) {
+                throw new RuntimeException("ERROR");
             }
-            if (j != 0) {
-                head.add(0, longCycle.get((startIndex + j * 3 - 1) % longCycle.size()) + 0.01F);
-            }
-            newCycles.add(new ArrayList<>(head));
-        }
-
-        _spi.addAll(newCycles);
-
-        final var _pi = _spi.stream().flatMap(Collection::stream)
-                .sorted().collect(Collectors.toList());
-        final var __pi = new ByteArrayList(_pi.size());
-
-
-        final var substitution = new HashMap<Float, Byte>();
-        for (int j = 0; j < _pi.size(); j++) {
-            substitution.put(_pi.get(j), (byte) j);
-            __pi.add((byte) j);
-        }
-
-        return toConfiguration(_spi.stream().map(c -> {
-            Collections.reverse(c);
-            final var byteList = new ByteArrayList();
-            for (final var symbol : c) {
-                byteList.add(substitution.get(symbol));
-            }
-            return new Cycle(byteList);
-        }).collect(Collectors.toList()), new Cycle(__pi));
-    }
-
-    private static List<Float> toListOfFloatsReversed(final Cycle cycle) {
-        final var floatList = new FloatArrayList(cycle.size());
-        for (final var symbol : cycle.getSymbols()) {
-            floatList.add(symbol);
-        }
-        floatList.reverse();
-        return new ArrayList<>(Floats.asList(floatList.elements()));
-    }
-
-    private static boolean isSimple(final MulticyclePermutation spi) {
-        return spi.stream().noneMatch(c -> c.size() > 3);
-    }
-
-    private static boolean subConfigurationHasSorting(final Configuration config, final Set<Configuration> knownSortings) {
-        for (int i = 2; i <= config.getSpi().size(); i++) {
-            for (final var mu : combinations(config.getSpi(), i)) {
-                final var _configuration = toConfiguration(mu.getVector(), config.getPi());
-                if (_configuration.numberOfOpenGates() <= 2) {
-                    if (knownSortings.contains(_configuration)) {
-                        return true;
-                    }
-                }
+            return sorting;
+        } else {
+            final List<Cycle> sorting;
+            if ((sorting = subConfigurationHasSorting(simplifiedConfig, knownSortings)) != null) {
+                return sorting;
             }
         }
 
-        return false;
-    }
-
-    private static Configuration toConfiguration(final List<Cycle> _spi, final Cycle pi) {
-        final var cycleIndex = createCycleIndex(_spi, pi);
-
-        final var labelMap = new HashMap<Cycle, Byte>();
-
-        for (final var cycle : _spi) {
-            labelMap.computeIfAbsent(cycle, c -> (byte) (labelMap.size() + 1));
-        }
-
-        final var _pi = new ByteArrayList(_spi.stream().mapToInt(Cycle::size).sum());
-        for (int i = 0; i < pi.size(); i++) {
-            if (cycleIndex[pi.get(i)] != null)
-                _pi.add(labelMap.get(cycleIndex[pi.get(i)]));
-        }
-
-        return Configuration.fromSignature(_pi.elements());
-    }
-
-    private static boolean isValid(final Configuration config) {
-        final var sigma = computeProduct(config.getSpi(), config.getPi());
-        return sigma.size() == 1 && sigma.stream().findFirst().get().size() == config.getPi().size();
-    }
-
-    private static Configuration toConfiguration(final ByteArrayList extension) {
-        final var cyclesByLabel = new HashMap<Byte, ByteArrayList>();
-        for (int j = extension.size() - 1; j >= 0; j--) {
-            final var label = extension.get(j);
-            cyclesByLabel.computeIfAbsent(label, l -> new ByteArrayList());
-            cyclesByLabel.get(label).add((byte) j);
-        }
-
-        final var spi = cyclesByLabel.values().stream().map(Cycle::new)
-                .collect(toCollection(MulticyclePermutation::new));
-
-        return new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
-    }
-
-    private static ByteArrayList extend(final byte[] signature, final byte label, final int... positions) {
-        Preconditions.checkArgument(1 < positions.length && positions.length <= 3);
-        Arrays.sort(positions);
-        final var extension = new ByteArrayList(signature);
-        for (int i = 0; i < positions.length; i++) {
-            extension.beforeInsert(positions[i] + i, label);
-        }
-        return extension;
+        return null;
     }
 
     public static List<Cycle> searchFor11_8SortingSeq(final MulticyclePermutation spi, final Cycle pi) {
@@ -271,7 +151,7 @@ public class ProofGenerator {
             final var rho = move.getKey();
             final var _partialSorting = new Stack<Cycle>();
             _partialSorting.push(rho);
-            submittedTasks.add(completionService.submit(() -> searchForSortingSeq(applyTransposition(pi, rho),
+            submittedTasks.add(completionService.submit(() -> searchForSortingSeq(CommonOperations.applyTransposition(pi, rho),
                     PermutationGroups.computeProduct(spi, rho.getInverse()), _partialSorting,
                     spi.getNumberOfEvenCycles(), 1.375F)));
         }
@@ -282,7 +162,7 @@ public class ProofGenerator {
         try {
             for (int i = 0; i < submittedTasks.size(); i++) {
                 final var next = completionService.take();
-                if (next.get().size() > 1 || next.get().size() == 1 && is11_8(spi, pi, next.get())) {
+                if (next.get().size() > 1 || next.get().size() == 1 && CommonOperations.is11_8(spi, pi, next.get())) {
                     sorting = next.get();
                     break;
                 }
@@ -296,8 +176,204 @@ public class ProofGenerator {
         return sorting;
     }
 
-    private static Set<Configuration> type1Extensions(final Configuration config) {
-        final var result = new HashSet<Configuration>();
+    public static boolean is11_8(MulticyclePermutation spi, final List<Cycle> rhos) {
+        final var before = spi.getNumberOfEvenCycles();
+        for (final var rho : rhos) {
+            spi = PermutationGroups.computeProduct(spi, rho.getInverse());
+        }
+        final var after = spi.getNumberOfEvenCycles();
+        return after > before && (float) rhos.size() / ((after - before) / 2) <= ((float) 11 / 8);
+    }
+
+    private static List<Cycle> mimicSorting(final List<Float> simplificationPi,
+                                            final List<List<Float>> simplificationSorting) {
+        final var sorting = new ArrayList<Cycle>();
+
+        final var omegas = new ArrayList<List<Float>>();
+        omegas.add(simplificationPi);
+
+        for (final var rho : simplificationSorting) {
+            omegas.add(applyTransposition(omegas.get(omegas.size() - 1), rho));
+        }
+
+        for (int i = 1; i < omegas.size(); i++) {
+            final var pi = removeFractions(omegas.get(i - 1));
+            final var _pi = removeFractions(omegas.get(i));
+            final var rho = computeProduct(false, _pi, pi.getInverse());
+            if (!rho.isIdentity()) {
+                sorting.add(rho.asNCycle());
+            }
+        }
+
+        return sorting;
+    }
+
+    private static Cycle removeFractions(final List<Float> pi) {
+        final var it = pi.iterator();
+        while (it.hasNext()) {
+            final var symbol = it.next();
+            if (symbol % 1 > 0) {
+                it.remove();
+            }
+        }
+        return new Cycle(Bytes.toArray(pi));
+    }
+
+    public static List<Float> applyTransposition(final List<Float> pi, final List<Float> rho) {
+        final var a = rho.get(0);
+        final var b = rho.get(1);
+        final var c = rho.get(2);
+
+        final var indexes = new int[3];
+        for (var i = 0; i < pi.size(); i++) {
+            if (pi.get(i).floatValue() == a)
+                indexes[0] = i;
+            if (pi.get(i).floatValue() == b)
+                indexes[1] = i;
+            if (pi.get(i).floatValue() == c)
+                indexes[2] = i;
+        }
+
+        Arrays.sort(indexes);
+
+        final var _pi = ArrayUtils.toPrimitive(pi.toArray(new Float[0]), 0.0F);
+        final var result = new float[pi.size()];
+        System.arraycopy(_pi, 0, result, 0, indexes[0]);
+        System.arraycopy(_pi, indexes[1], result, indexes[0], indexes[2] - indexes[1]);
+        System.arraycopy(_pi, indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
+        System.arraycopy(_pi, indexes[2], result, indexes[2], pi.size() - indexes[2]);
+
+        return new ArrayList<>(Floats.asList(result));
+    }
+
+    private static List<List<Float>> getSimplificationSorting(final List<Float> simplificationPi,
+                                                              final UnorientedConfiguration simplifiedConfig,
+                                                              final UnorientedConfiguration equivalentConfig,
+                                                              List<Cycle> equivalentConfigSorting) {
+        final var matchedSignature = equivalentConfig.getEquivalentSignatures().stream()
+                .filter(c -> Arrays.equals(c.getSignature(), simplifiedConfig.getSignature().getSignature()))
+                .findFirst().get();
+
+        var equivalentSorting = equivalentConfigSorting;
+
+        // this is the first code to compute the rho's properly
+        final var sigma = computeProduct(equivalentConfig.getSpi(), equivalentConfig.getPi());
+
+        if (matchedSignature.isMirror()) {
+            var mirroredSorting = new ArrayList<Cycle>();
+            var pi = equivalentConfig.getPi();
+            for (final var rho : equivalentConfigSorting) {
+                var _pi = computeProduct(rho, pi).asNCycle();
+                mirroredSorting.add(
+                        computeProduct(false, _pi.conjugateBy(sigma).getInverse(),
+                                pi.conjugateBy(sigma)).asNCycle());
+                pi = _pi;
+            }
+            equivalentSorting = mirroredSorting;
+        }
+
+        final var sorting = new ArrayList<List<Float>>();
+
+        var pi = matchedSignature.getPi();
+        var sPi = simplifiedConfig.getPi();
+        var fPi = simplificationPi;
+
+        for (final var rho : equivalentSorting) {
+            final var finalPi = pi;
+            final var finalSPi = sPi;
+            final var finalFPi = fPi;
+
+            final var _rho = new Cycle(sPi.get(finalPi.indexOf(rho.get(0))),
+                    sPi.get(finalPi.indexOf(rho.get(1))), sPi.get(finalPi.indexOf(rho.get(2))));
+
+            sorting.add(Bytes.asList(_rho.getSymbols()).stream()
+                    .map(s -> finalFPi.get(finalSPi.indexOf(s))).collect(Collectors.toList()));
+
+            pi = computeProduct(rho, pi).asNCycle();
+            sPi = computeProduct(_rho, sPi).asNCycle();
+            fPi = applyTransposition(fPi, sorting.get(sorting.size() - 1));
+        }
+
+        return sorting;
+    }
+
+    private static List<List<Float>> toListOfListOfFloats(final MulticyclePermutation spi) {
+        return spi.stream().map(ProofGenerator::toFloatsList).collect(Collectors.toList());
+    }
+
+    private static List<Float> toFloatsList(final Cycle cycle) {
+        final var floatList = new ArrayList<Float>(cycle.size());
+        for (final var symbol : cycle.getSymbols()) {
+            floatList.add((float) symbol);
+        }
+        return floatList;
+    }
+
+    private static List<Cycle> subConfigurationHasSorting(final UnorientedConfiguration config,
+                                                          final Map<UnorientedConfiguration, List<Cycle>> knownSortings) {
+        for (int i = 2; i <= config.getSpi().size(); i++) {
+            for (final var mu : combinations(config.getSpi(), i)) {
+                final var _configs = toConfiguration(mu.getVector(), config.getPi());
+                if (_configs.getNumberOfOpenGates() <= 2) {
+                    if (knownSortings.containsKey(_configs)) {
+                        return knownSortings.get(_configs);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static UnorientedConfiguration toConfiguration(final List<Cycle> _spi, final Cycle pi) {
+        final var cycleIndex = createCycleIndex(_spi, pi);
+
+        final var labelMap = new HashMap<Cycle, Byte>();
+
+        for (final var cycle : _spi) {
+            labelMap.computeIfAbsent(cycle, c -> (byte) (labelMap.size() + 1));
+        }
+
+        final var _pi = new ByteArrayList(_spi.stream().mapToInt(Cycle::size).sum());
+        for (int i = 0; i < pi.size(); i++) {
+            if (cycleIndex[pi.get(i)] != null)
+                _pi.add(labelMap.get(cycleIndex[pi.get(i)]));
+        }
+
+        return fromSignature(_pi.elements());
+    }
+
+    private static boolean isValid(final UnorientedConfiguration config) {
+        final var sigma = computeProduct(config.getSpi(), config.getPi());
+        return sigma.size() == 1 && sigma.stream().findFirst().get().size() == config.getPi().size();
+    }
+
+    private static UnorientedConfiguration toConfiguration(final ByteArrayList extension) {
+        final var cyclesByLabel = new HashMap<Byte, ByteArrayList>();
+        for (int j = extension.size() - 1; j >= 0; j--) {
+            final var label = extension.get(j);
+            cyclesByLabel.computeIfAbsent(label, l -> new ByteArrayList());
+            cyclesByLabel.get(label).add((byte) j);
+        }
+
+        final var spi = cyclesByLabel.values().stream().map(Cycle::new)
+                .collect(toCollection(MulticyclePermutation::new));
+
+        return new UnorientedConfiguration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
+    }
+
+    private static ByteArrayList extend(final byte[] signature, final byte label, final int... positions) {
+        Preconditions.checkArgument(1 < positions.length && positions.length <= 3);
+        Arrays.sort(positions);
+        final var extension = new ByteArrayList(signature);
+        for (int i = 0; i < positions.length; i++) {
+            extension.beforeInsert(positions[i] + i, label);
+        }
+        return extension;
+    }
+
+    private static List<UnorientedConfiguration> type1Extensions(final UnorientedConfiguration config) {
+        final var result = new ArrayList<UnorientedConfiguration>();
 
         final var newCycleLabel = (byte) (config.getSpi().size() + 1);
 
@@ -319,12 +395,12 @@ public class ProofGenerator {
         return result;
     }
 
-    private static Set<Configuration> type2Extensions(final Configuration config) {
+    private static List<UnorientedConfiguration> type2Extensions(final UnorientedConfiguration config) {
         if (!config.isFull()) {
-            return Collections.emptySet();
+            return Collections.emptyList();
         }
 
-        final var result = new HashSet<Configuration>();
+        final var result = new ArrayList<UnorientedConfiguration>();
 
         final var newCycleLabel = (byte) (config.getSpi().size() + 1);
 
@@ -343,8 +419,8 @@ public class ProofGenerator {
         return result;
     }
 
-    private static Set<Configuration> type3Extensions(final Configuration config) {
-        final var result = new HashSet<Configuration>();
+    private static List<UnorientedConfiguration> type3Extensions(final UnorientedConfiguration config) {
+        final var result = new ArrayList<UnorientedConfiguration>();
 
         final var signature = signature(config.getSpi(), config.getPi());
 
@@ -352,7 +428,7 @@ public class ProofGenerator {
             for (int a = 0; a < signature.length; a++) {
                 for (int b = a; b < signature.length; b++) {
                     final var extension = toConfiguration(extend(signature, (byte) label, a, b));
-                    if (extension.numberOfOpenGates() <= 2) {
+                    if (extension.getNumberOfOpenGates() <= 2) {
                         result.add(extension);
                     }
                 }

@@ -1,6 +1,6 @@
 package br.unb.cic.tdp.proof;
 
-import br.unb.cic.tdp.Configuration;
+import br.unb.cic.tdp.base.OrientedConfiguration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.primitives.Bytes;
@@ -8,7 +8,7 @@ import org.paukov.combinatorics.Factory;
 
 import java.util.*;
 
-import static br.unb.cic.tdp.CommonOperations.*;
+import static br.unb.cic.tdp.base.CommonOperations.*;
 
 public class Cases3_2 {
 
@@ -29,7 +29,7 @@ public class Cases3_2 {
     private static List<Case> generate(final MulticyclePermutation spi) {
         final var result = new ArrayList<Case>();
 
-        final var verifiedConfigurations = new HashSet<Configuration>();
+        final var verifiedConfigurations = new HashSet<OrientedConfiguration>();
 
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
             final var pi = new Cycle(Bytes.toArray(permutation.getVector()));
@@ -38,7 +38,7 @@ public class Cases3_2 {
                 if (openGates.values().stream().mapToInt(j -> j).sum() <= 2) {
                     final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), 3, 1.5F);
 
-                    final var configuration = new Configuration(spi, pi);
+                    final var configuration = new OrientedConfiguration(spi, pi);
                     if (!verifiedConfigurations.contains(configuration)) {
                         result.add(new Case(spi, pi, rhos));
                         verifiedConfigurations.add(configuration);

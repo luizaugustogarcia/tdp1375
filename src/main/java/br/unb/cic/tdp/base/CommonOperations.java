@@ -1,4 +1,4 @@
-package br.unb.cic.tdp;
+package br.unb.cic.tdp.base;
 
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
@@ -33,6 +33,16 @@ public class CommonOperations {
             CANONICAL_PI[i] = new Cycle(pi);
         }
     }
+/*
+
+    public static void main(String[] args) {
+        final var conf1 = new Configuration(new MulticyclePermutation("(0,3,1,2,4)"), new Cycle("(0,1,2,3,4)"));
+        System.out.println(Arrays.toString(signature(conf1.getSpi(), conf1.getPi())));
+        final var conf2 = new Configuration(new MulticyclePermutation("(0,2,4,3,1)"), new Cycle("(0,4,3,2,1)"));
+        System.out.println(Arrays.toString(signature(conf2.getSpi(), conf2.getPi())));
+        System.out.println(conf1.equals(conf2));
+    }
+*/
 
     public static Cycle simplify(Cycle pi) {
         var _pi = new FloatArrayList();
@@ -105,6 +115,13 @@ public class CommonOperations {
         return new Cycle(result);
     }
 
+    public static int mod(int a, int b) {
+        int r = a % b;
+        if (r < 0)
+            r += b;
+        return r;
+    }
+
     /**
      * Creates an array where the cycles in <code>spi</code> can be accessed by the symbols of <code>pi</code>
      * (being the indexes of the resulting array).
@@ -118,22 +135,35 @@ public class CommonOperations {
         }
         return index;
     }
-
-    public static byte[] signature(final List<Cycle> spi, final Cycle pi) {
-        final var labelMap = new HashMap<Cycle, Byte>();
+/*
+    public static float[] signature(final List<Cycle> spi, final Cycle pi) {
+        final var labelByCycle = new HashMap<Cycle, Float>();
         final var cycleIndex = createCycleIndex(spi, pi);
+        final var orientedCycles = spi.stream().filter(c -> !areSymbolsInCyclicOrder(c.getSymbols(), pi.getInverse().getSymbols()))
+                .collect(Collectors.toSet());
+        final var symbolIndexByOrientedCycle = new HashMap<Cycle, byte[]>();
 
-        final var signature = new byte[pi.size()];
+        final var signature = new float[pi.size()];
 
         for (var i = 0; i < signature.length; i++) {
             final int symbol = pi.get(i);
             final var cycle = cycleIndex[symbol];
-            labelMap.computeIfAbsent(cycle, c -> (byte) (labelMap.size() + 1));
-            signature[i] = labelMap.get(cycle);
+            if (orientedCycles.contains(cycle)) {
+                symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
+                    final var symbolIndex = new byte[pi.size()];
+                    for (int j = 0; j < c.size(); j++) {
+                        symbolIndex[c.get(j)] = (byte) (j + 1);
+                    }
+                    return symbolIndex;
+                });
+            }
+            labelByCycle.computeIfAbsent(cycle, c -> (float) (labelByCycle.size() + 1));
+            signature[i] = orientedCycles.contains(cycle) ?
+                    labelByCycle.get(cycle) + (float) symbolIndexByOrientedCycle.get(cycle)[symbol] / 10 : labelByCycle.get(cycle);
         }
 
         return signature;
-    }
+    }*/
 
     /**
      * Performs a join operation, producing new \spi, \pi and \rhos.

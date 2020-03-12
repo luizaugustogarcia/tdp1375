@@ -7,8 +7,7 @@ import lombok.ToString;
 
 import java.util.List;
 
-import static br.unb.cic.tdp.CommonOperations.canonicalize;
-import static br.unb.cic.tdp.CommonOperations.signature;
+import static br.unb.cic.tdp.base.CommonOperations.canonicalize;
 
 @Getter
 @ToString
@@ -29,7 +28,7 @@ public class Case {
         this.pi = cr.second;
         this.rhos = cr.third;
 
-        this.signature = signature(this.spi, this.pi);
+        //this.signature = signature(this.spi, this.pi);
     }
 
     @ToString.Include

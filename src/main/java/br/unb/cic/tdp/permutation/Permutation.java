@@ -11,6 +11,6 @@ public interface Permutation {
     Cycle asNCycle();
 
     default Permutation conjugateBy(final Permutation conjugator) {
-        return PermutationGroups.computeProduct(conjugator, this, conjugator.getInverse());
+        return PermutationGroups.computeProduct(false,conjugator, this, conjugator.getInverse());
     }
 }

@@ -7,8 +7,8 @@ import org.paukov.combinatorics.Factory;
 
 import java.util.*;
 
-import static br.unb.cic.tdp.CommonOperations.canonicalize;
-import static br.unb.cic.tdp.CommonOperations.searchForSortingSeq;
+import static br.unb.cic.tdp.base.CommonOperations.canonicalize;
+import static br.unb.cic.tdp.base.CommonOperations.searchForSortingSeq;
 
 public class OrientedCycleGreaterThan5 {
 
