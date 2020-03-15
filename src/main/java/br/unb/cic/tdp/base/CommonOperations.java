@@ -44,6 +44,9 @@ public class CommonOperations {
     }
 */
 
+    /**
+     * Assumes \sigma=(0,1,2,...,n).
+     */
     public static Cycle simplify(Cycle pi) {
         var _pi = new FloatArrayList();
         for (var i = 0; i < pi.getSymbols().length; i++) {

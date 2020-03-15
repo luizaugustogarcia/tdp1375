@@ -50,24 +50,25 @@ public class Simplification {
 
     // Only works if \spi is related to a canonical \pi
     private static List<List<Float>> simplify(final List<List<Float>> spi, final List<Float> longCycle,
-                                              final Integer startIndex) {
+                                              final Integer breakIndex) {
         final var _spi = new ArrayList<>(spi);
-        final var newCycles = new ArrayList<List<Float>>();
 
         _spi.remove(longCycle);
 
-        for (int j = 0; j < Math.ceil((double) longCycle.size() / 3); j++) {
-            final var segment = new ArrayList<Float>();
-            for (int k = 0; k < (j == 0 ? 3 : 2); k++) {
-                segment.add(longCycle.get((k + startIndex + j * 3) % longCycle.size()));
-            }
-            if (j != 0) {
-                segment.add(0, longCycle.get((startIndex + j * 3 - 1) % longCycle.size()) + 0.01F);
-            }
-            newCycles.add(new ArrayList<>(segment));
+        final var segment = new ArrayList<Float>();
+        segment.add(longCycle.get(breakIndex));
+        segment.add(longCycle.get((breakIndex + 1) % longCycle.size()));
+        segment.add(longCycle.get((breakIndex + 2) % longCycle.size()));
+
+        final var remaining = new ArrayList<Float>();
+        remaining.add(segment.get(0) + 0.01F);
+
+        for (int i = 0; i < longCycle.size() - 3; i++) {
+            remaining.add(longCycle.get((breakIndex + i + 3) % longCycle.size()));
         }
 
-        _spi.addAll(newCycles);
+        _spi.add(segment);
+        _spi.add(remaining);
 
         return _spi;
     }

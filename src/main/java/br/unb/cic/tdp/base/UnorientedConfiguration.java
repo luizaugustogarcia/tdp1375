@@ -13,23 +13,25 @@ import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
 import static br.unb.cic.tdp.base.CommonOperations.createCycleIndex;
-import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 @ToString
 public class UnorientedConfiguration {
+
+    @Getter
+    private final MulticyclePermutation spi;
 
     @Getter
     @ToString.Exclude
     private final Cycle pi;
 
     @Getter
-    private final MulticyclePermutation spi;
+    private final Cycle mirroredPi;
 
     @Getter
     private final Signature signature;
 
     @ToString.Exclude
-    private Set<Signature> equivalentSignatures;
+    private Collection<Signature> equivalentSignatures;
 
     @ToString.Exclude
     private Integer hashCode;
@@ -37,7 +39,8 @@ public class UnorientedConfiguration {
     public UnorientedConfiguration(final MulticyclePermutation spi, final Cycle pi) {
         this.spi = spi;
         this.pi = pi;
-        this.signature = new Signature(false, pi, signature(spi, pi));
+        this.mirroredPi = pi.getInverse().conjugateBy(spi).asNCycle();
+        this.signature = new Signature(pi, signature(spi, pi), false);
     }
 
     public static byte[] signature(final List<Cycle> spi, final Cycle pi) {
@@ -68,20 +71,19 @@ public class UnorientedConfiguration {
         return new UnorientedConfiguration(spi, pi);
     }
 
-    public Set<Signature> getEquivalentSignatures() {
+    public Collection<Signature> getEquivalentSignatures() {
         if (equivalentSignatures != null) {
             return equivalentSignatures;
         }
 
         equivalentSignatures = new HashSet<>();
 
-        final var sigma = computeProduct(spi, pi);
-
         for (var i = 0; i < pi.size(); i++) {
             final var shifting = pi.getStartingBy(pi.get(i));
-            equivalentSignatures.add(new Signature(false, shifting, signature(spi, shifting)));
-            final var mirroring = shifting.getInverse().getStartingBy(shifting.getInverse().get(i));
-            equivalentSignatures.add(new Signature(true, mirroring, signature(spi.getInverse(), mirroring)));
+            equivalentSignatures.add(new Signature(shifting, signature(spi, shifting), false));
+
+            final var mirroredShifting = mirroredPi.getStartingBy(mirroredPi.get(i));
+            equivalentSignatures.add(new Signature(mirroredShifting, signature(spi.getInverse(), mirroredShifting), true));
         }
 
         return equivalentSignatures;
@@ -106,11 +108,11 @@ public class UnorientedConfiguration {
         }
         return true;
     }
-/*
+
     @ToString.Include
     public int get3Norm() {
         return this.spi.get3Norm();
-    }*/
+    }
 
     @ToString.Include
     public int getNumberOfOpenGates() {
@@ -189,13 +191,13 @@ public class UnorientedConfiguration {
     public class Signature {
 
         @Getter
-        private final boolean mirror;
-
-        @Getter
         private final Cycle pi;
 
         @Getter
         private final byte[] signature;
+
+        @Getter
+        private final boolean mirror;
 
         @Override
         public boolean equals(final Object o) {

@@ -3,7 +3,6 @@ package br.unb.cic.tdp.proof.eh.desimplification;
 import br.unb.cic.tdp.base.UnorientedConfiguration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.util.Triplet;
 import com.google.common.base.Throwables;
 import org.apache.commons.lang.StringUtils;
 
@@ -14,7 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.function.Consumer;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
@@ -26,17 +25,23 @@ public class EHProofTraverser {
     private static final Pattern SORTING_PATTERN = Pattern.compile(".*a = (\\d+).*b = (\\d+).*c = (\\d+).*");
 
     public static void traverse(final String baseFolder, final String startFile,
-                                final Consumer<Triplet<UnorientedConfiguration, List<Cycle>, Integer>> consumer) {
-        traverse(baseFolder, startFile, 0, consumer);
+                                final CaseProcessor processor, final Set<UnorientedConfiguration> processedConfigs) {
+        traverse(baseFolder, startFile, 0, processor, processedConfigs);
     }
 
     private static void traverse(final String baseFolder, final String startFile, final int depth,
-                                 final Consumer<Triplet<UnorientedConfiguration, List<Cycle>, Integer>> consumer) {
+                                 final CaseProcessor processor, final Set<UnorientedConfiguration> processedConfigs) {
         final var spi = readSpi(startFile);
         final var configuration = new UnorientedConfiguration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
         final var sorting = readSorting(baseFolder + startFile);
 
-        consumer.accept(new Triplet<>(configuration, sorting, depth));
+        processor.process(configuration, sorting, depth, processedConfigs.contains(configuration));
+
+        if (processedConfigs.contains(configuration)) {
+            return;
+        }
+
+        processedConfigs.add(configuration);
 
         if (!sorting.isEmpty()) {
             return;
@@ -52,7 +57,7 @@ public class EHProofTraverser {
                     if (line.startsWith("View")) {
                         final var matcher = SPI_PATTERN.matcher(line);
                         if (matcher.matches())
-                            traverse(baseFolder, matcher.group(1), depth + 1, consumer);
+                            traverse(baseFolder, matcher.group(1), depth + 1, processor, processedConfigs);
                     }
                 }
             }
@@ -77,7 +82,7 @@ public class EHProofTraverser {
 
         final var sorting = new ArrayList<Cycle>();
 
-        try (final var fr = new BufferedReader(new FileReader(file))) {
+        try (final var fr = new BufferedReader(new FileReader(file), 1024 * 1024)) {
             try (final var scanner = new Scanner(fr)) {
                 scanner.useDelimiter("\\n");
 
@@ -108,5 +113,10 @@ public class EHProofTraverser {
         }
 
         return sorting;
+    }
+
+    public static interface CaseProcessor {
+
+        void process(UnorientedConfiguration configuration, List<Cycle> sorting, int depth, boolean alreadyVisited);
     }
 }

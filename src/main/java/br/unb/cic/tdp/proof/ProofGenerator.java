@@ -7,7 +7,7 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import cern.colt.list.ByteArrayList;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Floats;
 import org.apache.commons.lang.ArrayUtils;
@@ -19,9 +19,6 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
@@ -118,12 +115,16 @@ public class ProofGenerator {
         final var simplifiedConfig = fromSignature(signature(simplificationSpi));
 
         if (knownSortings.containsKey(simplifiedConfig)) {
+            final var entry = knownSortings.entrySet().stream().filter(e -> e.getKey().equals(simplifiedConfig))
+                    .findFirst().get();
+
             final var simplificationPi = simplificationSpi.stream().flatMap(Collection::stream)
                     .sorted().collect(Collectors.toList());
-            final var entry = knownSortings.entrySet().stream().filter(e -> e.getKey().equals(simplifiedConfig)).findFirst().get();
-            final var simplificationSorting = getSimplificationSorting(simplificationPi,
-                    simplifiedConfig, entry.getKey(), entry.getValue());
+            final var simplificationSorting = simplificationSorting(entry.getKey(), entry.getValue(), simplifiedConfig, simplificationPi
+            );
+
             final var sorting = mimicSorting(simplificationPi, simplificationSorting);
+
             if (!is11_8(config.getSpi(), sorting)) {
                 throw new RuntimeException("ERROR");
             }
@@ -136,44 +137,6 @@ public class ProofGenerator {
         }
 
         return null;
-    }
-
-    public static List<Cycle> searchFor11_8SortingSeq(final MulticyclePermutation spi, final Cycle pi) {
-        final var executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        final var completionService = new ExecutorCompletionService<List<Cycle>>(executorService);
-
-        final var spiCycleIndex = createCycleIndex(spi, pi);
-        final var iterator = generateAll0_2Moves(pi, spiCycleIndex).iterator();
-
-        final var submittedTasks = new ArrayList<Future<List<Cycle>>>();
-        while (iterator.hasNext()) {
-            final var move = iterator.next();
-            final var rho = move.getKey();
-            final var _partialSorting = new Stack<Cycle>();
-            _partialSorting.push(rho);
-            submittedTasks.add(completionService.submit(() -> searchForSortingSeq(CommonOperations.applyTransposition(pi, rho),
-                    PermutationGroups.computeProduct(spi, rho.getInverse()), _partialSorting,
-                    spi.getNumberOfEvenCycles(), 1.375F)));
-        }
-
-        executorService.shutdown();
-
-        List<Cycle> sorting = Collections.emptyList();
-        try {
-            for (int i = 0; i < submittedTasks.size(); i++) {
-                final var next = completionService.take();
-                if (next.get().size() > 1 || next.get().size() == 1 && CommonOperations.is11_8(spi, pi, next.get())) {
-                    sorting = next.get();
-                    break;
-                }
-            }
-        } catch (final Exception e) {
-            Throwables.propagate(e);
-        }
-
-        executorService.shutdownNow();
-
-        return sorting;
     }
 
     public static boolean is11_8(MulticyclePermutation spi, final List<Cycle> rhos) {
@@ -196,9 +159,26 @@ public class ProofGenerator {
             omegas.add(applyTransposition(omegas.get(omegas.size() - 1), rho));
         }
 
+        final var remove = new HashSet<Float>();
+        final var replaceBy = new HashMap<Float, Float>();
+        for (final var s : simplificationPi) {
+            if (s % 1 > 0) {
+                remove.add((float) Math.floor(s));
+                replaceBy.put(s, (float) Math.floor(s));
+            }
+        }
+
         for (int i = 1; i < omegas.size(); i++) {
-            final var pi = removeFractions(omegas.get(i - 1));
-            final var _pi = removeFractions(omegas.get(i));
+            var temp = new ArrayList<>(omegas.get(i - 1));
+            temp.removeAll(remove);
+            temp.replaceAll(s -> replaceBy.getOrDefault(s, s));
+            final var pi = new Cycle(Bytes.toArray(temp));
+
+            temp = new ArrayList<>(omegas.get(i));
+            temp.removeAll(remove);
+            temp.replaceAll(s -> replaceBy.getOrDefault(s, s));
+            final var _pi = new Cycle(Bytes.toArray(temp));
+
             final var rho = computeProduct(false, _pi, pi.getInverse());
             if (!rho.isIdentity()) {
                 sorting.add(rho.asNCycle());
@@ -206,17 +186,6 @@ public class ProofGenerator {
         }
 
         return sorting;
-    }
-
-    private static Cycle removeFractions(final List<Float> pi) {
-        final var it = pi.iterator();
-        while (it.hasNext()) {
-            final var symbol = it.next();
-            if (symbol % 1 > 0) {
-                it.remove();
-            }
-        }
-        return new Cycle(Bytes.toArray(pi));
     }
 
     public static List<Float> applyTransposition(final List<Float> pi, final List<Float> rho) {
@@ -246,39 +215,35 @@ public class ProofGenerator {
         return new ArrayList<>(Floats.asList(result));
     }
 
-    private static List<List<Float>> getSimplificationSorting(final List<Float> simplificationPi,
-                                                              final UnorientedConfiguration simplifiedConfig,
-                                                              final UnorientedConfiguration equivalentConfig,
-                                                              List<Cycle> equivalentConfigSorting) {
+    private static List<List<Float>> simplificationSorting(final UnorientedConfiguration equivalentConfig,
+                                                           final List<Cycle> equivalentConfigSorting,
+                                                           final UnorientedConfiguration simplifiedConfig,
+                                                           final List<Float> simplificationPi) {
         final var matchedSignature = equivalentConfig.getEquivalentSignatures().stream()
                 .filter(c -> Arrays.equals(c.getSignature(), simplifiedConfig.getSignature().getSignature()))
                 .findFirst().get();
 
-        var equivalentSorting = equivalentConfigSorting;
-
-        // this is the first code to compute the rho's properly
-        final var sigma = computeProduct(equivalentConfig.getSpi(), equivalentConfig.getPi());
+        var sorting = equivalentConfigSorting;
 
         if (matchedSignature.isMirror()) {
-            var mirroredSorting = new ArrayList<Cycle>();
-            var pi = equivalentConfig.getPi();
+            final var pis = Lists.newArrayList(equivalentConfig.getPi());
+            final var spis = Lists.newArrayList(new MulticyclePermutation[]{equivalentConfig.getSpi()});
+            var mirroredRhos = new ArrayList<Cycle>();
             for (final var rho : equivalentConfigSorting) {
-                var _pi = computeProduct(rho, pi).asNCycle();
-                mirroredSorting.add(
-                        computeProduct(false, _pi.conjugateBy(sigma).getInverse(),
-                                pi.conjugateBy(sigma)).asNCycle());
-                pi = _pi;
+                pis.add(computeProduct(rho, pis.get(pis.size() - 1)).asNCycle());
+                spis.add(computeProduct(spis.get(spis.size() - 1), rho.getInverse()));
+                mirroredRhos.add(rho.getInverse().conjugateBy(spis.get(spis.size() - 1)).asNCycle());
             }
-            equivalentSorting = mirroredSorting;
+            sorting = mirroredRhos;
         }
 
-        final var sorting = new ArrayList<List<Float>>();
+        final var result = new ArrayList<List<Float>>();
 
         var pi = matchedSignature.getPi();
         var sPi = simplifiedConfig.getPi();
         var fPi = simplificationPi;
 
-        for (final var rho : equivalentSorting) {
+        for (final var rho : sorting) {
             final var finalPi = pi;
             final var finalSPi = sPi;
             final var finalFPi = fPi;
@@ -286,15 +251,15 @@ public class ProofGenerator {
             final var _rho = new Cycle(sPi.get(finalPi.indexOf(rho.get(0))),
                     sPi.get(finalPi.indexOf(rho.get(1))), sPi.get(finalPi.indexOf(rho.get(2))));
 
-            sorting.add(Bytes.asList(_rho.getSymbols()).stream()
+            result.add(Bytes.asList(_rho.getSymbols()).stream()
                     .map(s -> finalFPi.get(finalSPi.indexOf(s))).collect(Collectors.toList()));
 
-            pi = computeProduct(rho, pi).asNCycle();
-            sPi = computeProduct(_rho, sPi).asNCycle();
-            fPi = applyTransposition(fPi, sorting.get(sorting.size() - 1));
+            pi = CommonOperations.applyTransposition(pi, rho);
+            sPi = CommonOperations.applyTransposition(sPi, _rho);
+            fPi = applyTransposition(fPi, result.get(result.size() - 1));
         }
 
-        return sorting;
+        return result;
     }
 
     private static List<List<Float>> toListOfListOfFloats(final MulticyclePermutation spi) {

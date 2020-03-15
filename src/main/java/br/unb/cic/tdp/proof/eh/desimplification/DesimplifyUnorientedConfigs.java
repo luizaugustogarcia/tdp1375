@@ -9,9 +9,9 @@ public class DesimplifyUnorientedConfigs {
     }
 
     public static void generate(final String ehProofFolder, final PrintStream printer) {
-        final var processedConfigs = new HashSet<OrientedConfiguration>();
+        final var processedConfigs = new HashSet<UnorientedConfiguration>();
 
-        final Consumer<Triplet<OrientedConfiguration, List<Cycle>, Integer>> configConsumer = triplet -> {
+        final Consumer<Triplet<UnorientedConfiguration, List<Cycle>, Integer>> configConsumer = triplet -> {
             if (!processedConfigs.contains(triplet.first) && !triplet.second.isEmpty()) {
                 print(printer, triplet.first, triplet.second);
                 desimplify(triplet.first, triplet.second, processedConfigs, printer);
@@ -58,8 +58,8 @@ public class DesimplifyUnorientedConfigs {
                 configConsumer);
     }
 
-    private static void desimplify(final OrientedConfiguration configuration, final List<Cycle> rhos,
-                                   final Set<OrientedConfiguration> verifiedConfigurations, final PrintStream printer) {
+    private static void desimplify(final UnorientedConfiguration configuration, final List<Cycle> rhos,
+                                   final Set<UnorientedConfiguration> verifiedConfigurations, final PrintStream printer) {
         for (final var combination : combinations(configuration.getSpi(), 2)) {
             // only join cycles which are not intersecting
             if (areNotIntersecting(combination.getVector(), configuration.getPi())) {
@@ -74,7 +74,7 @@ public class DesimplifyUnorientedConfigs {
                     final var _sorting = cr.third;
 
                     if (is11_8(_spi, _pi, _sorting)) {
-                        final var _config = new OrientedConfiguration(_spi, _pi);
+                        final var _config = new UnorientedConfiguration(_spi, _pi);
 
                         if (!verifiedConfigurations.contains(_config)) {
                             verifiedConfigurations.add(_config);
@@ -89,7 +89,7 @@ public class DesimplifyUnorientedConfigs {
         }
     }
 
-    private static void print(final PrintStream printer, final OrientedConfiguration config, final List<Cycle> sorting) {
+    private static void print(final PrintStream printer, final UnorientedConfiguration config, final List<Cycle> sorting) {
         printer.println(config.hashCode() + "#" + config.getSpi().toString() + "->" +
                 sorting.stream().map(Cycle::toString).collect(Collectors.joining(";")));
     }
