@@ -2,7 +2,7 @@ package br.unb.cic.tdp.base;
 
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import cern.colt.list.ByteArrayList;
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
 import static br.unb.cic.tdp.base.CommonOperations.createCycleIndex;
+import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 @ToString
 public class UnorientedConfiguration {
@@ -89,14 +90,20 @@ public class UnorientedConfiguration {
         return equivalentSignatures;
     }
 
-    private MulticyclePermutation translate(final byte[] permutation) {
-        return spi.stream().map(c -> {
-            final var _c = new ByteArrayList(c.size());
-            for (final var s : c.getSymbols()) {
-                _c.add(pi.get(permutation[s]));
+    public List<Cycle> equivalentSorting(final Signature signature, final List<Cycle> sorting) {
+        if (signature.isMirror()) {
+            final var pis = Lists.newArrayList(this.getPi());
+            final var spis = Lists.newArrayList(new MulticyclePermutation[]{this.getSpi()});
+            var mirroredRhos = new ArrayList<Cycle>();
+            for (final var rho : sorting) {
+                pis.add(computeProduct(rho, pis.get(pis.size() - 1)).asNCycle());
+                spis.add(computeProduct(spis.get(spis.size() - 1), rho.getInverse()));
+                mirroredRhos.add(rho.getInverse().conjugateBy(spis.get(spis.size() - 1)).asNCycle());
             }
-            return new Cycle(_c);
-        }).collect(Collectors.toCollection(MulticyclePermutation::new));
+            return mirroredRhos;
+        }
+
+        return sorting;
     }
 
     @ToString.Include

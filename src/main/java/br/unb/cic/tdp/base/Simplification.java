@@ -1,7 +1,15 @@
 package br.unb.cic.tdp.base;
 
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Floats;
+import org.apache.commons.lang.ArrayUtils;
+
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 public class Simplification {
 
@@ -73,85 +81,122 @@ public class Simplification {
         return _spi;
     }
 
-    private static boolean isSimple(final List<List<Float>> spi) {
+    public static boolean isSimple(final List<List<Float>> spi) {
         return spi.stream().noneMatch(c -> c.size() > 3);
     }
 
-    /*
+    public static List<Cycle> mimicSorting(final List<Float> simplificationPi,
+                                           final List<List<Float>> simplificationSorting) {
+        final var sorting = new ArrayList<Cycle>();
 
-    // Requires a configuration whose \pi is canonical
-    public static Set<Configuration> simplifications(final Configuration config, final Set<Configuration> collected) {
-        if (isSimple(config.getSpi())) {
-            collected.add(config);
-            return collected;
+        final var omegas = new ArrayList<List<Float>>();
+        omegas.add(simplificationPi);
+
+        for (final var rho : simplificationSorting) {
+            omegas.add(applyTransposition(omegas.get(omegas.size() - 1), rho));
         }
 
-        final List<List<Float>> _spi = config.getSpi().stream()
-                .map(ProofGenerator::toFloatsList)
-                .collect(Collectors.toList());
+        final var remove = new HashSet<Float>();
+        final var replaceBy = new HashMap<Float, Float>();
+        float previousSymbol = -1;
+        for (int i = 0; i < simplificationPi.size(); i++) {
+            final var s = simplificationPi.get(i);
+            if ((float) Math.floor(s) == (float) Math.floor(previousSymbol)) {
+                remove.add(previousSymbol);
+                replaceBy.put(s, (float) Math.floor(s));
+            }
+            previousSymbol = s;
+        }
 
-        for (final var cycle : _spi) {
-            if (cycle.size() > 3) {
-                for (int i = 0; i < cycle.size(); i++) {
-                    simplifications(simplify(_spi, cycle, i), collected);
-                }
+        for (int i = 1; i < omegas.size(); i++) {
+            var temp = new ArrayList<>(omegas.get(i - 1));
+            temp.removeAll(remove);
+            temp.replaceAll(s -> replaceBy.getOrDefault(s, s));
+            final var pi = new Cycle(Bytes.toArray(temp));
+
+            temp = new ArrayList<>(omegas.get(i));
+            temp.removeAll(remove);
+            temp.replaceAll(s -> replaceBy.getOrDefault(s, s));
+            final var _pi = new Cycle(Bytes.toArray(temp));
+
+            final var rho = computeProduct(false, _pi, pi.getInverse());
+            if (!rho.isIdentity()) {
+                sorting.add(rho.asNCycle());
             }
         }
 
-        return collected;
+        return sorting;
     }
 
-    // Only works if \spi is related to a canonical \pi
-    private static Configuration simplify(final List<List<Float>> spi, final List<Float> longCycle, final Integer startIndex) {
-        final var _spi = new ArrayList<>(spi);
-        final var newCycles = new ArrayList<List<Float>>();
+    public static List<Float> applyTransposition(final List<Float> pi, final List<Float> rho) {
+        final var a = rho.get(0);
+        final var b = rho.get(1);
+        final var c = rho.get(2);
 
-        _spi.remove(longCycle);
-
-        for (int j = 0; j < Math.ceil((double) longCycle.size() / 3); j++) {
-            final var segment = new ArrayList<Float>();
-            for (int k = 0; k < (j == 0 ? 3 : 2); k++) {
-                segment.add(longCycle.get((k + startIndex + j * 3) % longCycle.size()));
-            }
-            if (j != 0) {
-                segment.add(0, longCycle.get((startIndex + j * 3 - 1) % longCycle.size()) + 0.01F);
-            }
-            newCycles.add(new ArrayList<>(segment));
+        final var indexes = new int[3];
+        for (var i = 0; i < pi.size(); i++) {
+            if (pi.get(i).floatValue() == a)
+                indexes[0] = i;
+            if (pi.get(i).floatValue() == b)
+                indexes[1] = i;
+            if (pi.get(i).floatValue() == c)
+                indexes[2] = i;
         }
 
-        _spi.addAll(newCycles);
+        Arrays.sort(indexes);
 
-        final var _pi = _spi.stream().flatMap(Collection::stream)
-                .sorted().collect(Collectors.toList());
-        final var __pi = new ByteArrayList(_pi.size());
+        final var _pi = ArrayUtils.toPrimitive(pi.toArray(new Float[0]), 0.0F);
+        final var result = new float[pi.size()];
+        System.arraycopy(_pi, 0, result, 0, indexes[0]);
+        System.arraycopy(_pi, indexes[1], result, indexes[0], indexes[2] - indexes[1]);
+        System.arraycopy(_pi, indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
+        System.arraycopy(_pi, indexes[2], result, indexes[2], pi.size() - indexes[2]);
 
-
-        final var substitution = new HashMap<Float, Byte>();
-        for (int j = 0; j < _pi.size(); j++) {
-            substitution.put(_pi.get(j), (byte) j);
-            __pi.add((byte) j);
-        }
-
-        return new Configuration(_spi.stream().map(c -> {
-            final var byteList = new ByteArrayList();
-            for (final var symbol : c) {
-                byteList.add(substitution.get(symbol));
-            }
-            return new Cycle(byteList);
-        }).collect(toCollection(MulticyclePermutation::new)), new Cycle(__pi));
+        return new ArrayList<>(Floats.asList(result));
     }
 
-    private static List<Float> toFloatsList(final Cycle cycle) {
+    public static List<List<Float>> simplificationSorting(final UnorientedConfiguration equivalentConfig,
+                                                          final List<Cycle> sorting,
+                                                          final UnorientedConfiguration simplifiedConfig,
+                                                          final List<Float> simplificationPi) {
+        final var matchedSignature = equivalentConfig.getEquivalentSignatures().stream()
+                .filter(c -> Arrays.equals(c.getSignature(), simplifiedConfig.getSignature().getSignature()))
+                .findFirst().get();
+
+        final var result = new ArrayList<List<Float>>();
+
+        var pi = matchedSignature.getPi();
+        var sPi = simplifiedConfig.getPi();
+        var fPi = simplificationPi;
+
+        for (final var rho : equivalentConfig.equivalentSorting(matchedSignature, sorting)) {
+            final var finalPi = pi;
+            final var finalSPi = sPi;
+            final var finalFPi = fPi;
+
+            final var _rho = new Cycle(sPi.get(finalPi.indexOf(rho.get(0))),
+                    sPi.get(finalPi.indexOf(rho.get(1))), sPi.get(finalPi.indexOf(rho.get(2))));
+
+            result.add(Bytes.asList(_rho.getSymbols()).stream()
+                    .map(s -> finalFPi.get(finalSPi.indexOf(s))).collect(Collectors.toList()));
+
+            pi = CommonOperations.applyTransposition(pi, rho);
+            sPi = CommonOperations.applyTransposition(sPi, _rho);
+            fPi = applyTransposition(fPi, result.get(result.size() - 1));
+        }
+
+        return result;
+    }
+
+    public static List<List<Float>> toListOfListOfFloats(final MulticyclePermutation spi) {
+        return spi.stream().map(Simplification::toFloatsList).collect(Collectors.toList());
+    }
+
+    public static List<Float> toFloatsList(final Cycle cycle) {
         final var floatList = new ArrayList<Float>(cycle.size());
         for (final var symbol : cycle.getSymbols()) {
             floatList.add((float) symbol);
         }
         return floatList;
     }
-
-    private static boolean isSimple(final MulticyclePermutation spi) {
-        return spi.stream().noneMatch(c -> c.size() > 3);
-    }
-*/
-
 }
