@@ -1,6 +1,6 @@
 package br.unb.cic.tdp.proof;
 
-import br.unb.cic.tdp.base.OrientedConfiguration;
+import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.primitives.Bytes;
@@ -35,7 +35,7 @@ public class OddCycles {
     private static List<Case> generate(final MulticyclePermutation spi, final int moves) {
         final var result = new ArrayList<Case>();
 
-        final var verifiedConfigurations = new HashSet<OrientedConfiguration>();
+        final var verifiedConfigurations = new HashSet<Configuration>();
         permutation:
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
             final var pi = new Cycle(Bytes.toArray(permutation.getVector())).getInverse();
@@ -48,7 +48,7 @@ public class OddCycles {
 
                 if (move.getValue() == 2) {
                     if (moves == 1) {
-                        final var configuration = new OrientedConfiguration(spi, pi);
+                        final var configuration = new Configuration(spi, pi);
                         if (!verifiedConfigurations.contains(configuration)) {
                             result.add(new Case(spi, pi, Collections.singletonList(rho1)));
                             verifiedConfigurations.add(configuration);
@@ -61,7 +61,7 @@ public class OddCycles {
                             final var move2 = _iterator.next();
                             final var rho2 = move2.getKey();
                             if (move2.getValue() == 2) {
-                                final var configuration = new OrientedConfiguration(spi, pi);
+                                final var configuration = new Configuration(spi, pi);
                                 if (!verifiedConfigurations.contains(configuration)) {
                                     result.add(new Case(spi, pi, Arrays.asList(rho1, rho2)));
                                     verifiedConfigurations.add(configuration);

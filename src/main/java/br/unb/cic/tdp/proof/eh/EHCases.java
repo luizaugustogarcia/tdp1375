@@ -1,8 +1,7 @@
-package br.unb.cic.tdp.proof;
+package br.unb.cic.tdp.proof.eh;
 
-import br.unb.cic.tdp.base.UnorientedConfiguration;
+import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.proof.eh.desimplification.EHProofTraverser;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
@@ -64,7 +63,7 @@ public class EHCases {
                 configConsumer, new HashSet<>());
     }
 
-    private static void print(final PrintStream printer, final UnorientedConfiguration config,
+    private static void print(final PrintStream printer, final Configuration config,
                               final List<Cycle> sorting, final int depth, final boolean alreadyVisited) {
         if (alreadyVisited) {
             printer.println(StringUtils.repeat("\t", depth) + "^" + config.hashCode() + "#" +

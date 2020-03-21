@@ -13,7 +13,7 @@ import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 public class Simplification {
 
-    public static byte[] signature(final List<List<Float>> spi) {
+    public static float[] signature(final List<List<Float>> spi) {
         final var labelMap = new HashMap<List<Float>, Byte>();
 
         final var floatCyclesIndex = new TreeMap<Float, List<Float>>();
@@ -25,7 +25,7 @@ public class Simplification {
 
         final var pi = floatCyclesIndex.keySet().stream().collect(Collectors.toList());
 
-        final var signature = new byte[floatCyclesIndex.size()];
+        final var signature = new float[floatCyclesIndex.size()];
 
         for (var i = 0; i < signature.length; i++) {
             final var symbol = pi.get(i);
@@ -155,9 +155,9 @@ public class Simplification {
         return new ArrayList<>(Floats.asList(result));
     }
 
-    public static List<List<Float>> simplificationSorting(final UnorientedConfiguration equivalentConfig,
+    public static List<List<Float>> simplificationSorting(final Configuration equivalentConfig,
                                                           final List<Cycle> sorting,
-                                                          final UnorientedConfiguration simplifiedConfig,
+                                                          final Configuration simplifiedConfig,
                                                           final List<Float> simplificationPi) {
         final var matchedSignature = equivalentConfig.getEquivalentSignatures().stream()
                 .filter(c -> Arrays.equals(c.getSignature(), simplifiedConfig.getSignature().getSignature()))
@@ -186,6 +186,28 @@ public class Simplification {
         }
 
         return result;
+    }
+
+    public static List<List<Float>> simplificationSorting(final Configuration simplifiedConfig,
+                                                          final List<Cycle> sorting, final List<Float> simplificationPi) {
+        var pi = simplifiedConfig.getPi();
+        var _simplificationPi = simplificationPi;
+
+        final var simplificationSorting = new ArrayList<List<Float>>();
+
+        for (final var rho : sorting) {
+            final var finalPi = pi;
+            final var fSimplificationPi = _simplificationPi;
+
+            simplificationSorting.add(Bytes.asList(rho.getSymbols()).stream()
+                    .map(s -> fSimplificationPi.get(finalPi.indexOf(s))).collect(Collectors.toList()));
+
+            pi = CommonOperations.applyTransposition(pi, rho);
+            _simplificationPi = Simplification.applyTransposition(_simplificationPi,
+                    simplificationSorting.get(simplificationSorting.size() - 1));
+        }
+
+        return simplificationSorting;
     }
 
     public static List<List<Float>> toListOfListOfFloats(final MulticyclePermutation spi) {

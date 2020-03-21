@@ -1,6 +1,6 @@
-package br.unb.cic.tdp.proof.eh.desimplification;
+package br.unb.cic.tdp.proof.eh;
 
-import br.unb.cic.tdp.base.UnorientedConfiguration;
+import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.base.Throwables;
@@ -25,14 +25,14 @@ public class EHProofTraverser {
     private static final Pattern SORTING_PATTERN = Pattern.compile(".*a = (\\d+).*b = (\\d+).*c = (\\d+).*");
 
     public static void traverse(final String baseFolder, final String startFile,
-                                final CaseProcessor processor, final Set<UnorientedConfiguration> processedConfigs) {
+                                final CaseProcessor processor, final Set<Configuration> processedConfigs) {
         traverse(baseFolder, startFile, 0, processor, processedConfigs);
     }
 
     private static void traverse(final String baseFolder, final String startFile, final int depth,
-                                 final CaseProcessor processor, final Set<UnorientedConfiguration> processedConfigs) {
+                                 final CaseProcessor processor, final Set<Configuration> processedConfigs) {
         final var spi = readSpi(startFile);
-        final var configuration = new UnorientedConfiguration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
+        final var configuration = new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
         final var sorting = readSorting(baseFolder + startFile);
 
         processor.process(configuration, sorting, depth, processedConfigs.contains(configuration));
@@ -117,6 +117,6 @@ public class EHProofTraverser {
 
     public static interface CaseProcessor {
 
-        void process(UnorientedConfiguration configuration, List<Cycle> sorting, int depth, boolean alreadyVisited);
+        void process(Configuration configuration, List<Cycle> sorting, int depth, boolean alreadyVisited);
     }
 }

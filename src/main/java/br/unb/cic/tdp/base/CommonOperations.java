@@ -6,7 +6,6 @@ import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Triplet;
 import cern.colt.list.ByteArrayList;
 import cern.colt.list.FloatArrayList;
-import com.google.common.primitives.Bytes;
 import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
@@ -16,7 +15,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static br.unb.cic.tdp.util.ByteArrayOperations.removeSymbol;
 import static br.unb.cic.tdp.util.ByteArrayOperations.replace;
 
 public class CommonOperations {
@@ -33,16 +31,6 @@ public class CommonOperations {
             CANONICAL_PI[i] = new Cycle(pi);
         }
     }
-/*
-
-    public static void main(String[] args) {
-        final var conf1 = new Configuration(new MulticyclePermutation("(0,3,1,2,4)"), new Cycle("(0,1,2,3,4)"));
-        System.out.println(Arrays.toString(signature(conf1.getSpi(), conf1.getPi())));
-        final var conf2 = new Configuration(new MulticyclePermutation("(0,2,4,3,1)"), new Cycle("(0,4,3,2,1)"));
-        System.out.println(Arrays.toString(signature(conf2.getSpi(), conf2.getPi())));
-        System.out.println(conf1.equals(conf2));
-    }
-*/
 
     /**
      * Assumes \sigma=(0,1,2,...,n).
@@ -137,130 +125,6 @@ public class CommonOperations {
             }
         }
         return index;
-    }
-/*
-    public static float[] signature(final List<Cycle> spi, final Cycle pi) {
-        final var labelByCycle = new HashMap<Cycle, Float>();
-        final var cycleIndex = createCycleIndex(spi, pi);
-        final var orientedCycles = spi.stream().filter(c -> !areSymbolsInCyclicOrder(c.getSymbols(), pi.getInverse().getSymbols()))
-                .collect(Collectors.toSet());
-        final var symbolIndexByOrientedCycle = new HashMap<Cycle, byte[]>();
-
-        final var signature = new float[pi.size()];
-
-        for (var i = 0; i < signature.length; i++) {
-            final int symbol = pi.get(i);
-            final var cycle = cycleIndex[symbol];
-            if (orientedCycles.contains(cycle)) {
-                symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
-                    final var symbolIndex = new byte[pi.size()];
-                    for (int j = 0; j < c.size(); j++) {
-                        symbolIndex[c.get(j)] = (byte) (j + 1);
-                    }
-                    return symbolIndex;
-                });
-            }
-            labelByCycle.computeIfAbsent(cycle, c -> (float) (labelByCycle.size() + 1));
-            signature[i] = orientedCycles.contains(cycle) ?
-                    labelByCycle.get(cycle) + (float) symbolIndexByOrientedCycle.get(cycle)[symbol] / 10 : labelByCycle.get(cycle);
-        }
-
-        return signature;
-    }*/
-
-    /**
-     * Performs a join operation, producing new \spi, \pi and \rhos.
-     */
-    public static Triplet<MulticyclePermutation, Cycle, List<Cycle>> join(final MulticyclePermutation spi,
-                                                                          final Cycle pi, final List<Cycle> rhos,
-                                                                          final byte[] joinPair) {
-        final var cycleIndex = createCycleIndex(spi, pi);
-
-        final var _spi = new MulticyclePermutation(spi);
-
-        var a = cycleIndex[joinPair[0]];
-        var b = cycleIndex[joinPair[1]];
-
-        a = a.getInverse().getStartingBy(a.getInverse().image(joinPair[0]));
-        b = b.getInverse().getStartingBy(joinPair[1]);
-
-        final var cSymbols = new byte[a.size() + b.size() - 1];
-        System.arraycopy(a.getSymbols(), 0, cSymbols, 0, a.size());
-        System.arraycopy(b.getSymbols(), 1, cSymbols, a.size(), b.size() - 1);
-
-        final var c = new Cycle(cSymbols);
-        _spi.add(c.getInverse());
-        _spi.remove(cycleIndex[joinPair[0]]);
-        _spi.remove(cycleIndex[joinPair[1]]);
-
-        final var _rhos = new ArrayList<Cycle>();
-        var _pi = pi.getSymbols();
-        for (final var rho : rhos) {
-            final var __pi = applyTransposition(new Cycle(_pi), rho).getSymbols();
-            final var _rho = PermutationGroups.computeProduct(false,
-                    new Cycle(replace(removeSymbol(__pi, joinPair[0]), joinPair[1], joinPair[0])),
-                    new Cycle(replace(removeSymbol(_pi, joinPair[0]), joinPair[1], joinPair[0])).getInverse());
-
-            _pi = __pi;
-            // sometimes _rho = (),
-            if (_rho.size() != 0)
-                _rhos.add(_rho.asNCycle());
-        }
-
-        _pi = removeSymbol(pi.getSymbols(), joinPair[1]);
-
-        return new Triplet<>(_spi, new Cycle(_pi), _rhos);
-    }
-
-
-    public static List<byte[]> getJoinPairs(final List<Cycle> cycles, final Cycle pi) {
-        final var symbols = new HashSet<>(Bytes.asList(pi.getSymbols()));
-
-        final var symbolToLabel = new HashMap<Byte, Byte>();
-
-        for (var i = 0; i < cycles.size(); i++) {
-            for (var j = 0; j < cycles.get(i).size(); j++) {
-                final var symbol = cycles.get(i).getSymbols()[j];
-                symbolToLabel.put(symbol, (byte) i);
-                symbols.remove(symbol);
-            }
-        }
-
-        final var _pi = new ByteArrayList(Arrays.copyOf(pi.getSymbols(), pi.size()));
-        _pi.removeAll(new ByteArrayList(Bytes.toArray(symbols)));
-
-        final var results = new ArrayList<byte[]>();
-        for (var i = 0; i < _pi.size(); i++) {
-            final var currentLabel = symbolToLabel.get(_pi.get(i));
-            final var nextLabel = symbolToLabel.get(_pi.get((i + 1) % _pi.size()));
-            if (!currentLabel.equals(nextLabel) && (_pi.get(i) + 1) % pi.size() == _pi.get((i + 1) % _pi.size()))
-                results.add(new byte[]{_pi.get(i), _pi.get((i + 1) % _pi.size())});
-        }
-
-        return results;
-    }
-
-    public static boolean areNotIntersecting(final List<Cycle> cycles, final Cycle pi) {
-        final var cycleIndex = createCycleIndex(cycles, pi);
-        for (int i = 0; i < pi.size(); i++) {
-            int j = i;
-            Cycle a = null;
-            while (a == null) {
-                a = cycleIndex[pi.get((j++) % pi.size())];
-            }
-            Cycle b = null;
-            while (b == null) {
-                b = cycleIndex[pi.get((j++) % pi.size())];
-            }
-            Cycle c = null;
-            while (c == null) {
-                c = cycleIndex[pi.get((j++) % pi.size())];
-            }
-            if (a != b && a == c) {
-                return false;
-            }
-        }
-        return true;
     }
 
     public static boolean isOpenGate(final List<Cycle> cycles, final Cycle piInverse, final Cycle[] cyclesBySymbols,
