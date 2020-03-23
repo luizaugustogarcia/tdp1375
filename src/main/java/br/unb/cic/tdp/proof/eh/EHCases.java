@@ -15,8 +15,7 @@ import java.util.stream.Collectors;
 public class EHCases {
 
     public static void main(String[] args) throws FileNotFoundException {
-        generate("C:\\Users\\USER-Admin\\workspace\\tdp1375\\sbt1375_proof\\",
-                new PrintStream(new File("desimplify-unoriented")));
+        generate(args[0], new PrintStream(new File(args[1])));
     }
 
     public static void generate(final String ehProofFolder, final PrintStream printer) {

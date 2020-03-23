@@ -3,10 +3,11 @@ package br.unb.cic.tdp.permutation;
 import cc.redberry.core.utils.BitArray;
 import cern.colt.list.ByteArrayList;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 
-public class PermutationGroups {
+public class PermutationGroups implements Serializable {
 
     public static MulticyclePermutation computeProduct(final Collection<Permutation> permutations) {
         return computeProduct(true, permutations.toArray(new Permutation[permutations.size()]));

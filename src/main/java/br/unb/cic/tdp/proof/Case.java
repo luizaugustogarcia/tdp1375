@@ -11,6 +11,7 @@ import static br.unb.cic.tdp.base.CommonOperations.canonicalize;
 
 @Getter
 @ToString
+@Deprecated
 public class Case {
 
     @ToString.Exclude

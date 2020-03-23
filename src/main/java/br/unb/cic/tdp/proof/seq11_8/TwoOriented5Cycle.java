@@ -1,23 +1,48 @@
 package br.unb.cic.tdp.proof.seq11_8;
 
-import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
+import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.LinkedList;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
-import static br.unb.cic.tdp.proof.seq11_8.Extensions.loadKnownSortings;
-import static br.unb.cic.tdp.proof.seq11_8.Extensions.searchForSorting;
+import static br.unb.cic.tdp.base.CommonOperations.searchForSortingSeq;
+import static br.unb.cic.tdp.proof.ProofGenerator.renderSorting;
+import static br.unb.cic.tdp.proof.ProofGenerator.searchForSorting;
 
-public class Oriented5Cycle {
+/* The Extension.java extends to oriented 5-cycles. Moreover, the Combinations.java also treats
+the case where we have combinations of oriented 5-cycles, so this case analysis it not necessary anymore. */
+@Deprecated
+public class TwoOriented5Cycle {
 
-    public static void main(String[] args) throws IOException {
-        final var knownSortings = loadKnownSortings(args[0]);
-
-        final var configs = new LinkedList<Configuration>();
+    public static void generate(final Pair<Map<Configuration, List<Cycle>>,
+            Map<Integer, List<Configuration>>> knownSortings, final boolean shouldAlsoUseBruteForce,
+                                final String outputDir) throws IOException {
+        final var configs = new HashSet<Configuration>();
         final var fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
+
+        Files.createDirectories(Paths.get(outputDir + "\\two-oriented-5-cycle\\"));
+
+        final var out = new PrintStream(new File(outputDir + "\\two-oriented-5-cycle\\index.html"));
+        out.println("<HTML>" +
+                "<script src=\"../draw-config.js\"></script>" +
+                "<link rel=\"stylesheet\" href=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css\">" +
+                "<script src=\"https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js\"></script>" +
+                "<script src=\"https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js\"></script>" +
+                "<HEAD><style>* { font-size: small; }</style><TITLE></TITLE>" +
+                "</HEAD><BODY><PRE>");
+
+        out.println("<pi>The possible configurations are (all have a (4,3)-sequence): ");
 
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(new Byte[]{1, 1, 1, 1, 1, 2, 2, 2, 2, 2}))) {
             final var signature = new float[10];
@@ -28,16 +53,29 @@ public class Oriented5Cycle {
                 nextFraction[permutation.getValue(i) - 1]++;
             }
 
-            configs.add(Configuration.fromSignature(signature));
-        }
+            final var config = Configuration.fromSignature(signature);
+            final var canonicalConfig = config.getCanonical();
+            out.println("<p>" + config.getSpi());
+            out.println("Hash code " + config.hashCode());
+            out.println("Signature " + config.getSignature());
+            out.println(String.format("View canonical configuration <a href=\"%s.html\">%s</a>",
+                    canonicalConfig.getSpi(), canonicalConfig.getSpi()));
 
-        configs.forEach(c -> {
-            final var sorting = searchForSorting(c, knownSortings);
-            if (sorting == null) {
-                System.out.println(CommonOperations.searchForSortingSeq(c.getPi(), c.getSpi(), new Stack<>(), c.getSpi().getNumberOfEvenCycles(), 1.375F));
-            } else {
-                System.out.println(sorting);
+            if (!configs.contains(config)) {
+                configs.add(config);
+
+                var sorting = searchForSorting(config, knownSortings, shouldAlsoUseBruteForce);
+                if (sorting == null) {
+                    sorting = searchForSortingSeq(config.getPi(), config.getSpi(), new Stack<>(), config.getSpi().getNumberOfEvenCycles(), 1.375F);
+                }
+
+                assert sorting != null : "ERROR";
+
+                try (final var writer = new FileWriter(
+                        new File(outputDir + "\\two-oriented-5-cycle\\" + canonicalConfig.getSpi() + ".html"))) {
+                    renderSorting(canonicalConfig, canonicalConfig.translatedSorting(config, sorting), writer);
+                }
             }
-        });
+        }
     }
 }

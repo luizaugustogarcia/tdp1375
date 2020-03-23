@@ -3,8 +3,8 @@ package br.unb.cic.tdp.proof.seq3_2;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.Case;
 import com.google.common.primitives.Bytes;
+import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 
 import java.util.*;
@@ -13,22 +13,26 @@ import static br.unb.cic.tdp.base.CommonOperations.*;
 
 public class Cases3_2 {
 
+    public static void main(String[] args) {
+        generate().stream().forEach(p -> System.out.println(p.getFirst()));
+    }
+
     /**
      * Generate the (3,2)-sequences to apply when we have either two interleaving
      * pairs or three intersecting 3-cycles in \spi.
      *
      * @return a list of cases.
      */
-    public static List<Case> generate() {
-        final var result = new ArrayList<Case>();
-        result.add(new Case(new MulticyclePermutation("(0,4,2)(1,5,3)"), new Cycle("0,1,2,3,4,5"),
+    public static List<Pair<Configuration, List<Cycle>>> generate() {
+        final var result = new ArrayList<Pair<Configuration, List<Cycle>>>();
+        result.add(new Pair<>(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)"), new Cycle("0,1,2,3,4,5")),
                 Arrays.asList(new Cycle("0,2,4"), new Cycle("3,1,5"), new Cycle("2,4,0"))));
         result.addAll(generate(new MulticyclePermutation("(0,1,2)(3,4,5)(6,7,8)")));
         return result;
     }
 
-    private static List<Case> generate(final MulticyclePermutation spi) {
-        final var result = new ArrayList<Case>();
+    private static List<Pair<Configuration, List<Cycle>>> generate(final MulticyclePermutation spi) {
+        final var result = new ArrayList<Pair<Configuration, List<Cycle>>>();
 
         final var verifiedConfigurations = new HashSet<Configuration>();
 
@@ -39,9 +43,10 @@ public class Cases3_2 {
                 if (openGates.values().stream().mapToInt(j -> j).sum() <= 2) {
                     final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), 3, 1.5F);
 
-                    final var configuration = new Configuration(spi, pi);
+                    final var c = canonicalize(spi, pi, rhos);
+                    final var configuration = new Configuration(c.first, c.second);
                     if (!verifiedConfigurations.contains(configuration)) {
-                        result.add(new Case(spi, pi, rhos));
+                        result.add(new Pair<>(configuration, c.third));
                         verifiedConfigurations.add(configuration);
                     }
                 }

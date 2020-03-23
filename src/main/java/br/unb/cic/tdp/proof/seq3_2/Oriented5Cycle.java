@@ -1,14 +1,19 @@
 package br.unb.cic.tdp.proof.seq3_2;
 
+import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.Case;
 import com.google.common.primitives.Bytes;
+import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Stack;
 
-import static br.unb.cic.tdp.base.CommonOperations.*;
+import static br.unb.cic.tdp.base.CommonOperations.searchFor2Move;
+import static br.unb.cic.tdp.base.CommonOperations.searchForSortingSeq;
 
 public class Oriented5Cycle {
 
@@ -16,13 +21,13 @@ public class Oriented5Cycle {
      * Generate (3,2)-sequences to apply when there is a cycle in \spi with length
      * equals to 5 that doesn't allow the application of a 2-move.
      */
-    public static List<Case> generate() {
+    public static List<Pair<Configuration, List<Cycle>>> generate() {
         final var orientedCycle = new Cycle("(0,3,1,4,2)");
         final var triple = new byte[]{0, 1, 2};
 
-        final var result = new ArrayList<Case>();
+        final var result = new ArrayList<Pair<Configuration, List<Cycle>>>();
 
-        final var verifiedConfigurations = new HashSet<String>();
+        final var verifiedConfigurations = new HashSet<Configuration>();
 
         final var spi = new MulticyclePermutation(orientedCycle);
 
@@ -37,15 +42,10 @@ public class Oriented5Cycle {
 
                 if (!rhos.isEmpty()) {
                     if (rhos.size() > 1) {
-                        final var signatures = new TreeSet<String>();
-                        for (final var symbol : pi.getSymbols()) {
-                            final var cr = canonicalize(spi, pi.getStartingBy(symbol));
-                            signatures.add(cr.first.toString());
-                        }
-
-                        if (!verifiedConfigurations.contains(signatures.toString())) {
-                            result.add(new Case(spi, pi, rhos));
-                            verifiedConfigurations.add(signatures.toString());
+                        final var config = new Configuration(spi, pi);
+                        if (!verifiedConfigurations.contains(config)) {
+                            result.add(new Pair<>(config, rhos));
+                            verifiedConfigurations.add(config);
                         }
                     }
                 } else {

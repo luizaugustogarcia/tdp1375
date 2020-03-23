@@ -159,29 +159,19 @@ public class Simplification {
                                                           final List<Cycle> sorting,
                                                           final Configuration simplifiedConfig,
                                                           final List<Float> simplificationPi) {
-        final var matchedSignature = equivalentConfig.getEquivalentSignatures().stream()
-                .filter(c -> Arrays.equals(c.getSignature(), simplifiedConfig.getSignature().getSignature()))
-                .findFirst().get();
-
         final var result = new ArrayList<List<Float>>();
 
-        var pi = matchedSignature.getPi();
         var sPi = simplifiedConfig.getPi();
         var fPi = simplificationPi;
 
-        for (final var rho : equivalentConfig.equivalentSorting(matchedSignature, sorting)) {
-            final var finalPi = pi;
+        for (final var rho : simplifiedConfig.translatedSorting(equivalentConfig, sorting)) {
             final var finalSPi = sPi;
             final var finalFPi = fPi;
 
-            final var _rho = new Cycle(sPi.get(finalPi.indexOf(rho.get(0))),
-                    sPi.get(finalPi.indexOf(rho.get(1))), sPi.get(finalPi.indexOf(rho.get(2))));
-
-            result.add(Bytes.asList(_rho.getSymbols()).stream()
+            result.add(Bytes.asList(rho.getSymbols()).stream()
                     .map(s -> finalFPi.get(finalSPi.indexOf(s))).collect(Collectors.toList()));
 
-            pi = CommonOperations.applyTransposition(pi, rho);
-            sPi = CommonOperations.applyTransposition(sPi, _rho);
+            sPi = CommonOperations.applyTransposition(sPi, rho);
             fPi = applyTransposition(fPi, result.get(result.size() - 1));
         }
 

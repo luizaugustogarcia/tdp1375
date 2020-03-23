@@ -1,6 +1,8 @@
 package br.unb.cic.tdp.permutation;
 
-public interface Permutation {
+import java.io.Serializable;
+
+public interface Permutation extends Serializable {
 
     Permutation getInverse();
 

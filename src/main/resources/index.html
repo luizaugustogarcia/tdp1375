@@ -1,0 +1,105 @@
+<HTML>
+<HEAD>
+    <TITLE>
+    </TITLE>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+    </script>
+    <script type="text/javascript"
+            src="http://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+    <style>* { font-family: 'Open Sans', sans-serif; font-size: small; }</style>
+</HEAD>
+<BODY>
+\(
+\newcommand\norm[1]{\lvert\lvert#1\rvert\rvert}
+\newcommand\epi{\bar{\pi}}
+\newcommand\esigma{\bar{\sigma}}
+\newcommand\spi{{\esigma}{\epi}^{-1}}
+\)
+<table border=0 cellspacing=0 cellpadding=5 width="60%">
+    <tr>
+        <td>
+            <h1> TDP 1.375 </h1>
+            This document proves that if $\norm{\spi}_3 \geq 8$, then a $\frac{11}{8}$-sequence exists. In order to
+            understand the details of the proof, the reader is referred to the paper by L. A. G. Silva, L. A. B. Kowada,
+            N. R. Rocco and M. E. M. T. Walter. The syntax of the proof
+            is explained <a href="explain.html">here</a>.
+            <hr>
+
+            <h2> Download </h2>
+            The whole proof containing all generated HTML files and images can be downloaded using this <a
+                href="tdp1375proof.tar.gz">link</a>.
+            <hr>
+
+            <h2>Results</h2>
+
+            <h3>Lemma 1: Every sufficient configuration $\Gamma$ of $\spi$ has a $\frac{11}{8}$-sequence of
+                transpositions.</h3>
+
+            <h3>Lemma 2: The bad small components that do not have a $\frac{11}{8}$-sequence are:</h3>
+            <ol>
+                <li><a href="dfs/(0 3 1 4 2).html">the bad oriented $5$-cycle</a></li>
+                <li><a href="dfs/(0 4 2)(1 5 3).html">the unoriented interleaving pair</a></li>
+                <li><a href="dfs/(0 10 2)(1 5 3)(4 8 6)(7 11 9).html">the unoriented necklace of size $4$</a></li>
+                <li><a href="dfs/(0 10 5)(1 11 3)(2 9 7)(4 8 6).html">the twisted necklace of size $4$</a></li>
+                <li><a href="dfs/(0 13 2)(1 5 3)(4 8 6)(7 11 9)(10 14 12).html">the unoriented necklace of size $5$</a>
+                </li>
+                <li><a href="dfs/(0 16 14)(1 17 3)(2 6 4)(5 9 7)(8 12 10)(11 15 13).html">the unoriented necklace of
+                    size $6$</a></li>
+            </ol>
+
+            The demonstration of the previous results rely on a case analysis performed similarly to a DFS search, in
+            which each configuration is systematically extended until $\frac{11}{8}$-sequences are found, starting from:
+            <ol>
+                <li><a href="dfs/(0 3 1 4 2).html">the bad oriented $5$-cycle</a></li>
+                <li><a href="dfs/(0 4 2)(1 5 3).html">the unoriented interleaving pair</a></li>
+                <li><a href="dfs/(0 5 2)(1 4 3).html">the unoriented intersecting pair</a></li>
+            </ol>
+            No configuration with $3$-norm equals to $10$ was reached by the search.
+            The search found the full configuration <a href="dfs/(0 5 2)(1 10 3)(4 9 7)(6 11 8).html">(0 5 2)(1 10 3)(4
+            9 7)(6 11 8)</a> which does not allow a $\frac{11}{8}$-sequence. However, note that this configuration is
+            not valid, since in this case, $\esigma\epi\esigma^{-1}$ ($\epi$ conjugated by $\esigma$) is not a
+            $(n+1)$-cycle. Intuitively, this means that there are no $\epi$ and $\esigma$ such that $\spi$ contains a
+            component with the form of this invalid configuration.
+
+            <h3>Lemma 3: If $\spi$ consists only of bad small components and $\norm{\spi}_3 \geq 8$, then a
+                $\frac{11}{8}$-sequence of transpositions exists.</h3>
+
+            In order to demonstrate this result, we also employ an approach similar to a DFS search, in which, starting
+            from each bad small component listed above, we extend the previous configuration by adding another bad small
+            component in a different position of $\epi$, until find a $\frac{11}{8}$-sequence. We note that by this
+            approach no combination with $3$-norm at least $8$ was extended. Below, the result of the search:
+
+            <ol>
+                <li><a href="comb/(0 3 1 4 2).html">the bad oriented $5$-cycle</a></li>
+                <li><a href="comb/(0 4 2)(1 5 3).html">the unoriented interleaving pair</a></li>
+                <li><a href="comb/(0 10 2)(1 5 3)(4 8 6)(7 11 9).html">the unoriented necklace of size $4$</a></li>
+                <li><a href="comb/(0 10 5)(1 11 3)(2 9 7)(4 8 6).html">the twisted necklace of size $4$</a></li>
+                <li><a href="comb/(0 13 2)(1 5 3)(4 8 6)(7 11 9)(10 14 12).html">the unoriented necklace of size $5$</a>
+                </li>
+                <li><a href="comb/(0 16 14)(1 17 3)(2 6 4)(5 9 7)(8 12 10)(11 15 13).html">the unoriented necklace of
+                    size $6$</a></li>
+            </ol>
+
+            <h3>Lemma 4: If there is an even (odd-length) $k$-cycle $\gamma=(a\dots b\dots c\dots)$ in $\spi$ such that
+                $k\geq 7$ and $(a,b,c)$ is an oriented triple, then there is a $\frac{4}{3}$-sequence.</h3>
+
+            Proof. If $(a\;b\;c)$ is a $2$-move, then the lemma holds since a $2$-move is a $(1,1)$-sequence, which in
+            turn is $\frac{4}{3}$-sequence. Thus, w.l.o.g, suppose
+            \[\gamma=(\underbrace{d\;e\dots b}_{odd}\;|\;\underbrace{f\dots c}_{even}\;|\;\underbrace{g\dots
+            a}_{even}\;|).\]
+            We use vertical bars to indicate the positions in $\gamma$ that would be affected by the application of
+            $(a\;b\;c)$ (breaking $\gamma$ into $3$ smaller cycles), and subscripts to indicate the length parity of the
+            resulting cycles. Note that the cycle $\gamma$ can be rewritten as the product
+            \[\gamma=(\underbrace{a\dots}_{odd})(\underbrace{b\dots}_{odd})(\underbrace{c\dots}_{odd})(a\;d\;e\;b\;f\;c\;g).\]
+            For each of the $71$ distinct possible forms of $\epi$, related to the symbols of $(a\;d\;e\;b\;f\;c\;g)$,
+            there is a $\frac{4}{3}$-sequence of transpositions. The case analysis can be visualised <a
+                href="oriented-7-cycle/index.html">here</a>.
+
+        </td>
+    </tr>
+</table>
+</BODY>
+</HTML>

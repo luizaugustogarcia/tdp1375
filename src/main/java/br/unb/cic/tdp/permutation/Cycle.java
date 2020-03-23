@@ -118,7 +118,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             representation.append(_default.symbols[i]);
             if (i == _default.symbols.length - 1)
                 break;
-            representation.append(",");
+            representation.append(" ");
         }
         representation.append(")");
 
@@ -211,8 +211,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return areSymbolsInCyclicOrder(rho.getSymbols(), this.getSymbols());
     }
 
-    @Deprecated
     public boolean isOriented(final byte... symbols) {
+        assert symbols.length == 3: "ERROR";
         boolean leap = false;
         for (int i = 0; i < symbols.length; i++) {
             if (symbolIndexes[symbols[i]] > symbolIndexes[symbols[(i + 1) % symbols.length]]) {
@@ -235,5 +235,9 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     @Override
     public Cycle asNCycle() {
         return this;
+    }
+
+    public boolean isLong() {
+        return this.size() > 3;
     }
 }

@@ -132,8 +132,8 @@ public class EliasAndHartman extends BaseAlgorithm {
         final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
         final Set<Byte> muSymbols = new HashSet<>();
 
-        final var muCycleIndex = createCycleIndex(mu, pi);
-        final var spiCycleIndex = createCycleIndex(spi, pi);
+        final var muCycleIndex = cycleIndex(mu, pi);
+        final var spiCycleIndex = cycleIndex(spi, pi);
 
         // Type 1 extension
         // These two outer loops are O(1), since at this point, ||mu|| never
@@ -193,7 +193,7 @@ public class EliasAndHartman extends BaseAlgorithm {
     public static Cycle[] searchForSeq(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi,
                                        final List<Case> cases) {
         if (cases != null) {
-            final var cycleIndex = createCycleIndex(mu, pi);
+            final var cycleIndex = cycleIndex(mu, pi);
 
             final var symbolsCount = mu.stream().mapToInt(Cycle::size).sum();
 

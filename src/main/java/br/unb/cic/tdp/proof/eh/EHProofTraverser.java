@@ -115,7 +115,7 @@ public class EHProofTraverser {
         return sorting;
     }
 
-    public static interface CaseProcessor {
+    interface CaseProcessor {
 
         void process(Configuration configuration, List<Cycle> sorting, int depth, boolean alreadyVisited);
     }

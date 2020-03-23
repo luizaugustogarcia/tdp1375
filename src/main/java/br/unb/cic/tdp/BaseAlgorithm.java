@@ -5,7 +5,6 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.proof.Case;
-import br.unb.cic.tdp.proof.OddCycles;
 import com.google.common.base.Throwables;
 import org.apache.commons.math3.util.Pair;
 
@@ -44,11 +43,11 @@ public abstract class BaseAlgorithm {
     protected void loadCases(final String casesFolder) {
         // Generates the 2-moves to be applied when we have one odd cycle in sigma
         // pi^{-1}
-        _1_1OddCyclesCases.addAll(OddCycles.generate());
+//        _1_1OddCyclesCases.addAll(OddCycles.generate());
 
         // Generates the (2,2)-sequences to be applied when we have four odd cycles in
         // sigma pi^{-1}
-        _2_2OddCyclesCases.addAll(OddCycles.generate2_2Cases());
+//        _2_2OddCyclesCases.addAll(OddCycles.generate2_2Cases());
 
         // Loads the (3,2)-sequences to be applied to the interleaving pair and to
         // the cases where three 3-cycles are intersecting

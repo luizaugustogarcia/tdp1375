@@ -6,18 +6,25 @@ import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Triplet;
 import cern.colt.list.ByteArrayList;
 import cern.colt.list.FloatArrayList;
+import com.google.common.base.Throwables;
 import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
 
+import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.util.ByteArrayOperations.replace;
 
-public class CommonOperations {
+public class CommonOperations implements Serializable {
+
+    public static int numberOfCoresToUse = Runtime.getRuntime().availableProcessors();
 
     public static final Cycle[] CANONICAL_PI;
 
@@ -117,7 +124,7 @@ public class CommonOperations {
      * Creates an array where the cycles in <code>spi</code> can be accessed by the symbols of <code>pi</code>
      * (being the indexes of the resulting array).
      */
-    public static Cycle[] createCycleIndex(final List<Cycle> spi, final Cycle pi) {
+    public static Cycle[] cycleIndex(final List<Cycle> spi, final Cycle pi) {
         final var index = new Cycle[pi.size()];
         for (final var muCycle : spi) {
             for (final int symbol : muCycle.getSymbols()) {
@@ -140,7 +147,7 @@ public class CommonOperations {
     }
 
     public static Map<Cycle, Integer> openGatesPerCycle(final List<Cycle> cycles, final Cycle piInverse) {
-        final var cycleIndex = createCycleIndex(cycles, piInverse);
+        final var cycleIndex = cycleIndex(cycles, piInverse);
 
         final Map<Cycle, Integer> result = new HashMap<>();
         for (final var muCycle : cycles) {
@@ -241,7 +248,7 @@ public class CommonOperations {
      */
     public static List<Cycle> searchForSortingSeq(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> rhos,
                                                   final int initialNumberOfEvenCycles, final float maxRatio) {
-        return searchForSortingSeq(pi, mu, rhos, initialNumberOfEvenCycles, 1, maxRatio, -1);
+        return searchForSortingSeq(pi, mu, rhos, initialNumberOfEvenCycles, 1, maxRatio);
     }
 
     /**
@@ -250,13 +257,13 @@ public class CommonOperations {
      */
     private static List<Cycle> searchForSortingSeq(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> rhos,
                                                    final int initialNumberOfEvenCycles, final float minRatio,
-                                                   final float maxRatio, final int lastMove) {
+                                                   final float maxRatio) {
         final var n = pi.size();
 
         final var lowerBound = (n - mu.getNumberOfEvenCycles()) / 2;
         final var minAchievableRatio = (float) (rhos.size() + lowerBound) / ((n - initialNumberOfEvenCycles) / 2);
 
-        final var spiCycleIndex = createCycleIndex(mu, pi);
+        final var spiCycleIndex = cycleIndex(mu, pi);
 
         // Do not allow it to exceed the max ratio
         if (minAchievableRatio <= maxRatio) {
@@ -272,14 +279,11 @@ public class CommonOperations {
                     final var pair = iterator.next();
                     final var rho = pair.getFirst();
 
-                    if (pair.getSecond() == 0 && lastMove == 0) {
-                        continue;
-                    }
                     final var _mu = PermutationGroups.computeProduct(mu, rho.getInverse());
                     rhos.push(rho);
                     final var solution = searchForSortingSeq(applyTransposition(pi, rho),
                             _mu, rhos, initialNumberOfEvenCycles,
-                            minRatio, maxRatio, pair.getSecond());
+                            minRatio, maxRatio);
                     if (!solution.isEmpty()) {
                         return rhos;
                     }
@@ -403,5 +407,44 @@ public class CommonOperations {
      */
     public static boolean isOriented(final Cycle pi, final Cycle cycle) {
         return !areSymbolsInCyclicOrder(cycle.getSymbols(), pi.getInverse().getSymbols());
+    }
+
+    public static List<Cycle> searchFor11_8SortingSeq(final MulticyclePermutation spi, final Cycle pi) {
+        final var executorService = Executors.newFixedThreadPool(numberOfCoresToUse);
+        final var completionService = new ExecutorCompletionService<List<Cycle>>(executorService);
+
+        final var spiCycleIndex = cycleIndex(spi, pi);
+        final var iterator = generateAll0_2Moves(pi, spiCycleIndex).iterator();
+
+        final var submittedTasks = new ArrayList<Future<List<Cycle>>>();
+        while (iterator.hasNext()) {
+            final var move = iterator.next();
+            final var rho = move.getKey();
+            final var _partialSorting = new Stack<Cycle>();
+            _partialSorting.push(rho);
+            submittedTasks.add(completionService.submit(() ->
+                    searchForSortingSeq(CommonOperations.applyTransposition(pi, rho),
+                    PermutationGroups.computeProduct(spi, rho.getInverse()), _partialSorting,
+                    spi.getNumberOfEvenCycles(), 1.375F)));
+        }
+
+        executorService.shutdown();
+
+        List<Cycle> sorting = Collections.emptyList();
+        try {
+            for (int i = 0; i < submittedTasks.size(); i++) {
+                final var next = completionService.take();
+                if (next.get().size() > 1 || next.get().size() == 1 && CommonOperations.is11_8(spi, pi, next.get())) {
+                    sorting = next.get();
+                    break;
+                }
+            }
+        } catch (final Exception e) {
+            Throwables.propagate(e);
+        }
+
+        executorService.shutdownNow();
+
+        return sorting;
     }
 }

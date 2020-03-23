@@ -1,162 +1,182 @@
-package br.unb.cic.tdp.proof;
+package br.unb.cic.tdp.proof.seq11_8;
 
 import br.unb.cic.tdp.base.Configuration;
-import br.unb.cic.tdp.base.Simplification;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import cern.colt.list.ByteArrayList;
 import cern.colt.list.FloatArrayList;
 import com.google.common.base.Preconditions;
 import org.apache.commons.math3.util.Pair;
 
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.List;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 
-import static br.unb.cic.tdp.base.CommonOperations.applyTransposition;
-import static br.unb.cic.tdp.base.CommonOperations.*;
-import static br.unb.cic.tdp.base.Configuration.isOpenGate;
-import static br.unb.cic.tdp.base.Configuration.signature;
+import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
 import static br.unb.cic.tdp.base.Configuration.*;
-import static br.unb.cic.tdp.base.Simplification.*;
-import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
+import static br.unb.cic.tdp.proof.ProofGenerator.*;
 
-public class ProofGenerator {
+public class Extensions {
 
-    private static Set<Configuration> visitedConfigs = new HashSet<>();
-
-    // mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.proof.ProofVerifier" -Dexec.args=".\\proof\\"
-    public static void main(String[] args) throws Exception {
-        final var knownSortings = loadKnownSortings(args[0]);
+    public static void generate(final Pair<Map<Configuration, List<Cycle>>,
+            Map<Integer, List<Configuration>>> knownSortings, final boolean shouldAlsoUseBruteForce,
+                                final String outputDir) throws IOException {
+        Files.createDirectories(Paths.get(outputDir + "/dfs/"));
 
         // oriented 5-cycle (extensions not leading to new oriented cycles)
-        verify(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,3,1,4,2)"), new Cycle("0,1,2,3,4"))),
-                knownSortings, 0);
+        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,3,1,4,2)"), new Cycle("0,1,2,3,4"))),
+                knownSortings, shouldAlsoUseBruteForce, outputDir);
 
         // interleaving pair
-        verify(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)"), new Cycle("0,1,2,3,4,5"))),
-                knownSortings, 0);
+        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)"), new Cycle("0,1,2,3,4,5"))),
+                knownSortings, shouldAlsoUseBruteForce, outputDir);
 
         // intersecting pair
-        verify(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)"), new Cycle("0,1,2,3,4,5"))),
-                knownSortings, 0);
+        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)"), new Cycle("0,1,2,3,4,5"))),
+                knownSortings, shouldAlsoUseBruteForce, outputDir);
     }
 
-    private static Pair<Map<Configuration, List<Cycle>>,
-            Map<Integer, List<Configuration>>> loadKnownSortings(final String file) throws IOException {
-        final var knownSortings = new HashMap<Configuration, List<Cycle>>();
+    private static void sortOrExtend(final Pair<String, Configuration> config,
+                                     final Pair<Map<Configuration, List<Cycle>>,
+                                             Map<Integer, List<Configuration>>> knownSortings,
+                                     final boolean shouldAlsoUseBruteForce, final String outputDir) throws IOException {
 
-        Files.lines(Paths.get(file)).forEach(line -> {
-            final var lineSplit = line.trim().split("->");
-            if (lineSplit.length > 1) {
-                final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1]);
-                knownSortings.put(new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]),
-                        Arrays.stream(lineSplit[1].split(";")).map(Cycle::new).collect(Collectors.toList()));
+        final var canonicalConfig = config.getSecond().getCanonical();
+        final var file = new File(outputDir + "/dfs/" + canonicalConfig.getSpi() + ".html");
+
+        if (file.exists()) {
+            try (final var fr = new FileReader(file)) {
+                try (final var input = new BufferedReader(fr, 50 * 1024)) {
+                    String last = null, line = null;
+                    // checks whether the file generation was finished
+                    while ((line = input.readLine()) != null) {
+                        last = line;
+                    }
+                    // if so, return
+                    if (last != null && last.equals("</html>")) {
+                        return;
+                    }
+                    // if not, regenerate the file
+                    try (final var write = new PrintWriter(file)) {
+                        // empty
+                    }
+                }
             }
-        });
-
-        return new Pair<>(knownSortings, knownSortings.keySet().stream()
-                .collect(Collectors.groupingBy(Configuration::hashCode)));
-    }
-
-    public static void verify(final Pair<String, Configuration> config,
-                              final Pair<Map<Configuration, List<Cycle>>,
-                                      Map<Integer, List<Configuration>>> knownSortings,
-                              final int depth) throws IOException {
-        if (visitedConfigs.contains(config.getSecond())) {
-            return;
         }
 
-        visitedConfigs.add(config.getSecond());
-
-        final var sorting = getSorting(config.getSecond(), knownSortings);
+        var sorting = searchForSorting(config.getSecond(), knownSortings, shouldAlsoUseBruteForce);
         if (sorting != null) {
-            final var out = new PrintStream(new File("proof\\" + config.getSecond().getCanonical().getSpi() + ".html"));
-            out.println("<HTML><HEAD><TITLE></TITLE></HEAD><BODY><PRE>");
-            drawConfig(config.getSecond());
-            out.println(String.format("<img src=\"%s.png\">", config.getSecond().getSpi()));
-            out.println(config.getSecond().getSpi());
-            out.println("HAS (11/8)-SEQUENCE");
-            var spi = config.getSecond().getSpi();
-            for (int i = 0; i < sorting.size(); i++) {
-                final var rho = sorting.get(i);
-                out.println(String.format("<p>%d: %s", i + 1, rho));
-                out.println(spi = computeProduct(spi, rho.getInverse()));
+            try (final var writer = new FileWriter((file))) {
+                renderSorting(canonicalConfig, canonicalConfig.translatedSorting(config.getSecond(), sorting), writer);
             }
-            out.println("</PRE></BODY></HTML>");
             return;
+        } else {
+            assert canonicalConfig.get3Norm() <= 8 : "ERROR";
         }
 
-        final var out = new PrintStream(new File("proof\\" + config.getSecond().getCanonical().getSpi() + ".html"));
-        out.println("<HTML><HEAD><TITLE></TITLE></HEAD><BODY><PRE>");
-        drawConfig(config.getSecond());
-        out.println(String.format("<img src=\"%s.png\">", config.getSecond().getSpi()));
-        out.println(config.getSecond().getSpi());
+        try (final var out = new PrintStream(file)) {
+            out.println("<html>\n" +
+                    "\t<head>\n" +
+                    "\t\t<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css\" integrity=\"sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh\" crossorigin=\"anonymous\">\n" +
+                    "\t\t<script src=\"https://code.jquery.com/jquery-3.4.1.slim.min.js\" integrity=\"sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n\" crossorigin=\"anonymous\"></script>\n" +
+                    "\t\t<script src=\"https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js\" integrity=\"sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo\" crossorigin=\"anonymous\"></script>\n" +
+                    "\t\t<script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js\" integrity=\"sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6\" crossorigin=\"anonymous\"></script>\n" +
+                    "\t\t<script src=\"../draw-config.js\"></script>\n" +
+                    "\t\t<style>* { font-size: small; }</style>\n" +
+                    "\t</head>\n" +
+                    "<body>\n" +
+                    "<div class=\"modal fade\" id=\"modal\" role=\"dialog\">\n" +
+                    "    <div class=\"modal-dialog\" style=\"left: 25px; max-width: unset;\">\n" +
+                    "      <!-- Modal content-->\n" +
+                    "      <div class=\"modal-content\" style=\"width: fit-content;\">\n" +
+                    "        <div class=\"modal-header\">\n" +
+                    "          <h6 class=\"modal-title\">--------</h6>\n" +
+                    "          <button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>\n" +
+                    "        </div>\n" +
+                    "        <div class=\"modal-body\">\n" +
+                    "          <canvas id=\"modalCanvas\"></canvas>\n" +
+                    "        </div>\n" +
+                    "      </div>\n" +
+                    "    </div>\n" +
+                    "</div>\n" +
+                    "<script>\n" +
+                    "\tfunction updateCanvas(canvasId, spi) {\n" +
+                    "\t   var pi = []; for (var i = 0; i < spi.flatMap(c => c).length; i++) { pi.push(i); }" +
+                    "\t   var canvas = document.getElementById(canvasId);\n" +
+                    "\t   canvas.height = calcHeight(canvas, spi, pi);\n" +
+                    "\t   canvas.width = pi.length * padding;\n" +
+                    "\t   draw(canvas, spi, pi);\n" +
+                    "\t}\n" +
+                    "</script>\n" +
+                    "<div style=\"margin-top: 10px; margin-left: 10px\">");
 
-        if (config.getSecond().isFull()) {
-            if (isValid(config.getSecond())) {
-                out.println("BAD SMALL COMPONENT");
-            } else {
-                out.println("INVALID CONFIGURATION");
-            }
+            out.println("<canvas id=\"canvas\"></canvas>");
+            out.println(String.format("<script>updateCanvas('canvas', %s);</script>",
+                    permutationToJsArray(canonicalConfig.getSpi())));
+
+            out.println("<h6>" + canonicalConfig.getSpi() + "</h6>");
+
+            out.println("Hash code: " + canonicalConfig.hashCode() + "<br>");
+            out.println("Open gates: " + canonicalConfig.getOpenGates() + "<br>");
+            out.println("Signature: " + canonicalConfig.getSignature() + "<br>");
+            out.println("3-norm: " + canonicalConfig.getSpi().get3Norm());
+
+            out.println("<p style=\"margin-top: 10px;\"></p>");
+            out.println("THE EXTENSIONS ARE:");
+
+            final Consumer<List<Pair<String, Configuration>>> extend = extensions -> {
+                for (final var extension : extensions) {
+                    final var hasSorting = searchForSorting(extension.getSecond(), knownSortings, shouldAlsoUseBruteForce) != null;
+                    out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
+                            "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
+                    out.println(extension.getFirst() + "<br>");
+                    out.println(((hasSorting ? "GOOD" : "BAD") + " EXTENSION") + "<br>");
+                    out.println("Hash code: " + extension.getSecond().hashCode() + "<br>");
+                    out.println("3-norm: " + extension.getSecond().getSpi().get3Norm() + "<br>");
+                    out.println("Signature: " + extension.getSecond().getSignature() + "<br>");
+                    final var jsSpi = permutationToJsArray(extension.getSecond().getSpi());
+                    out.println(String.format("Extension: <a href=\"\" " +
+                                    "onclick=\"" +
+                                    "updateCanvas('modalCanvas', %s); " +
+                                    "$('h6.modal-title').text('%s');" +
+                                    "$('#modal').modal('show'); " +
+                                    "return false;\">%s</a><br>",
+                            jsSpi, extension.getSecond().getSpi(), extension.getSecond().getSpi()));
+                    out.println(String.format("View canonical extension: <a href=\"%s.html\">%s</a>",
+                            extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
+                    out.println("</div>");
+
+                    try {
+                        sortOrExtend(extension, knownSortings, shouldAlsoUseBruteForce, outputDir);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            };
+
+            out.println("<table style=\"width:100%; border: 1px solid lightgray; border-collapse: collapse;\">");
+            out.println("  <tr>");
+            out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 1</th>");
+            out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 2</th>");
+            out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 3</th>");
+            out.println("  </tr>");
+            out.println("  <tr>");
+            out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
+            extend.accept(type1Extensions(canonicalConfig));
+            out.println("    </td>");
+            out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
+            extend.accept(type2Extensions(canonicalConfig));
+            out.println("    </td>");
+            out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
+            extend.accept(type3Extensions(canonicalConfig));
+            out.println("    </td>");
+            out.println("  </tr>");
+            out.println("</table>");
+
+            out.println("</body>");
+            out.println("</html>");
         }
-
-        out.println("<p>THE EXTENSIONS ARE: ");
-
-        if (config.getSecond().get3Norm() > 8) {
-            throw new RuntimeException("ERROR");
-        }
-
-        for (final var extension : type1Extensions(config.getSecond())) {
-            out.println("<p>" + extension.getFirst());
-            out.println((getSorting(extension.getSecond(), knownSortings) != null ? "GOOD" : "BAD") + " EXTENSION");
-            out.println(String.format("View extension <a href=\"%s.html\">%s</a>",
-                    extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
-            verify(extension, knownSortings, depth + 1);
-        }
-
-        for (final var extension : type2Extensions(config.getSecond())) {
-            out.println("<p>" + extension.getFirst());
-            out.println((getSorting(extension.getSecond(), knownSortings) != null ? "GOOD" : "BAD") + " EXTENSION");
-            out.println(String.format("View extension <a href=\"%s.html\">%s</a>",
-                    extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
-            verify(extension, knownSortings, depth + 1);
-        }
-
-        for (final var extension : type3Extensions(config.getSecond())) {
-            out.println("<p>" + extension.getFirst());
-            out.println((getSorting(extension.getSecond(), knownSortings) != null ? "GOOD" : "BAD") + " EXTENSION");
-            out.println(String.format("View extension <a href=\"%s.html\">%s</a>",
-                    extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
-            verify(extension, knownSortings, depth + 1);
-        }
-
-        out.println("</PRE></BODY></HTML>");
-    }
-
-    private static void drawConfig(final Configuration config) throws IOException {
-        var height = (config.getPi().size() * 10) + 10;
-        var bufferedImage = new BufferedImage(config.getPi().size() * 40, height, BufferedImage.TYPE_INT_ARGB);
-        final var canvas = bufferedImage.createGraphics();
-        canvas.setRenderingHints(new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON));
-        canvas.translate(10, height - 10);
-        config.draw(canvas);
-        ImageIO.write(bufferedImage, "PNG", new File("proof\\" + config.getSpi() + ".png"));
-    }
-
-    private static List<Cycle> getSorting(final Configuration config, final Pair<Map<Configuration, List<Cycle>>,
-            Map<Integer, List<Configuration>>> knownSortings) {
-        final var sorting = simplifications(toListOfListOfFloats(config.getSpi()), new HashSet<>())
-                .stream().map(s -> getSorting(config, s, knownSortings)).filter(Objects::nonNull).findFirst();
-        return sorting.orElse(null);
     }
 
     /*
@@ -170,13 +190,13 @@ public class ProofGenerator {
         final var signature = signature(config.getSpi(), config.getPi());
 
         for (int i = 0; i < signature.length; i++) {
-            if (isOpenGate(i + 1, signature)) {
-                final var a = (i + 1) % signature.length;
+            if (isOpenGate(i, signature)) {
+                final var a = i;
                 for (int b = 0; b < signature.length; b++) {
                     for (int c = b; c < signature.length; c++) {
                         if (!(a == b && b == c)) {
-                            result.add(new Pair<>(String.format("Type 2, a=%d b=%d c=%d", a, b, c),
-                                    fromSignature(extend(signature, newCycleLabel, a, b, c).elements())));
+                            result.add(new Pair<>(String.format("a=%d b=%d c=%d", a, b, c),
+                                    fromSignature(unorientedExtension(signature, newCycleLabel, a, b, c).elements())));
                         }
                     }
                 }
@@ -204,8 +224,8 @@ public class ProofGenerator {
             for (int b = a; b < signature.length; b++) {
                 for (int c = b; c < signature.length; c++) {
                     if (!(a == b && b == c)) {
-                        result.add(new Pair<>(String.format("Type 2, a=%d b=%d c=%d", a, b, c),
-                                fromSignature(extend(signature, newCycleLabel, a, b, c).elements())));
+                        result.add(new Pair<>(String.format("a=%d b=%d c=%d", a, b, c),
+                                fromSignature(unorientedExtension(signature, newCycleLabel, a, b, c).elements())));
                     }
                 }
             }
@@ -220,15 +240,34 @@ public class ProofGenerator {
     private static List<Pair<String, Configuration>> type3Extensions(final Configuration config) {
         final var result = new ArrayList<Pair<String, Configuration>>();
 
+        final var _cyclesSizes = new HashMap<Byte, Byte>();
         final var signature = signature(config.getSpi(), config.getPi());
+        for (int i = 0; i < signature.length; i++) {
+            _cyclesSizes.computeIfAbsent((byte) Math.floor(signature[i]), _s -> (byte) 0);
+            _cyclesSizes.computeIfPresent((byte) Math.floor(signature[i]), (k, v) -> (byte) (v + 1));
+        }
+
+        final var cycleIndex = cycleIndex(config.getSpi(), config.getPi());
+        final var cyclesByLabel = new HashMap<Integer, Cycle>();
+        for (int i = 0; i < signature.length; i++) {
+            final int _i = i;
+            cyclesByLabel.computeIfAbsent((int) Math.floor(signature[i]), k -> cycleIndex[config.getPi().get(_i)]);
+        }
 
         for (int label = 1; label <= config.getSpi().size(); label++) {
             if (!isOriented(signature, label)) {
                 for (int a = 0; a < signature.length; a++) {
                     for (int b = a; b < signature.length; b++) {
-                        final var extension = fromSignature(extend(signature, (byte) label, a, b).elements());
+                        final var extendedSignature = unorientedExtension(signature, (byte) label, a, b).elements();
+                        var extension = fromSignature(extendedSignature);
                         if (extension.getNumberOfOpenGates() <= 2) {
-                            result.add(new Pair<>(String.format("Type 3, a=%d b=%d", a, b), extension));
+                            result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
+                        }
+
+                        if (_cyclesSizes.get((byte) label) == 3) {
+                            extension = fromSignature(makeOriented5Cycle(extendedSignature, label));
+                            result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s - turn oriented", a, b,
+                                    cyclesByLabel.get(label)), extension));
                         }
                     }
                 }
@@ -236,6 +275,20 @@ public class ProofGenerator {
         }
 
         return result;
+    }
+
+    private static float[] makeOriented5Cycle(final float[] extension, final int label) {
+        final var fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
+        int count = 0;
+        for (int i = 0; i < extension.length; i++) {
+            if (count > fractions.length) {
+                break;
+            }
+            if (Math.floor(extension[i]) == label) {
+                extension[i] += fractions[count++];
+            }
+        }
+        return extension;
     }
 
     private static boolean isOriented(float[] signature, int label) {
@@ -247,112 +300,8 @@ public class ProofGenerator {
         return false;
     }
 
-    private static List<Cycle> getSorting(final Configuration config, final List<List<Float>> simplificationSpi,
-                                          final Pair<Map<Configuration, List<Cycle>>,
-                                                  Map<Integer, List<Configuration>>> knownSortings) {
-        final var simplifiedConfig = fromSignature(Simplification.signature(simplificationSpi));
-        final var simplificationPi = simplificationSpi.stream().flatMap(Collection::stream)
-                .sorted().collect(Collectors.toList());
 
-        List<Cycle> sorting;
-        if (knownSortings.getFirst().containsKey(config)) {
-            final var equivalentConfig = knownSortings.getSecond().get(simplifiedConfig.hashCode())
-                    .stream().filter(c -> c.equals(simplifiedConfig)).findFirst().get();
-            final var equivalentSorting = knownSortings.getFirst().get(equivalentConfig);
-            final var simplificationSorting = Simplification.simplificationSorting(equivalentConfig, equivalentSorting,
-                    simplifiedConfig, simplificationPi);
-
-            sorting = mimicSorting(simplificationPi, simplificationSorting);
-        } else {
-            sorting = subConfigurationHasSorting(simplifiedConfig, knownSortings);
-            if (sorting != null) {
-                sorting = mimicSorting(simplificationPi,
-                        simplificationSorting(simplifiedConfig, sorting, simplificationPi));
-            }
-        }
-
-        if (sorting != null && !is11_8(config.getSpi(), config.getPi(), sorting)) {
-            throw new RuntimeException("ERROR");
-        }
-
-        return sorting;
-    }
-
-    private static List<Cycle> subConfigurationHasSorting(final Configuration config,
-                                                          final Pair<Map<Configuration, List<Cycle>>,
-                                                                  Map<Integer, List<Configuration>>> knownSortings) {
-        for (int i = 3; i <= config.getSpi().size(); i++) {
-            for (final var mu : combinations(config.getSpi(), i)) {
-                final var _config = toConfiguration(mu.getVector(), config.getPi());
-                if (_config.getNumberOfOpenGates() <= 2) {
-                    if (knownSortings.getFirst().containsKey(_config)) {
-                        final var equivalentConfig = knownSortings.getSecond().get(_config.hashCode())
-                                .stream().filter(c -> c.equals(_config)).findFirst().get();
-
-                        final var cycleIndex = createCycleIndex(mu.getVector(), config.getPi());
-
-                        final var _pi = new ByteArrayList(equivalentConfig.getPi().size());
-                        for (var j = 0; j < config.getPi().size(); j++) {
-                            if (cycleIndex[config.getPi().getSymbols()[j]] != null)
-                                _pi.add(config.getPi().getSymbols()[j]);
-                        }
-
-                        final var signature = new float[_pi.elements().length];
-                        final Map<Cycle, Byte> labels = new HashMap<>();
-                        for (int k = 0; k < _pi.elements().length; k++) {
-                            labels.computeIfAbsent(cycleIndex[_pi.elements()[k]], c -> (byte) (labels.size() + 1));
-                            signature[k] = labels.get(cycleIndex[_pi.elements()[k]]);
-                        }
-
-                        final var matchedSignature = equivalentConfig.getEquivalentSignatures()
-                                .stream().filter(s -> Arrays.equals(s.getSignature(), signature)).findFirst().get();
-
-                        var pi = matchedSignature.getPi();
-                        var cPi = new Cycle(_pi);
-
-                        final var result = new ArrayList<Cycle>();
-                        for (final var rho : equivalentConfig.equivalentSorting(matchedSignature,
-                                knownSortings.getFirst().get(equivalentConfig))) {
-                            final var _rho = new Cycle(cPi.get(pi.indexOf(rho.get(0))),
-                                    cPi.get(pi.indexOf(rho.get(1))), cPi.get(pi.indexOf(rho.get(2))));
-                            result.add(_rho);
-
-                            pi = applyTransposition(pi, rho);
-                            cPi = applyTransposition(cPi, _rho);
-                        }
-                        return result;
-                    }
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private static Configuration toConfiguration(final List<Cycle> spi, final Cycle pi) {
-        final var cycleIndex = createCycleIndex(spi, pi);
-
-        final var labelMap = new HashMap<Cycle, Byte>();
-
-        for (final var cycle : spi) {
-            labelMap.computeIfAbsent(cycle, c -> (byte) (labelMap.size() + 1));
-        }
-
-        final var _pi = new FloatArrayList(spi.stream().mapToInt(Cycle::size).sum());
-        for (int i = 0; i < pi.size(); i++) {
-            if (cycleIndex[pi.get(i)] != null)
-                _pi.add(labelMap.get(cycleIndex[pi.get(i)]));
-        }
-
-        return fromSignature(_pi.elements());
-    }
-
-    private static boolean isValid(final Configuration config) {
-        final var sigma = computeProduct(config.getSpi(), config.getPi());
-        return sigma.size() == 1 && sigma.stream().findFirst().get().size() == config.getPi().size();
-    }
-
-    private static FloatArrayList extend(final float[] signature, final byte label, final int... positions) {
+    private static FloatArrayList unorientedExtension(final float[] signature, final byte label, final int... positions) {
         Preconditions.checkArgument(1 < positions.length && positions.length <= 3);
         Arrays.sort(positions);
         final var extension = new FloatArrayList(signature);
