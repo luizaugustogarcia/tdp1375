@@ -9,11 +9,15 @@ import cern.colt.list.FloatArrayList;
 import com.google.common.base.Preconditions;
 import org.apache.commons.math3.util.Pair;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -77,6 +81,8 @@ public class ProofGenerator {
         if (sorting != null) {
             final var out = new PrintStream(new File("proof\\" + config.getSecond().getCanonical().getSpi() + ".html"));
             out.println("<HTML><HEAD><TITLE></TITLE></HEAD><BODY><PRE>");
+            drawConfig(config.getSecond());
+            out.println(String.format("<img src=\"%s.png\">", config.getSecond().getSpi()));
             out.println(config.getSecond().getSpi());
             out.println("HAS (11/8)-SEQUENCE");
             var spi = config.getSecond().getSpi();
@@ -91,7 +97,8 @@ public class ProofGenerator {
 
         final var out = new PrintStream(new File("proof\\" + config.getSecond().getCanonical().getSpi() + ".html"));
         out.println("<HTML><HEAD><TITLE></TITLE></HEAD><BODY><PRE>");
-
+        drawConfig(config.getSecond());
+        out.println(String.format("<img src=\"%s.png\">", config.getSecond().getSpi()));
         out.println(config.getSecond().getSpi());
 
         if (config.getSecond().isFull()) {
@@ -133,6 +140,16 @@ public class ProofGenerator {
         }
 
         out.println("</PRE></BODY></HTML>");
+    }
+
+    private static void drawConfig(final Configuration config) throws IOException {
+        var height = (config.getPi().size() * 10) + 10;
+        var bufferedImage = new BufferedImage(config.getPi().size() * 40, height, BufferedImage.TYPE_INT_ARGB);
+        final var canvas = bufferedImage.createGraphics();
+        canvas.setRenderingHints(new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON));
+        canvas.translate(10, height - 10);
+        config.draw(canvas);
+        ImageIO.write(bufferedImage, "PNG", new File("proof\\" + config.getSpi() + ".png"));
     }
 
     private static List<Cycle> getSorting(final Configuration config, final Pair<Map<Configuration, List<Cycle>>,

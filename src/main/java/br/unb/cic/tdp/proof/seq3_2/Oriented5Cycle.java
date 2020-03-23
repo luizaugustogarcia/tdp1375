@@ -1,7 +1,8 @@
-package br.unb.cic.tdp.proof;
+package br.unb.cic.tdp.proof.seq3_2;
 
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.proof.Case;
 import com.google.common.primitives.Bytes;
 import org.paukov.combinatorics.Factory;
 
