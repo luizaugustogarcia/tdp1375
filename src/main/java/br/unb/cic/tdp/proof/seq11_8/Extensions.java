@@ -25,15 +25,15 @@ public class Extensions {
         Files.createDirectories(Paths.get(outputDir + "/dfs/"));
 
         // oriented 5-cycle (extensions not leading to new oriented cycles)
-        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,3,1,4,2)"), new Cycle("0,1,2,3,4"))),
+        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,3,1,4,2)"))),
                 knownSortings, shouldAlsoUseBruteForce, outputDir);
 
         // interleaving pair
-        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)"), new Cycle("0,1,2,3,4,5"))),
+        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)"))),
                 knownSortings, shouldAlsoUseBruteForce, outputDir);
 
         // intersecting pair
-        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)"), new Cycle("0,1,2,3,4,5"))),
+        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)"))),
                 knownSortings, shouldAlsoUseBruteForce, outputDir);
     }
 

@@ -12,7 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Stack;
 
-import static br.unb.cic.tdp.base.CommonOperations.searchFor2Move;
+import static br.unb.cic.tdp.base.CommonOperations.searchFor2MoveOddCycles;
 import static br.unb.cic.tdp.base.CommonOperations.searchForSortingSeq;
 
 public class Oriented5Cycle {
@@ -36,7 +36,7 @@ public class Oriented5Cycle {
 
             // It is the case to avoid combinations originating 2-moves because the symbols
             // in the only cycle of spi are indeed the symbols of the actual 5-cycle
-            if (pi.isOriented(triple) && searchFor2Move(spi, pi) == null) {
+            if (pi.isOriented(triple) && searchFor2MoveOddCycles(spi, pi) == null) {
                 final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), spi.getNumberOfEvenCycles(),
                         1.5F);
 

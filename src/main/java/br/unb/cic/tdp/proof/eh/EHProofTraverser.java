@@ -32,7 +32,7 @@ public class EHProofTraverser {
     private static void traverse(final String baseFolder, final String startFile, final int depth,
                                  final CaseProcessor processor, final Set<Configuration> processedConfigs) {
         final var spi = readSpi(startFile);
-        final var configuration = new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
+        final var configuration = new Configuration(spi);
         final var sorting = readSorting(baseFolder + startFile);
 
         processor.process(configuration, sorting, depth, processedConfigs.contains(configuration));

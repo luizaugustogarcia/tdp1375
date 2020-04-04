@@ -17,22 +17,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 
 public class Combinations {
     private static final Configuration oriented5Cycle = new Configuration(
-            new MulticyclePermutation("(0,3,1,4,2)"), CANONICAL_PI[5]);
+            new MulticyclePermutation("(0,3,1,4,2)"));
     private static final Configuration interleavingPair = new Configuration(
-            new MulticyclePermutation("(0,4,2)(1,5,3)"), CANONICAL_PI[6]);
+            new MulticyclePermutation("(0,4,2)(1,5,3)"));
     private static final Configuration necklaceSize4 = new Configuration(
-            new MulticyclePermutation("(0,10,2)(1,5,3)(4,8,6)(7,11,9)"), CANONICAL_PI[12]);
+            new MulticyclePermutation("(0,10,2)(1,5,3)(4,8,6)(7,11,9)"));
     private static final Configuration twistedNecklaceSize4 = new Configuration(
-            new MulticyclePermutation("(0,7,5)(1,11,9)(2,6,4)(3,10,8)"), CANONICAL_PI[12]);
+            new MulticyclePermutation("(0,7,5)(1,11,9)(2,6,4)(3,10,8)"));
     private static final Configuration necklaceSize5 = new Configuration(
-            new MulticyclePermutation("(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)"), CANONICAL_PI[15]);
+            new MulticyclePermutation("(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)"));
     private static final Configuration necklaceSize6 = new Configuration(
-            new MulticyclePermutation("(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)"), CANONICAL_PI[18]);
+            new MulticyclePermutation("(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)"));
     static final Configuration[] badSmallComponents = new Configuration[]{oriented5Cycle, interleavingPair,
             necklaceSize4, twistedNecklaceSize4, necklaceSize5, necklaceSize6};
 
@@ -162,7 +161,7 @@ public class Combinations {
 
                 final String info;
                 if (badSmallComponent == oriented5Cycle)
-                    info = "oriented 5-cycle";
+                    info = "bad oriented 5-cycle";
                 else if (badSmallComponent == interleavingPair)
                     info = "unoriented interleaving pair";
                 else if (badSmallComponent == necklaceSize4)

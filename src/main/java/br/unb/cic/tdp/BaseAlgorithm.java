@@ -1,107 +1,164 @@
 package br.unb.cic.tdp;
 
 import br.unb.cic.tdp.base.CommonOperations;
+import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
-import br.unb.cic.tdp.proof.Case;
+import br.unb.cic.tdp.proof.ProofGenerator;
+import cern.colt.list.ByteArrayList;
 import com.google.common.base.Throwables;
+import com.google.common.primitives.Bytes;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.base.CommonOperations.applyTransposition;
-import static br.unb.cic.tdp.base.CommonOperations.isOriented;
+import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 public abstract class BaseAlgorithm {
 
-    protected static final String UNRTD_3_2 = "unoriented/3_2";
-    protected static final String UNRTD_INTERSECTING_PAIR = "unoriented/(0,3,1)(2,5,4)";
-    protected static final String UNRTD_INTERLEAVING_PAIR = "unoriented/(0,4,2)(1,5,3)";
-    protected static final String UNRTD_BAD_SMALL_INTERLEAVING_PAIR = "unoriented/bad-small-(0,4,2)(1,5,3)";
-    protected static final String UNRTD_BAD_SMALL_NECKLACE_SIZE_4 = "unoriented/bad-small-(0,10,2)(1,5,3)(4,8,6)(7,11,9)";
-    protected static final String UNRTD_BAD_SMALL_TWISTED_NECKLACE_SIZE_4 = "unoriented/bad-small-(0,7,5)(1,11,9)(2,6,4)(3,10,8)";
-    protected static final String UNRTD_BAD_SMALL_NECKLACE_SIZE_5 = "unoriented/bad-small-(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)";
-    protected static final String UNRTD_BAD_SMALL_NECKLACE_SIZE_6 = "unoriented/bad-small-(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)";
+    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> _11_8cases;
+    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> _3_2cases;
 
-    protected Map<Integer, List<Case>> _11_8UnorientedCases = new HashMap<>();
-    protected List<Case> _1_1OddCyclesCases = new ArrayList<>();
-    protected List<Case> _2_2OddCyclesCases = new ArrayList<>();
-    protected List<Case> _3_2Cases = new ArrayList<>();
+    public BaseAlgorithm() {
+        final var _11_8sortings = new HashMap<Configuration, List<Cycle>>();
+        loadSortings("cases/cases-oriented-7cycle.txt").forEach(_11_8sortings::put);
+        loadSortings("cases/cases-dfs.txt").forEach(_11_8sortings::put);
+        loadSortings("cases/cases-comb.txt").forEach(_11_8sortings::put);
+        _11_8cases = new Pair<>(_11_8sortings, _11_8sortings.keySet().stream()
+                .collect(Collectors.groupingBy(Configuration::hashCode)));
 
-    public BaseAlgorithm(final String casesFolder) {
-        //loadCases(casesFolder);
+        final var _3_2sortings = new HashMap<Configuration, List<Cycle>>();
+        loadSortings("cases/cases-3,2.txt").forEach(_3_2sortings::put);
+        _3_2cases = new Pair<>(_3_2sortings, _3_2sortings.keySet().stream()
+                .collect(Collectors.groupingBy(Configuration::hashCode)));
     }
 
-    abstract int sort(Cycle pi);
-
-    protected void loadCases(final String casesFolder) {
-        // Generates the 2-moves to be applied when we have one odd cycle in sigma
-        // pi^{-1}
-//        _1_1OddCyclesCases.addAll(OddCycles.generate());
-
-        // Generates the (2,2)-sequences to be applied when we have four odd cycles in
-        // sigma pi^{-1}
-//        _2_2OddCyclesCases.addAll(OddCycles.generate2_2Cases());
-
-        // Loads the (3,2)-sequences to be applied to the interleaving pair and to
-        // the cases where three 3-cycles are intersecting
-        _3_2Cases = loadCasesFromFile(String.format("%s/%s", casesFolder, UNRTD_3_2));
-
-        final List<Case> cases = new ArrayList<>();
-        addCases(casesFolder, cases, UNRTD_INTERSECTING_PAIR, UNRTD_INTERLEAVING_PAIR,
-                UNRTD_BAD_SMALL_INTERLEAVING_PAIR, UNRTD_BAD_SMALL_NECKLACE_SIZE_4,
-                UNRTD_BAD_SMALL_TWISTED_NECKLACE_SIZE_4, UNRTD_BAD_SMALL_NECKLACE_SIZE_5,
-                UNRTD_BAD_SMALL_NECKLACE_SIZE_6);
-
-        _11_8UnorientedCases.putAll(cases.stream().collect(Collectors.groupingBy(Case::getCyclesCount)));
-    }
-
-    protected void addCases(final String casesFolder, final List<Case> cases, final String... caseFiles) {
-        for (final var caseFile : caseFiles) {
-            cases.addAll(loadCasesFromFile(String.format("%s/%s", casesFolder, caseFile)));
-        }
-    }
-
-    public static int getNorm(final Collection<Cycle> mu) {
+    public int getNorm(final Collection<Cycle> mu) {
         return mu.stream().mapToInt(Cycle::getNorm).sum();
     }
 
-    protected static byte[] getStartingBy(final byte[] cycle, final int i) {
-        final var _symbols = new byte[cycle.length];
-        System.arraycopy(cycle, i, _symbols, 0, _symbols.length - i);
-        System.arraycopy(cycle, 0, _symbols, _symbols.length - i, i);
-        return _symbols;
-    }
-
-    public static boolean isOutOfInterval(final int x, final int left, final int right) {
+    protected boolean isOutOfInterval(final int x, final int left, final int right) {
         if (left < right)
             return x < left || x > right;
         return false;
     }
 
-    // O(n)
-    public static Cycle getIntersectingCycle(final int left, final int right, final Cycle[] cycleIndex,
-                                             final Cycle piInverse) {
-        final var gates = left < right ? right - left : piInverse.size() - (left - right);
-        for (var i = 1; i < gates; i++) {
-            final var index = (i + left) % piInverse.size();
-            final var intersectingCycle = cycleIndex[piInverse.get(index)];
-            if (intersectingCycle != null && intersectingCycle.size() > 1) {
-                final var a = piInverse.get(index);
-                final var b = intersectingCycle.image(a);
-                if (isOutOfInterval(piInverse.indexOf(b), left, right)) {
-                    return intersectingCycle.getStartingBy(a);
+    protected boolean contains(final Set<Byte> muSymbols, final Cycle cycle) {
+        for (final Byte symbol : cycle.getSymbols())
+            if (muSymbols.contains(symbol))
+                return true;
+        return false;
+    }
+
+    protected List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, Cycle pi) {
+        final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
+        final Set<Byte> muSymbols = mu.stream().flatMap(c -> Bytes.asList(c.getSymbols()).stream())
+                .collect(Collectors.toSet());
+
+        final var muCycleIndex = cycleIndex(mu, pi);
+        final var spiCycleIndex = cycleIndex(spi, pi);
+
+        // Type 1 extension
+        // These two outer loops are O(1), since at this point, ||mu|| never
+        // exceeds 16
+        for (final var muCycle : mu) {
+            for (var i = 0; i < muCycle.getSymbols().length; i++) {
+                final var a = piInverse.indexOf(muCycle.get(i));
+                final var b = piInverse.indexOf(muCycle.image(muCycle.get(i)));
+
+                for (int j = 0; j < piInverse.size(); j++) {
+                    final var intersecting = spiCycleIndex[piInverse.get(j)];
+                    if (!intersecting.equals(muCycle) && !contains(muSymbols, intersecting)) {
+                        if (a < j && j < b) {
+                            for (final var symbol : intersecting.getStartingBy(piInverse.get(j)).getSymbols()) {
+                                final var nextSymbol = intersecting.image(symbol);
+                                final var index = piInverse.indexOf(nextSymbol);
+                                if (index > b || index < a) {
+                                    final List<Cycle> newMu = new ArrayList<>(mu);
+                                    newMu.add(new Cycle(symbol, nextSymbol, intersecting.image(nextSymbol)));
+                                    return newMu;
+                                }
+                            }
+                        } else if (a > j && j > b) {
+                            for (final var symbol : intersecting.getSymbols()) {
+                                final var nextSymbol = intersecting.image(symbol);
+                                final var index = piInverse.indexOf(nextSymbol);
+                                if (a < index || index < b) {
+                                    final List<Cycle> newMu = new ArrayList<>(mu);
+                                    newMu.add(new Cycle(symbol, nextSymbol, intersecting.image(nextSymbol)));
+                                    return newMu;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+
+        // Type 2 extension
+        // O(n)
+        for (final var muCycle : mu) {
+            for (var i = 0; i < muCycle.getSymbols().length; i++) {
+                final var left = piInverse.indexOf(muCycle.get(i));
+                final var right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
+                final var gates = left < right ? right - left : piInverse.size() - (left - right);
+                for (var j = 1; j < gates; j++) {
+                    final var index = (j + left) % piInverse.size();
+                    if (muCycleIndex[piInverse.get(index)] == null) {
+                        final var intersectingCycle = spiCycleIndex[piInverse.get(index)];
+                        if (intersectingCycle != null && intersectingCycle.size() > 1
+                                && !contains(muSymbols, spiCycleIndex[intersectingCycle.get(0)])) {
+                            final var a = piInverse.get(index);
+                            final var b = intersectingCycle.image(a);
+                            if (isOutOfInterval(piInverse.indexOf(b), left, right)) {
+                                final var c = intersectingCycle.image(b);
+                                final List<Cycle> newMu = new ArrayList<>(mu);
+                                newMu.add(new Cycle(a, b, c));
+                                return newMu;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         return null;
     }
+
+    private Map<Configuration, List<Cycle>> loadSortings(final String resource) {
+        try {
+            final Path file = Paths.get(ProofGenerator.class.getClassLoader().getResource(resource).toURI());
+            final var result = new HashMap<Configuration, List<Cycle>>();
+            final var br = new BufferedReader(new FileReader(file.toFile()), 1024 * 1024);
+
+            String line;
+            while ((line = br.readLine()) != null) {
+                final var lineSplit = line.trim().split("->");
+                final var spi = new MulticyclePermutation(lineSplit[0].replace(" ", ","));
+                final var sorting = Arrays.stream(lineSplit[1].substring(1, lineSplit[1].length() - 1)
+                        .split(", ")).map(c -> c.replace(" ", ",")).map(Cycle::new)
+                        .collect(Collectors.toList());
+                final var config = new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
+                result.put(config, sorting);
+            }
+
+            return result;
+        } catch (IOException | URISyntaxException e) {
+            Throwables.propagate(e);
+        }
+        return null;
+    }
+
+    abstract int sort(Cycle pi);
 
     protected void apply2MoveTwoOddCycles(final MulticyclePermutation spi, final Cycle pi) {
         final var evenCycles = spi.getNumberOfEvenCycles();
@@ -109,15 +166,15 @@ public abstract class BaseAlgorithm {
         for (final var c1 : oddCycles)
             for (final var c2 : oddCycles)
                 if (c1 != c2) {
-                    for (final var a : CommonOperations.getSegmentsOfLength2(c1))
-                        for (final var b : CommonOperations.getSegmentsOfLength2(c2)) {
+                    for (final var a : getSegmentsOfLength2(c1))
+                        for (final var b : getSegmentsOfLength2(c2)) {
                             for (final var rho : CommonOperations
                                     .combinations(Arrays.asList(a.get(0), a.get(1), b.get(0), b.get(1)), 3)) {
                                 final var rho1 = new Cycle(rho.getVector().stream().mapToInt(i -> i).toArray());
                                 if (pi.isApplicable(rho1)
                                         && (computeProduct(spi, rho1.getInverse())).getNumberOfEvenCycles()
                                         - evenCycles == 2) {
-                                    applyMoves(pi, rho1);
+                                    applyMoves(pi, Collections.singletonList(rho1));
                                 }
                             }
                         }
@@ -128,20 +185,13 @@ public abstract class BaseAlgorithm {
         return spi.stream().anyMatch(c -> !c.isEven());
     }
 
-    public static boolean contains(final Set<Byte> muSymbols, final Cycle cycle) {
-        for (final Byte symbol : cycle.getSymbols())
-            if (muSymbols.contains(symbol))
-                return true;
-        return false;
-    }
-
     protected Pair<Cycle, Cycle> searchFor2_2Seq(final MulticyclePermutation spi, final Cycle pi) {
         final var oddCycles = spi.stream().filter(c -> !c.isEven()).collect(Collectors.toList());
 
         for /* O(n) */ (final var c1 : oddCycles)
             for /* O(n) */ (final var c2 : oddCycles)
                 if (c1 != c2) {
-                    for /* O(n) */ (final var a : CommonOperations.getSegmentsOfLength2(c1))
+                    for /* O(n) */ (final var a : getSegmentsOfLength2(c1))
                         for (final Byte b : c2.getSymbols()) {
                             for (final var rho : CommonOperations
                                     .combinations(Arrays.asList(a.get(0), a.get(1), b), 3)) {
@@ -150,7 +200,7 @@ public abstract class BaseAlgorithm {
                                     final var _spi = PermutationGroups
                                             .computeProduct(spi, rho1.getInverse());
                                     final var _pi = applyTransposition(pi, rho1);
-                                    final var rho2 = CommonOperations.searchFor2Move(_spi, _pi);
+                                    final var rho2 = searchFor2MoveOddCycles(_spi, _pi);
                                     if (rho2 != null)
                                         return new Pair<>(rho1, rho2);
                                 }
@@ -176,7 +226,7 @@ public abstract class BaseAlgorithm {
                                 final var _spi = PermutationGroups.computeProduct(spi,
                                         rho1.getInverse());
                                 final var _pi = applyTransposition(pi, rho1);
-                                final var rho2 = CommonOperations.searchFor2Move(_spi, _pi);
+                                final var rho2 = searchFor2MoveOddCycles(_spi, _pi);
                                 if (rho2 != null)
                                     return new Pair<>(rho1, rho2);
                             }
@@ -189,44 +239,31 @@ public abstract class BaseAlgorithm {
         return null;
     }
 
-    protected void applyMoves(final Cycle pi, final Cycle... rhos) {
+    protected void applyMoves(final Cycle pi, final List<Cycle> rhos) {
         var _pi = pi;
         for (final var rho : rhos) {
-            _pi = CommonOperations.applyTransposition(_pi, rho);
+            _pi = applyTransposition(_pi, rho);
         }
         pi.redefine(_pi.getSymbols());
     }
 
-    protected List<Case> loadCasesFromFile(final String file) {
-        final List<Case> _cases = new ArrayList<>();
-
-        try (final var fr = new BufferedReader(new FileReader(file))) {
-            String line;
-
-            while ((line = fr.readLine()) != null) {
-                final var parts = line.trim().split(";");
-                final var spi = new MulticyclePermutation(parts[0]);
-                final var pi = new byte[spi.stream().mapToInt(c -> c.getSymbols().length).sum()];
-                for (var i = 0; i < pi.length; i++) {
-                    pi[i] = (byte) i;
-                }
-                final var rhos = new ArrayList<Cycle>();
-                for (var _rho : parts[1].split("-")) {
-                    _rho = _rho.replaceAll("\\[|\\]|\\s", "");
-                    final var rho = new byte[3];
-                    final var symbols = _rho.split(",");
-                    rho[0] = Byte.parseByte(symbols[0]);
-                    rho[1] = Byte.parseByte(symbols[1]);
-                    rho[2] = Byte.parseByte(symbols[2]);
-                    rhos.add(new Cycle(rho));
-                }
-                _cases.add(new Case(spi, new Cycle(pi), rhos));
+    protected List<Cycle> searchForSeq(final List<Cycle> mu, final Cycle pi,
+                                       final Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> _cases) {
+        final var allSymbols = mu.stream().flatMap(c -> Bytes.asList(c.getSymbols()).stream()).collect(Collectors.toSet());
+        final var _pi = new ByteArrayList(7);
+        for (final var symbol : pi.getSymbols()) {
+            if (allSymbols.contains(symbol)) {
+                _pi.add(symbol);
             }
-        } catch (final IOException e) {
-            Throwables.propagate(e);
         }
 
-        return _cases;
+        final var config = new Configuration(new MulticyclePermutation(mu), new Cycle(_pi));
+        if (_cases.getFirst().containsKey(config)) {
+            return config.translatedSorting(_cases.getSecond().get(config.hashCode()).stream()
+                    .filter(_c -> _c.equals(config)).findFirst().get(), _cases.getFirst().get(config));
+        }
+
+        return null;
     }
 
     protected void apply3_2_Unoriented(final MulticyclePermutation spi, final Cycle pi) {
@@ -235,19 +272,11 @@ public abstract class BaseAlgorithm {
         mu.add(new Cycle(initialFactor.get(0), initialFactor.get(1), initialFactor.get(2)));
         for (var i = 0; i < 2; i++) {
             mu = extend(mu, spi, pi);
-            final var rhos = searchForSeq(mu, spi, pi, _3_2Cases);
+            final var rhos = searchForSeq(mu, pi, _3_2cases);
             if (rhos != null) {
                 applyMoves(pi, rhos);
                 return;
             }
         }
-    }
-
-    static List<Cycle> extend(List<Cycle> mu, MulticyclePermutation spi, Cycle pi) {
-        return null;
-    }
-
-    static Cycle[] searchForSeq(List<Cycle> mu, MulticyclePermutation spi, Cycle pi, List<Case> cases) {
-        return new Cycle[0];
     }
 }

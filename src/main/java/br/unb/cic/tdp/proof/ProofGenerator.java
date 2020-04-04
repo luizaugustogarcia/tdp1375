@@ -74,7 +74,7 @@ public class ProofGenerator {
             final var lineSplit = line.trim().split("->");
             if (lineSplit.length > 1) {
                 final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1]);
-                knownSortings.put(new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]),
+                knownSortings.put(new Configuration(spi),
                         Arrays.stream(lineSplit[1].split(";")).map(Cycle::new).collect(Collectors.toList()));
             }
         });
@@ -82,7 +82,6 @@ public class ProofGenerator {
         return new Pair<>(knownSortings, knownSortings.keySet().stream()
                 .collect(Collectors.groupingBy(Configuration::hashCode)));
     }
-
 
     public static List<Cycle> searchForSorting(final Configuration config, final Pair<Map<Configuration, List<Cycle>>,
             Map<Integer, List<Configuration>>> knownSortings, final boolean shouldAlsoUseBruteForce) {
@@ -107,7 +106,7 @@ public class ProofGenerator {
             // TODO remove
             System.out.println("brute force sorting " + config);
 
-            final var _sorting = searchFor11_8SortingSeq(config.getSpi(), config.getPi());
+            final var _sorting = searchFor11_8SeqParallel(config.getSpi(), config.getPi());
             knownSortings.getFirst().put(config, _sorting);
             knownSortings.getSecond().computeIfAbsent(config.hashCode(), key -> new ArrayList<>());
             knownSortings.getSecond().computeIfPresent(config.hashCode(), (key, value) -> {

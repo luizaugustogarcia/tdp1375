@@ -6,6 +6,7 @@ import org.apache.commons.lang.ArrayUtils;
 import java.util.Arrays;
 
 import static br.unb.cic.tdp.base.CommonOperations.areSymbolsInCyclicOrder;
+import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
 
@@ -159,7 +160,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public byte pow(final byte a, final int power) {
-        return symbols[(symbolIndexes[a] + power) % symbols.length];
+        return symbols[mod(symbolIndexes[a] + power, symbols.length)];
     }
 
     public int getK(final byte a, final byte b) {
@@ -208,11 +209,11 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public boolean isApplicable(final Cycle rho) {
-        return areSymbolsInCyclicOrder(rho.getSymbols(), this.getSymbols());
+        return areSymbolsInCyclicOrder(rho.getSymbols(), this);
     }
 
     public boolean isOriented(final byte... symbols) {
-        assert symbols.length == 3: "ERROR";
+        assert symbols.length == 3 : "ERROR";
         boolean leap = false;
         for (int i = 0; i < symbols.length; i++) {
             if (symbolIndexes[symbols[i]] > symbolIndexes[symbols[(i + 1) % symbols.length]]) {

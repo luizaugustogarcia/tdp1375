@@ -36,7 +36,7 @@ public class OrientedCycleGreaterOrEquals7 {
                 "\t\t<script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js\" integrity=\"sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6\" crossorigin=\"anonymous\"></script>\n" +
                 "\t\t<style>* { font-size: small; }</style>\n" +
                 "\t</head>\n" +
-                "<body>\n");
+                "<body><div style=\"margin-top: 10px; margin-left: 10px;\"> \n");
 
         final var orientedCycle = new Cycle("0,3,4,1,5,2,6");
         final var orientedTriple = new byte[]{0, 1, 2};
@@ -64,7 +64,7 @@ public class OrientedCycleGreaterOrEquals7 {
 
                     assert !rhos.isEmpty() : "ERROR";
 
-                    out.println("<div style=\"margin-bottom: 10px; \">");
+                    out.println("<div style=\"margin-bottom: 10px; background-color: rgba(153, 255, 153, 0.15)\">");
                     out.println("\\bar{\\pi}: " + pi + "<br>");
                     out.println("Hash code: " + config.hashCode() + "<br>");
                     out.println("HAS (11/8)-SEQUENCE" + "<br>");
@@ -79,6 +79,6 @@ public class OrientedCycleGreaterOrEquals7 {
             }
         }
 
-        out.println("</body></html>");
+        out.println("</div></body></html>");
     }
 }

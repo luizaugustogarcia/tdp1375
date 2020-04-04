@@ -13,10 +13,6 @@ import static br.unb.cic.tdp.base.CommonOperations.*;
 
 public class Cases3_2 {
 
-    public static void main(String[] args) {
-        generate().stream().forEach(p -> System.out.println(p.getFirst()));
-    }
-
     /**
      * Generate the (3,2)-sequences to apply when we have either two interleaving
      * pairs or three intersecting 3-cycles in \spi.
@@ -25,7 +21,7 @@ public class Cases3_2 {
      */
     public static List<Pair<Configuration, List<Cycle>>> generate() {
         final var result = new ArrayList<Pair<Configuration, List<Cycle>>>();
-        result.add(new Pair<>(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)"), new Cycle("0,1,2,3,4,5")),
+        result.add(new Pair<>(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")),
                 Arrays.asList(new Cycle("0,2,4"), new Cycle("3,1,5"), new Cycle("2,4,0"))));
         result.addAll(generate(new MulticyclePermutation("(0,1,2)(3,4,5)(6,7,8)")));
         return result;
