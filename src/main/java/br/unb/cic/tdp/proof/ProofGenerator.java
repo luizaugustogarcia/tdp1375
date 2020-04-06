@@ -31,7 +31,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class ProofGenerator {
 
-    // mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.proof.ProofGenerator" -Dexec.args=".\\proof\\ false"
+    // mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.proof.ProofGenerator" -Dexec.args=".\\proof\\ true 8"
     public static void main(String[] args) throws IOException, URISyntaxException {
         Velocity.setProperty("resource.loader", "class");
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
@@ -54,9 +54,11 @@ public class ProofGenerator {
         final FileSystem fs = FileSystems.newFileSystem(URI.create(fileUri[0]), env);
         final Path path = fs.getPath(fileUri[1]);
 
-        final var knownSortings = loadKnownSortings(path);
+        /*final Path path = Paths.get(ProofGenerator.class.getClassLoader()
+                .getResource("known-sortings").toURI());*/
 
-        //TwoOriented5Cycle.generate(knownSortings, args[0]);
+        // Known sortings found by Elias and Hartman
+        final var knownSortings = loadKnownSortings(path);
 
         final var shouldAlsoUseBruteForce = args.length > 1 && args[1].equalsIgnoreCase("true");
         if (args.length > 2)
@@ -103,9 +105,6 @@ public class ProofGenerator {
         }
 
         if (shouldAlsoUseBruteForce && config.getSpi().stream().anyMatch(Cycle::isLong)) {
-            // TODO remove
-            System.out.println("brute force sorting " + config);
-
             final var _sorting = searchFor11_8SeqParallel(config.getSpi(), config.getPi());
             knownSortings.getFirst().put(config, _sorting);
             knownSortings.getSecond().computeIfAbsent(config.hashCode(), key -> new ArrayList<>());
@@ -113,9 +112,6 @@ public class ProofGenerator {
                 value.add(config);
                 return value;
             });
-
-            // TODO remove
-            System.out.println("brute force sorted " + config + "->" + _sorting);
 
             if (!_sorting.isEmpty())
                 return _sorting;

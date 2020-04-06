@@ -209,7 +209,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public boolean isApplicable(final Cycle rho) {
-        return areSymbolsInCyclicOrder(rho.getSymbols(), this);
+        return areSymbolsInCyclicOrder(this, rho.getSymbols());
     }
 
     public boolean isOriented(final byte... symbols) {

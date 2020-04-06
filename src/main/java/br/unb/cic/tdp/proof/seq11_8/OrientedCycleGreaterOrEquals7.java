@@ -35,6 +35,12 @@ public class OrientedCycleGreaterOrEquals7 {
                 "\t\t<script src=\"https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js\" integrity=\"sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo\" crossorigin=\"anonymous\"></script>\n" +
                 "\t\t<script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js\" integrity=\"sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6\" crossorigin=\"anonymous\"></script>\n" +
                 "\t\t<style>* { font-size: small; }</style>\n" +
+                "\t\t<script type=\"text/x-mathjax-config\">\n" +
+                "\t\tMathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\\\(','\\\\)']]}});\n" +
+                "\t\t</script>\n" +
+                "\t\t<script type=\"text/javascript\"\n" +
+                "\t\tsrc=\"http://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML\">\n" +
+                "\t\t</script>\n" +
                 "\t</head>\n" +
                 "<body><div style=\"margin-top: 10px; margin-left: 10px;\"> \n");
 
@@ -46,7 +52,7 @@ public class OrientedCycleGreaterOrEquals7 {
 
         final var spi = new MulticyclePermutation(orientedCycle);
 
-        out.println("<p>The possible forms of \\bar{\\pi} are (among the 360 generated cases, there are only 71 distinct cases): <br>");
+        out.println("<p>The possible forms of $\\bar{\\pi}$ are (among the 360 generated cases, there are only 71 distinct cases): <br>");
 
         final var verifiedPis = new HashSet<Cycle>();
 
@@ -65,9 +71,9 @@ public class OrientedCycleGreaterOrEquals7 {
                     assert !rhos.isEmpty() : "ERROR";
 
                     out.println("<div style=\"margin-bottom: 10px; background-color: rgba(153, 255, 153, 0.15)\">");
-                    out.println("\\bar{\\pi}: " + pi + "<br>");
+                    out.println("$\\bar{\\pi}$: " + pi + "<br>");
                     out.println("Hash code: " + config.hashCode() + "<br>");
-                    out.println("HAS (11/8)-SEQUENCE" + "<br>");
+                    out.println("$\frac{11}{8}$-SEQUENCE" + "<br>");
                     var _spi = spi;
                     for (int i = 0; i < rhos.size(); i++) {
                         final var rho = rhos.get(i);

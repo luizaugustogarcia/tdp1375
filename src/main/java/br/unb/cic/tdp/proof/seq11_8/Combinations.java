@@ -32,7 +32,7 @@ public class Combinations {
             new MulticyclePermutation("(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)"));
     private static final Configuration necklaceSize6 = new Configuration(
             new MulticyclePermutation("(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)"));
-    static final Configuration[] badSmallComponents = new Configuration[]{oriented5Cycle, interleavingPair,
+    public static final Configuration[] BAD_SMALL_COMPONENTS = new Configuration[]{oriented5Cycle, interleavingPair,
             necklaceSize4, twistedNecklaceSize4, necklaceSize5, necklaceSize6};
 
     public static void generate(final Pair<Map<Configuration, List<Cycle>>,
@@ -149,7 +149,7 @@ public class Combinations {
 
     private static List<Pair<String, Configuration>> extend(final Configuration config) {
         final var result = new ArrayList<Pair<String, Configuration>>();
-        for (final var badSmallComponent : badSmallComponents) {
+        for (final var badSmallComponent : BAD_SMALL_COMPONENTS) {
             for (int i = 0; i < config.getPi().size(); i++) {
                 final var badSmallComponentSignature = badSmallComponent.getSignature().getContent().clone();
                 for (int j = 0; j < badSmallComponentSignature.length; j++) {

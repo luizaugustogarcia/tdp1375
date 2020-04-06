@@ -16,10 +16,6 @@ import static br.unb.cic.tdp.base.CommonOperations.*;
 
 public class OddCycles {
 
-    public static void main(String[] args) {
-        generate().stream().forEach(p -> System.out.println(p.getFirst()));
-    }
-
     /**
      * Generate the 2-moves (i.e. (1,1)-sequences) to apply when we have two odd
      * cycles in \spi$.
@@ -35,9 +31,7 @@ public class OddCycles {
         permutation:
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
             final var pi = new Cycle(Bytes.toArray(permutation.getVector())).getInverse();
-            final var spiCycleIndex = cycleIndex(spi, pi);
-
-            final var iterator = generateAll0_2Moves(pi, spiCycleIndex).iterator();
+            final var iterator = generateAll0And2Moves(spi, pi).iterator();
             while (iterator.hasNext()) {
                 final var move = iterator.next();
                 final var rho1 = move.getKey();

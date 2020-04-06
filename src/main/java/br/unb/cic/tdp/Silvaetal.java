@@ -3,6 +3,7 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.ByteArrayList;
 import com.google.common.primitives.Bytes;
 import org.apache.commons.collections.ListUtils;
@@ -15,14 +16,32 @@ import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 public class Silvaetal extends BaseAlgorithm {
 
+    public Silvaetal() {
+        final var _11_8sortings = new HashMap<Configuration, List<Cycle>>();
+        loadSortings("cases/cases-oriented-7cycle.txt").forEach(_11_8sortings::put);
+        loadSortings("cases/cases-dfs.txt").forEach(_11_8sortings::put);
+        loadSortings("cases/cases-comb.txt").forEach(_11_8sortings::put);
+        _11_8cases = new Pair<>(_11_8sortings, _11_8sortings.keySet().stream()
+                .collect(Collectors.groupingBy(Configuration::hashCode)));
+    }
+
+    public static void main(String[] args) {
+        final var silvaetal = new Silvaetal();
+        System.out.println(silvaetal.sort(new Cycle(args[0])));
+    }
+
     @SuppressWarnings({"unchecked"})
     public int sort(Cycle pi) {
         final var n = pi.size();
 
-        final var sigma = CANONICAL_PI[pi.size()];
+        final var _sigma = new byte[pi.size()];
+        for (int i = 0; i < pi.size(); i++) {
+            _sigma[i] = (byte)i;
+        }
+
+        final var sigma = new Cycle(_sigma);
 
         var spi = computeProduct(true, n, sigma, pi.getInverse());
-        System.out.println(spi.toString() + spi.get3Norm());
 
         var distance = 0;
 

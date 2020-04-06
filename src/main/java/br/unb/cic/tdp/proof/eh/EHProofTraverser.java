@@ -3,13 +3,12 @@ package br.unb.cic.tdp.proof.eh;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import com.google.common.base.Throwables;
+import lombok.SneakyThrows;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
@@ -29,6 +28,7 @@ public class EHProofTraverser {
         traverse(baseFolder, startFile, 0, processor, processedConfigs);
     }
 
+    @SneakyThrows
     private static void traverse(final String baseFolder, final String startFile, final int depth,
                                  final CaseProcessor processor, final Set<Configuration> processedConfigs) {
         final var spi = readSpi(startFile);
@@ -61,8 +61,6 @@ public class EHProofTraverser {
                     }
                 }
             }
-        } catch (final Exception e) {
-            Throwables.propagate(e);
         }
     }
 
@@ -74,6 +72,7 @@ public class EHProofTraverser {
         return new MulticyclePermutation(str);
     }
 
+    @SneakyThrows
     private static List<Cycle> readSorting(final String file) {
         final var spi = readSpi(file);
         var pi = CANONICAL_PI[spi.getNumberOfSymbols()];
@@ -108,8 +107,6 @@ public class EHProofTraverser {
                     }
                 }
             }
-        } catch (final IOException e) {
-            Throwables.propagate(e);
         }
 
         return sorting;

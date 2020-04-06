@@ -240,11 +240,18 @@ public class Extensions {
     private static List<Pair<String, Configuration>> type3Extensions(final Configuration config) {
         final var result = new ArrayList<Pair<String, Configuration>>();
 
-        final var _cyclesSizes = new HashMap<Byte, Byte>();
         final var signature = signature(config.getSpi(), config.getPi());
+        final var _cyclesSizes = new HashMap<Byte, Byte>();
+        final var _symbolIndexes = new HashMap<Byte, List<Integer>>();
         for (int i = 0; i < signature.length; i++) {
             _cyclesSizes.computeIfAbsent((byte) Math.floor(signature[i]), _s -> (byte) 0);
             _cyclesSizes.computeIfPresent((byte) Math.floor(signature[i]), (k, v) -> (byte) (v + 1));
+            _symbolIndexes.computeIfAbsent((byte) Math.floor(signature[i]), _s -> new ArrayList<>());
+            int finalI = i;
+            _symbolIndexes.computeIfPresent((byte) Math.floor(signature[i]), (k, v) -> {
+                v.add(finalI);
+                return v;
+            });
         }
 
         final var cycleIndex = cycleIndex(config.getSpi(), config.getPi());
@@ -264,9 +271,9 @@ public class Extensions {
                             result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
                         }
 
-                        if (_cyclesSizes.get((byte) label) == 3) {
+                        if (_cyclesSizes.get((byte) label) == 3 && !areInTheSameGate(_symbolIndexes.get((byte) label), a, b)) {
                             extension = fromSignature(makeOriented5Cycle(extendedSignature, label));
-                            result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s - turn oriented", a, b,
+                            result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s, turn oriented", a, b,
                                     cyclesByLabel.get(label)), extension));
                         }
                     }
@@ -275,6 +282,22 @@ public class Extensions {
         }
 
         return result;
+    }
+
+    private static boolean areInTheSameGate(final List<Integer> gates, final int... newIndices) {
+        final var gatesFallenInto = new HashSet<Pair<Integer, Integer>>();
+
+        for (final var index : newIndices) {
+            for (int i = 0; i < gates.size(); i++) {
+                int left = gates.get(i), right = gates.get((i + 1) % gates.size());
+                if ((left < right && left < index && index <= right) ||
+                        (right < left && (left < index || index <= right))) {
+                    gatesFallenInto.add(new Pair<>(left, right));
+                }
+            }
+        }
+
+        return gatesFallenInto.size() == 1;
     }
 
     private static float[] makeOriented5Cycle(final float[] extension, final int label) {

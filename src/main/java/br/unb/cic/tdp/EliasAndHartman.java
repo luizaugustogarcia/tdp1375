@@ -1,18 +1,44 @@
 package br.unb.cic.tdp;
 
+import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.util.Pair;
+import lombok.SneakyThrows;
 import org.apache.commons.collections.ListUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 public class EliasAndHartman extends BaseAlgorithm {
+
+    @SneakyThrows
+    public EliasAndHartman() {
+        final var _11_8sortings = new HashMap<Configuration, List<Cycle>>();
+
+        Files.lines(Paths.get(this.getClass().getClassLoader()
+                .getResource("known-sortings").toURI())).forEach(line -> {
+            final var lineSplit = line.trim().split("->");
+            if (lineSplit.length > 1) {
+                final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1]);
+                _11_8sortings.put(new Configuration(spi),
+                        Arrays.stream(lineSplit[1].split(";")).map(Cycle::new).collect(Collectors.toList()));
+            }
+        });
+
+        _11_8cases = new Pair<>(_11_8sortings, _11_8sortings.keySet().stream()
+                .collect(Collectors.groupingBy(Configuration::hashCode)));
+    }
+
+    public static void main(String[] args) {
+        final var eliasAndHartman = new EliasAndHartman();
+        System.out.println(eliasAndHartman.sort(new Cycle(args[0])));
+    }
 
     @SuppressWarnings({"unchecked"})
     public int sort(Cycle pi) {
@@ -23,7 +49,6 @@ public class EliasAndHartman extends BaseAlgorithm {
         final var sigma = CANONICAL_PI[n];
 
         var spi = computeProduct(true, n, sigma, pi.getInverse());
-        System.out.println(spi.get3Norm());
 
         var distance = 0;
 

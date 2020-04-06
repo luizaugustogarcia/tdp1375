@@ -54,7 +54,7 @@ public class Configuration {
     public static float[] signature(final List<Cycle> spi, final Cycle pi) {
         final var labelByCycle = new HashMap<Cycle, Float>();
         final var cycleIndex = cycleIndex(spi, pi);
-        final var orientedCycles = spi.stream().filter(c -> !areSymbolsInCyclicOrder(c.getSymbols(), pi.getInverse()))
+        final var orientedCycles = spi.stream().filter(c -> !areSymbolsInCyclicOrder(pi.getInverse(), c.getSymbols()))
                 .collect(Collectors.toSet());
         final var symbolIndexByOrientedCycle = new HashMap<Cycle, byte[]>();
 
@@ -65,7 +65,7 @@ public class Configuration {
             final var cycle = cycleIndex[symbol];
             if (orientedCycles.contains(cycle)) {
                 symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
-                    final var symbolIndex = new byte[pi.size()];
+                    final var symbolIndex = new byte[pi.getMaxSymbol() + 1];
                     final var symbolMinIndex = Bytes.asList(c.getSymbols()).stream().sorted(comparing(s -> pi.indexOf(s))).findFirst().get();
                     c = c.getStartingBy(symbolMinIndex);
                     for (int j = 0; j < c.size(); j++) {
