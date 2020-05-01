@@ -1,12 +1,19 @@
-# tdp1375
-Algorithm for sorting by transpositions based on an algebraic approach with guarantee of approximation ratio of 1.375 for all permutations on the Symmetric Group S_n (not only for the subset of the simple permutations) conceived as part of the Ph.D. thesis of Luiz Silva.
+# TDP 1375
 
-The class "br.unb.cic.tdp.Silvaetal" implements the algorithm proposed by Silva et al. The paper describing the proposed algorithm is not yet published, but a preprint can be found [here](https://arxiv.org/abs/2001.11570).
+Algorithm for sorting by transpositions based on an algebraic formalism with guarantee of approximation ratio of 1.375 for all permutations on the Symmetric Group S_n (not only for the subset of the simple permutations). For the details on the algorithm, please refer to the paper "An algebraic 1.375-approximation algorithm for the Transposition Distance Problem" by L. A. G. Silva, L. A. B. Kowada, N. R. Rocco and M. E. M. T. Walter (preprint available [here](https://arxiv.org/abs/2001.11570)).
 
-To run the algorithm:
+This project requires Maven.
 
-1. Build the project using Maven.
-2. Uncompress the file "cases.tar.gz".
-3. Run the main method of "br.unb.cic.tdp.Silvaetal" providing as parameters: the folder into which the file "cases.tar.gz" was decompressed (first parameter), then the permutation to sort (last parameter), e.g., 0,8,7,6,5,4,3,2,1.
+To execute the program that generates the case analysis which is the base of the correctness proof of the algorithm, run the command
 
-The package "br.unb.cic.tdp.proof" contains the programs responsible to generate all the cases employed by the proposed algorithm. To generate the cases corresponding to the desimplifications of the catalog created by [Elias and Hartman](http://ieeexplore.ieee.org/document/4015379/), it is necessary to download and decompress the file [SBT1375_proof.tar.gz](https://www.dropbox.com/s/z6hwjcjtrld601z/sbt1375_proof.tar.gz?dl=0). The path for this catalog on the localhost must be provided in the classes "br.unb.cic.tdp.proof.Desimplify*.java".
+*mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.proof.ProofGenerator" -Dexec.args="<fist_arg> <second_arg> <third_arg>"*
+
+where the first argument indicates the directory which the proof will be generated into. The second argument is a boolean indicating whether or not the program will use branch and bound to sort the configurations when a previously known sorting (found by Elias and Hartman) is not found. Setting it to *false*, will make the execution very short. However, a significantly larger number of cases will be generated. If set to *true*, then a third argument, indicating the number of processors used on the brute force sorting, must be passed. Observe that using branch and bound makes the program to require much more time to run. By our experience, it requires around 5 days to run with 40 parallel Intel Xeon™ processors.
+
+To execute the proposed algorithm, run the command
+
+*mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.Silvaetal" -Dexec.args="<first_arg>"*
+
+where the first argument is the permutation to be sorted. Before calling the algorithm, the program has to load into memory all cases generated in the correctness proof. This demands a significant amount of memory. Thus, we suggest to increase the memory available for Maven to at least 10GB, by setting the environment variable MAVEN_OPTS, using the command
+
+*export MAVEN_OPTS="-Xmx10G".
