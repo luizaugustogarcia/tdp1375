@@ -1,94 +1,95 @@
 package br.unb.cic.tdp.permutation;
 
-import java.util.Arrays;
-import java.util.Collection;
-
 import cc.redberry.core.utils.BitArray;
 import cern.colt.list.ByteArrayList;
 
-public class PermutationGroups {
+import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collection;
 
-	public static MulticyclePermutation computeProduct(Collection<Permutation> permutations) {
-		return computeProduct(true, permutations.toArray(new Permutation[permutations.size()]));
-	}
+public class PermutationGroups implements Serializable {
 
-	public static MulticyclePermutation computeProduct(Permutation... permutations) {
-		return computeProduct(true, permutations);
-	}
+    public static MulticyclePermutation computeProduct(final Collection<Permutation> permutations) {
+        return computeProduct(true, permutations.toArray(new Permutation[permutations.size()]));
+    }
 
-	public static MulticyclePermutation computeProduct(boolean include1Cycle, Permutation... p) {
-		int n = 0;
-		for (Permutation p1 : p) {
-			if (p1 instanceof Cycle) {
-				n = Math.max(((Cycle) p1).getMaxSymbol(), n);
-			} else {
-				for (Cycle c : ((MulticyclePermutation) p1)) {
-					n = Math.max(c.getMaxSymbol(), n);
-				}
-			}
-		}
-		return computeProduct(include1Cycle, n + 1, p);
-	}
+    public static MulticyclePermutation computeProduct(final Permutation... permutations) {
+        return computeProduct(true, permutations);
+    }
 
-	public static MulticyclePermutation computeProduct(boolean include1Cycle, int n, Permutation... permutations) {
-		byte[][] functions = new byte[permutations.length][n];
+    public static MulticyclePermutation computeProduct(final boolean include1Cycle, final Permutation... p) {
+        var n = 0;
+        for (final var p1 : p) {
+            if (p1 instanceof Cycle) {
+                n = Math.max(((Cycle) p1).getMaxSymbol(), n);
+            } else {
+                for (final var c : ((MulticyclePermutation) p1)) {
+                    n = Math.max(c.getMaxSymbol(), n);
+                }
+            }
+        }
+        return computeProduct(include1Cycle, n + 1, p);
+    }
 
-		// initializing
-		for (int i = 0; i < permutations.length; i++)
-			Arrays.fill(functions[i], (byte) -1);
+    public static MulticyclePermutation computeProduct(final boolean include1Cycle, final int n, final Permutation... permutations) {
+        final var functions = new byte[permutations.length][n];
 
-		for (int i = 0; i < permutations.length; i++) {
-			if (permutations[i] instanceof Cycle) {
-				Cycle cycle = (Cycle) permutations[i];
-				for (int j = 0; j < cycle.size(); j++) {
-					functions[i][cycle.get(j)] = cycle.image(cycle.get(j));
-				}
-			} else {
-				for (Cycle cycle : ((MulticyclePermutation) permutations[i])) {
-					for (int j = 0; j < cycle.size(); j++) {
-						functions[i][cycle.get(j)] = cycle.image(cycle.get(j));
-					}
-				}
-			}
-		}
+        // initializing
+        for (var i = 0; i < permutations.length; i++)
+            Arrays.fill(functions[i], (byte) -1);
 
-		MulticyclePermutation result = new MulticyclePermutation();
+        for (var i = 0; i < permutations.length; i++) {
+            if (permutations[i] instanceof Cycle) {
+                final var cycle = (Cycle) permutations[i];
+                for (var j = 0; j < cycle.size(); j++) {
+                    functions[i][cycle.get(j)] = cycle.image(cycle.get(j));
+                }
+            } else {
+                for (final var cycle : ((MulticyclePermutation) permutations[i])) {
+                    for (var j = 0; j < cycle.size(); j++) {
+                        functions[i][cycle.get(j)] = cycle.image(cycle.get(j));
+                    }
+                }
+            }
+        }
 
-		ByteArrayList cycle = new ByteArrayList();
-		BitArray seen = new BitArray(n);
-		int counter = 0;
-		while (counter < n) {
-			byte start = (byte) seen.nextZeroBit(0);
+        final var result = new MulticyclePermutation();
 
-			byte image = start;
-			for (int i = functions.length - 1; i >= 0; i--) {
-				image = functions[i][image] == -1 ? image : functions[i][image];
-			}
+        final var cycle = new ByteArrayList();
+        final var seen = new BitArray(n);
+        var counter = 0;
+        while (counter < n) {
+            var start = (byte) seen.nextZeroBit(0);
 
-			if (image == start) {
-				++counter;
-				seen.set(start);
-				if (include1Cycle)
-					result.add(new Cycle(start));
-				continue;
-			}
-			while (!seen.get(start)) {
-				seen.set(start);
-				++counter;
-				cycle.add(start);
+            var image = start;
+            for (var i = functions.length - 1; i >= 0; i--) {
+                image = functions[i][image] == -1 ? image : functions[i][image];
+            }
 
-				image = start;
-				for (int i = functions.length - 1; i >= 0; i--) {
-					image = functions[i][image] == -1 ? image : functions[i][image];
-				}
+            if (image == start) {
+                ++counter;
+                seen.set(start);
+                if (include1Cycle)
+                    result.add(new Cycle(start));
+                continue;
+            }
+            while (!seen.get(start)) {
+                seen.set(start);
+                ++counter;
+                cycle.add(start);
 
-				start = image;
-			}
+                image = start;
+                for (var i = functions.length - 1; i >= 0; i--) {
+                    image = functions[i][image] == -1 ? image : functions[i][image];
+                }
 
-			result.add(new Cycle(Arrays.copyOfRange(cycle.elements(), 0, cycle.size())));
-			cycle.clear();
-		}
+                start = image;
+            }
 
-		return result;
-	}
+            result.add(new Cycle(Arrays.copyOfRange(cycle.elements(), 0, cycle.size())));
+            cycle.clear();
+        }
+
+        return result;
+    }
 }
