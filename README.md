@@ -16,4 +16,4 @@ To execute the proposed algorithm, run the command
 
 where the first argument is the permutation to be sorted. Before calling the algorithm, the program has to load into memory all cases generated in the correctness proof. This demands a significant amount of memory. Thus, we suggest to increase the memory available for Maven to at least 10GB, by setting the environment variable MAVEN_OPTS, using the command
 
-*export MAVEN_OPTS="-Xmx10G".
+*export MAVEN_OPTS="-Xmx10G"*.
