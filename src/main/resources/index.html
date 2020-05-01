@@ -1,0 +1,113 @@
+<HTML>
+<HEAD>
+    <TITLE>
+    </TITLE>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet">
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+    </script>
+    <script type="text/javascript"
+            src="http://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+    </script>
+    <style>* { font-family: 'Open Sans', sans-serif; font-size: small; }</style>
+</HEAD>
+<BODY>
+\(
+\newcommand\norm[1]{\lvert\lvert#1\rvert\rvert}
+\newcommand\epi{\bar{\pi}}
+\newcommand\esigma{\bar{\sigma}}
+\newcommand\spi{{\esigma}{\epi}^{-1}}
+\)
+<table border=0 cellspacing=0 cellpadding=5 width="60%">
+    <tr>
+        <td>
+            <h1> TDP 1.375 </h1>
+            This document contains proofs for results presented on the paper "An algebraic $1.375$-approximation algorithm for the Transposition Distance Problem" by L. A. G. Silva, L. A. B. Kowada,
+            N. R. Rocco and M. E. M. T. Walter.
+            <hr>
+
+            <h2> Download </h2>
+            The whole document containing all generated HTML files can be downloaded using this <a href="tdp1375proof.tar.gz">link</a>.
+            <hr>
+
+            <h1> Structure </h1>
+
+            The structure of the proofs of lemmas 1, 2 and 3 is explained <a href="explain.html">here</a>.
+            <hr>
+
+            <h2>Main results</h2>
+
+            <h3>Lemma 1: If it is possible to build a sufficient configuration $\Gamma$ of $\spi$ such that $\Gamma$ is big, then a $\frac{11}{8}$-sequence of transpositions exists.</h3>
+
+            <h3>Lemma 2: The bad small components are::</h3>
+            <ol>
+                <li><a href="dfs/(0 3 1 4 2).html">the bad oriented $5$-cycle</a></li>
+                <li><a href="dfs/(0 4 2)(1 5 3).html">the unoriented interleaving pair</a></li>
+                <li><a href="dfs/(0 10 2)(1 5 3)(4 8 6)(7 11 9).html">the unoriented necklace of size $4$</a></li>
+                <li><a href="dfs/(0 10 5)(1 11 3)(2 9 7)(4 8 6).html">the twisted necklace of size $4$</a></li>
+                <li><a href="dfs/(0 13 2)(1 5 3)(4 8 6)(7 11 9)(10 14 12).html">the unoriented necklace of size $5$</a></li>
+                <li><a href="dfs/(0 16 14)(1 17 3)(2 6 4)(5 9 7)(8 12 10)(11 15 13).html">the unoriented necklace of size $6$</a></li>
+            </ol>
+
+            The demonstration of the previous results employs a case analysis performed using  a Depth First Search (DFS), in which, the configurations, starting from the ones listed below, are systematically extended until $\frac{11}{8}$-sequences are found:
+            <ol>
+                <li><a href="dfs/(0 3 1 4 2).html">the bad oriented $5$-cycle</a></li>
+                <li><a href="dfs/(0 4 2)(1 5 3).html">the unoriented interleaving pair</a></li>
+                <li><a href="dfs/(0 5 2)(1 4 3).html">the unoriented intersecting pair</a></li>
+            </ol>
+            No configuration with $3$-norm equals to $10$ was reached during the search.
+            The search found the full configuration <a href="dfs/(0 5 2)(1 10 3)(4 9 7)(6 11 8).html">(0 5 2)(1 10 3)(4 9 7)(6 11 8)</a> which does not allow a $\frac{11}{8}$-sequence. However, note that this configuration is not valid, since in this case, $\esigma\epi\esigma^{-1}$ ($\epi$ conjugated by $\esigma$) is not a $(n+1)$-cycle. Intuitively, this means that there are no $\epi$ and $\esigma$ such that $\spi$ contains a component with the form of this invalid configuration.
+
+            <h3>Lemma 3: If $\spi$ consists only of bad small components and $\norm{\spi}_3 \geq 8$, then a $\frac{11}{8}$-sequence of transpositions exists.</h3>
+
+            In order to demonstrate this result, we also employ an approach similar to a DFS search, in which, starting from the bad small component listed above, we extend the configurations by adding another bad small component in a different position of $\epi$, until $\frac{11}{8}$-sequences are found. We note that by this approach no combination of bad small components with $3$-norm greater than 7 was extended. Below, the result of the search:
+
+            <ol>
+                <li><a href="comb/(0 3 1 4 2).html">the bad oriented $5$-cycle</a></li>
+                <li><a href="comb/(0 4 2)(1 5 3).html">the unoriented interleaving pair</a></li>
+                <li><a href="comb/(0 10 2)(1 5 3)(4 8 6)(7 11 9).html">the unoriented necklace of size $4$</a></li>
+                <li><a href="comb/(0 10 5)(1 11 3)(2 9 7)(4 8 6).html">the twisted necklace of size $4$</a></li>
+                <li><a href="comb/(0 13 2)(1 5 3)(4 8 6)(7 11 9)(10 14 12).html">the unoriented necklace of size $5$</a></li>
+                <li><a href="comb/(0 16 14)(1 17 3)(2 6 4)(5 9 7)(8 12 10)(11 15 13).html">the unoriented necklace of size $6$</a></li>
+            </ol>
+            <hr>
+
+            <h2>Auxiliary results</h2>
+
+            <h3>Lemma 4: If there is an even (odd-length) $k$-cycle $\gamma=(a\dots b\dots c\dots)$ in $\spi$ such that $k\geq 7$ and $(a,b,c)$ is an oriented triple, then there is a $\frac{4}{3}$-sequence.</h3>
+
+            Proof. If $(a\;b\;c)$ is a $2$-move, then the lemma holds since a $2$-move is a $(1,1)$-sequence, which in turn is $\frac{4}{3}$-sequence. Thus, w.l.o.g, suppose
+            \[\gamma=(\underbrace{d\;e\dots b}_{odd}\;|\;\underbrace{f\dots c}_{even}\;|\;\underbrace{g\dots a}_{even}\;|).\]
+            Vertical bars are used to indicate the positions in $\gamma$ that would be affected by the application of $(a\;b\;c)$ (breaking $\gamma$ into $3$ smaller cycles), and subscripts to indicate the length parity of the resulting cycles. Note that the cycle $\gamma$ can be rewritten as the product
+            \[\gamma=(\underbrace{a\dots}_{odd})(\underbrace{b\dots}_{odd})(\underbrace{c\dots}_{odd})(a\;d\;e\;b\;f\;c\;g).\]
+            For each of the $71$ distinct possible forms of $\epi$, related to the symbols of $(a\;d\;e\;b\;f\;c\;g)$, there is a $\frac{4}{3}$-sequence of transpositions. The case analysis can be visualised <a href="oriented-7-cycle/index.html">here</a>. For this consider $a=0$, $b=1$, $c=2$, $d=3$, $e=4$, $f=5$ and $g=6$.
+
+            <h3>Lemma 5: If $\spi\neq\iota$, then there is a $\frac{3}{2}$-sequence.</h3>
+
+            Proof. If there is an odd (even-length) cycle in $\spi$, then a $2$-move (i.e. a $(1,1)$-sequence) exists. Thus, consider $\spi$ containing only even (odd-length) cycles.
+
+            <p>(1) There is an oriented $k$-cycle $\gamma$ in $\spi$. If $k=3$, then there is a $2$-move and the lemma holds. On the other hand, if $k \geq 7$, then there is $\frac{4}{3}$-sequence given by Lemma 4. Thus, $k = 5$ and $\gamma$ is the bad oriented $5$-cycle. Assuming $\gamma=(a\;d\;b\;e\;c)$, then $\tau_1=(a\;b\;e)$, $\tau_2=(a\;b\;c)$ and $\tau_3=(b\;c\;d)$ is a $(3,2)$-sequence.
+                <br>
+                (2) All the cycles of $\spi$ are unoriented. Let $\gamma=(a\;b\;c)$ be a segment of a cycle of $\spi$. We have two subcases:<br>
+                &nbsp;&nbsp;(2.a) $\gamma$ interleaves with another segment $\delta=(d\;e\;f)$. In this case, $\epi=(a\dots f\dots c\dots e\dots b\dots d\dots )$. Then, $\tau_1=(a\;c\;b)$, $\tau_2=(d\;e\;f)$ and $\tau_3=(a\;c\;b)$ is a $(3,2)$-sequence.<br>
+                &nbsp;&nbsp;(2.b) $\gamma$ intersects with two segments $\delta=(d\;e\;f)$ and $\epsilon=(g\;h\;i)$. For each of the $15$ distinct forms of $\epi$ below, relatively to the possible positions of the symbols of $\gamma$, $\delta$ and $\epsilon$, there is a $(3,2)$-sequence.<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.i) $\epi=(a\;h\;c\;b\;f\;e\;g\;d\;i)$. $\tau_1=(a\;b\;d)$, $\tau_2=(g\;h\;i)$, $\tau_3=(a\;e\;c)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.ii) $\epi=(a\;i\;c\;h\;b\;f\;e\;g\;d)$. $\tau_1=(g\;i\;h)$, $\tau_2=(a\;b\;c)$, $\tau_3=(g\;i\;h)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.iii) $\epi=(a\;c\;h\;b\;f\;e\;g\;d\;i)$. $\tau_1=(a\;b\;d)$, $\tau_2=(g\;h\;i)$, $\tau_3=(c\;f\;d)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.iv) $\epi=(a\;i\;c\;b\;h\;f\;e\;g\;d)$. $\tau_1=(c\;f\;d)$, $\tau_2=(g\;h\;i)$, $\tau_3=(a\;b\;f)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.v) $\epi=(a\;c\;b\;i\;f\;h\;e\;g\;d)$. $\tau_1=(g\;i\;h)$, $\tau_2=(d\;e\;f)$, $\tau_3=(g\;i\;h)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.vi) $\epi=(a\;i\;c\;f\;b\;e\;h\;g\;d)$. $\tau_1=(d\;i\;f)$, $\tau_2=(e\;h\;i)$, $\tau_3=(a\;b\;c)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.vii) $\epi=(a\;c\;i\;f\;b\;e\;h\;g\;d)$. $\tau_1=(a\;i\;g)$, $\tau_2=(b\;h\;i)$, $\tau_3=(d\;e\;f)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.viii) $\epi=(a\;c\;f\;i\;b\;e\;h\;g\;d)$. $\tau_1=(a\;i\;g)$, $\tau_2=(d\;e\;f)$, $\tau_3=(b\;h\;i)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.ix) $\epi=(a\;c\;i\;f\;b\;h\;e\;g\;d)$. $\tau_1=(d\;f\;e)$, $\tau_2=(g\;h\;i)$, $\tau_3=(d\;f\;e)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.x) $\epi=(a\;i\;c\;f\;b\;h\;e\;g\;d)$. $\tau_1=(d\;f\;e)$, $\tau_2=(g\;h\;i)$, $\tau_3=(d\;f\;e)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xi) $\epi=(a\;i\;c\;f\;h\;b\;e\;g\;d)$. $\tau_1=(d\;f\;e)$, $\tau_2=(g\;h\;i)$, $\tau_3=(d\;f\;e)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xii) $\epi=(a\;c\;i\;f\;h\;b\;e\;g\;d)$. $\tau_1=(a\;f\;d)$, $\tau_2=(b\;c\;f)$, $\tau_3=(g\;h\;i)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xiii) $\epi=(a\;c\;i\;h\;f\;b\;e\;g\;d)$. $\tau_1=(a\;i\;g)$, $\tau_2=(b\;c\;i)$, $\tau_3=(d\;e\;f)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xiv) $\epi=(a\;h\;c\;f\;b\;e\;g\;d\;i)$. $\tau_1=(d\;i\;f)$, $\tau_2=(f\;g\;h)$, $\tau_3=(a\;b\;c)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xv) $\epi=(a\;i\;f\;c\;h\;e\;b\;g\;d)$. $\tau_1=(d\;f\;e)$, $\tau_2=(a\;b\;c)$, $\tau_3=(d\;f\;e)$
+        </td>
+    </tr>
+</table>
+</BODY>
+</HTML>

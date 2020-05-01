@@ -1,16 +1,18 @@
 package br.unb.cic.tdp.permutation;
 
-import java.util.List;
+import java.io.Serializable;
 
-public interface Permutation {
+public interface Permutation extends Serializable {
 
-	public Permutation getInverse();
+    Permutation getInverse();
 
-	public List<Cycle> default2CycleFactorization();
+    int getNumberOfEvenCycles();
 
-	public int getNumberOfEvenCycles();
+    int size();
 
-	public int getNumberOfEvenCycles(int n);
+    Cycle asNCycle();
 
-	public int size();
+    default Permutation conjugateBy(final Permutation conjugator) {
+        return PermutationGroups.computeProduct(false,conjugator, this, conjugator.getInverse());
+    }
 }
