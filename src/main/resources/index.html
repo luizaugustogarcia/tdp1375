@@ -37,9 +37,9 @@
 
             <h2>Main results</h2>
 
-            <h3>Lemma 1: If it is possible to build a sufficient configuration $\Gamma$ of $\spi$ such that $\Gamma$ is big, then a $\frac{11}{8}$-sequence of transpositions exists.</h3>
+            <h3>Lemma 1: If it is possible to build a sufficient configuration $\Gamma$ of $\spi$ such that $\Gamma$ is big, then $\Gamma$ allows an $\frac{11}{8}$-sequence.</h3>
 
-            <h3>Lemma 2: The bad small components are::</h3>
+            <h3>Lemma 2: The bad small components are:</h3>
             <ol>
                 <li><a href="dfs/(0 3 1 4 2).html">the bad oriented $5$-cycle</a></li>
                 <li><a href="dfs/(0 4 2)(1 5 3).html">the unoriented interleaving pair</a></li>
@@ -91,21 +91,21 @@
                 (2) All the cycles of $\spi$ are unoriented. Let $\gamma=(a\;b\;c)$ be a segment of a cycle of $\spi$. We have two subcases:<br>
                 &nbsp;&nbsp;(2.a) $\gamma$ interleaves with another segment $\delta=(d\;e\;f)$. In this case, $\epi=(a\dots f\dots c\dots e\dots b\dots d\dots )$. Then, $\tau_1=(a\;c\;b)$, $\tau_2=(d\;e\;f)$ and $\tau_3=(a\;c\;b)$ is a $(3,2)$-sequence.<br>
                 &nbsp;&nbsp;(2.b) $\gamma$ intersects with two segments $\delta=(d\;e\;f)$ and $\epsilon=(g\;h\;i)$. For each of the $15$ distinct forms of $\epi$ below, relatively to the possible positions of the symbols of $\gamma$, $\delta$ and $\epsilon$, there is a $(3,2)$-sequence.<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.i) $\epi=(a\;h\;c\;b\;f\;e\;g\;d\;i)$. $\tau_1=(a\;b\;d)$, $\tau_2=(g\;h\;i)$, $\tau_3=(a\;e\;c)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.ii) $\epi=(a\;i\;c\;h\;b\;f\;e\;g\;d)$. $\tau_1=(g\;i\;h)$, $\tau_2=(a\;b\;c)$, $\tau_3=(g\;i\;h)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.iii) $\epi=(a\;c\;h\;b\;f\;e\;g\;d\;i)$. $\tau_1=(a\;b\;d)$, $\tau_2=(g\;h\;i)$, $\tau_3=(c\;f\;d)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.iv) $\epi=(a\;i\;c\;b\;h\;f\;e\;g\;d)$. $\tau_1=(c\;f\;d)$, $\tau_2=(g\;h\;i)$, $\tau_3=(a\;b\;f)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.v) $\epi=(a\;c\;b\;i\;f\;h\;e\;g\;d)$. $\tau_1=(g\;i\;h)$, $\tau_2=(d\;e\;f)$, $\tau_3=(g\;i\;h)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.vi) $\epi=(a\;i\;c\;f\;b\;e\;h\;g\;d)$. $\tau_1=(d\;i\;f)$, $\tau_2=(e\;h\;i)$, $\tau_3=(a\;b\;c)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.vii) $\epi=(a\;c\;i\;f\;b\;e\;h\;g\;d)$. $\tau_1=(a\;i\;g)$, $\tau_2=(b\;h\;i)$, $\tau_3=(d\;e\;f)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.viii) $\epi=(a\;c\;f\;i\;b\;e\;h\;g\;d)$. $\tau_1=(a\;i\;g)$, $\tau_2=(d\;e\;f)$, $\tau_3=(b\;h\;i)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.ix) $\epi=(a\;c\;i\;f\;b\;h\;e\;g\;d)$. $\tau_1=(d\;f\;e)$, $\tau_2=(g\;h\;i)$, $\tau_3=(d\;f\;e)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.x) $\epi=(a\;i\;c\;f\;b\;h\;e\;g\;d)$. $\tau_1=(d\;f\;e)$, $\tau_2=(g\;h\;i)$, $\tau_3=(d\;f\;e)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xi) $\epi=(a\;i\;c\;f\;h\;b\;e\;g\;d)$. $\tau_1=(d\;f\;e)$, $\tau_2=(g\;h\;i)$, $\tau_3=(d\;f\;e)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xii) $\epi=(a\;c\;i\;f\;h\;b\;e\;g\;d)$. $\tau_1=(a\;f\;d)$, $\tau_2=(b\;c\;f)$, $\tau_3=(g\;h\;i)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xiii) $\epi=(a\;c\;i\;h\;f\;b\;e\;g\;d)$. $\tau_1=(a\;i\;g)$, $\tau_2=(b\;c\;i)$, $\tau_3=(d\;e\;f)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xiv) $\epi=(a\;h\;c\;f\;b\;e\;g\;d\;i)$. $\tau_1=(d\;i\;f)$, $\tau_2=(f\;g\;h)$, $\tau_3=(a\;b\;c)$<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xv) $\epi=(a\;i\;f\;c\;h\;e\;b\;g\;d)$. $\tau_1=(d\;f\;e)$, $\tau_2=(a\;b\;c)$, $\tau_3=(d\;f\;e)$
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.i) $\epi=(a\dots h\dots c\dots b\dots f\dots e\dots g\dots d\dots i\dots )$. $\tau_1=(a\;b\;d)$, $\tau_2=(g\;h\;i)$, $\tau_3=(a\;e\;c)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.ii) $\epi=(a\dots i\dots c\dots h\dots b\dots f\dots e\dots g\dots d\dots )$. $\tau_1=(g\;i\;h)$, $\tau_2=(a\;b\;c)$, $\tau_3=(g\;i\;h)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.iii) $\epi=(a\dots c\dots h\dots b\dots f\dots e\dots g\dots d\dots i\dots )$. $\tau_1=(a\;b\;d)$, $\tau_2=(g\;h\;i)$, $\tau_3=(c\;f\;d)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.iv) $\epi=(a\dots i\dots c\dots b\dots h\dots f\dots e\dots g\dots d\dots )$. $\tau_1=(c\;f\;d)$, $\tau_2=(g\;h\;i)$, $\tau_3=(a\;b\;f)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.v) $\epi=(a\dots c\dots b\dots i\dots f\dots h\dots e\dots g\dots d\dots )$. $\tau_1=(g\;i\;h)$, $\tau_2=(d\;e\;f)$, $\tau_3=(g\;i\;h)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.vi) $\epi=(a\dots i\dots c\dots f\dots b\dots e\dots h\dots g\dots d\dots )$. $\tau_1=(d\;i\;f)$, $\tau_2=(e\;h\;i)$, $\tau_3=(a\;b\;c)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.vii) $\epi=(a\dots c\dots i\dots f\dots b\dots e\dots h\dots g\dots d\dots )$. $\tau_1=(a\;i\;g)$, $\tau_2=(b\;h\;i)$, $\tau_3=(d\;e\;f)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.viii) $\epi=(a\dots c\dots f\dots i\dots b\dots e\dots h\dots g\dots d\dots )$. $\tau_1=(a\;i\;g)$, $\tau_2=(d\;e\;f)$, $\tau_3=(b\;h\;i)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.ix) $\epi=(a\dots c\dots i\dots f\dots b\dots h\dots e\dots g\dots d\dots )$. $\tau_1=(d\;f\;e)$, $\tau_2=(g\;h\;i)$, $\tau_3=(d\;f\;e)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.x) $\epi=(a\dots i\dots c\dots f\dots b\dots h\dots e\dots g\dots d\dots )$. $\tau_1=(d\;f\;e)$, $\tau_2=(g\;h\;i)$, $\tau_3=(d\;f\;e)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xi) $\epi=(a\dots i\dots c\dots f\dots h\dots b\dots e\dots g\dots d\dots )$. $\tau_1=(d\;f\;e)$, $\tau_2=(g\;h\;i)$, $\tau_3=(d\;f\;e)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xii) $\epi=(a\dots c\dots i\dots f\dots h\dots b\dots e\dots g\dots d\dots )$. $\tau_1=(a\;f\;d)$, $\tau_2=(b\;c\;f)$, $\tau_3=(g\;h\;i)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xiii) $\epi=(a\dots c\dots i\dots h\dots f\dots b\dots e\dots g\dots d\dots )$. $\tau_1=(a\;i\;g)$, $\tau_2=(b\;c\;i)$, $\tau_3=(d\;e\;f)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xiv) $\epi=(a\dots h\dots c\dots f\dots b\dots e\dots g\dots d\dots i\dots )$. $\tau_1=(d\;i\;f)$, $\tau_2=(f\;g\;h)$, $\tau_3=(a\;b\;c)$<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xv) $\epi=(a\dots i\dots f\dots c\dots h\dots e\dots b\dots g\dots d\dots )$. $\tau_1=(d\;f\;e)$, $\tau_2=(a\;b\;c)$, $\tau_3=(d\;f\;e)$
         </td>
     </tr>
 </table>
