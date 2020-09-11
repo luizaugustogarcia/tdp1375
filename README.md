@@ -1,6 +1,6 @@
 # TDP 1375
 
-Algorithm for sorting by transpositions based on an algebraic formalism with guarantee of approximation ratio of 1.375 for all permutations on the Symmetric Group S_n (not only for the subset of the simple permutations). For the details on the algorithm, please refer to the paper "An algebraic 1.375-approximation algorithm for the Transposition Distance Problem" by L. A. G. Silva, L. A. B. Kowada, N. R. Rocco and M. E. M. T. Walter (preprint available [here](https://arxiv.org/abs/2001.11570)).
+Algorithm for sorting by transpositions based on an algebraic formalism with guarantee of approximation ratio of 1.375 for all permutations in the Symmetric Group S_n (not only for the subset of the simple permutations). For the details on the algorithm, please refer to the paper "An algebraic 1.375-approximation algorithm for the Transposition Distance Problem" by L. A. G. Silva, L. A. B. Kowada, N. R. Rocco and M. E. M. T. Walter (preprint available [here](https://arxiv.org/abs/2001.11570)).
 
 This project requires Maven.
 
