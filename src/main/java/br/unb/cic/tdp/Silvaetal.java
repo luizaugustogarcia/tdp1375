@@ -127,7 +127,7 @@ public class Silvaetal extends BaseAlgorithm {
             }
         }
 
-        // O(n)
+        // O(1)
         while (!spi.isIdentity()) {
             final var _2move = searchFor2MoveFromOrientedCycle(spi, pi);
             if (_2move != null) {
