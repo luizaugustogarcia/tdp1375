@@ -39,10 +39,9 @@ public class Cases3_2 {
                 if (openGates.values().stream().mapToInt(j -> j).sum() <= 2) {
                     final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), 3, 1.5F);
 
-                    final var c = canonicalize(spi, pi, rhos);
-                    final var configuration = new Configuration(c.first, c.second);
+                    final var configuration = new Configuration(spi, pi);
                     if (!verifiedConfigurations.contains(configuration)) {
-                        result.add(new Pair<>(configuration, c.third));
+                        result.add(new Pair<>(configuration, rhos));
                         verifiedConfigurations.add(configuration);
                     }
                 }

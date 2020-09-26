@@ -9,7 +9,10 @@ import org.apache.commons.collections.ListUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
@@ -65,67 +68,58 @@ public class EliasAndHartman extends BaseAlgorithm {
             spi = computeProduct(true, sigma, pi.getInverse());
         }
 
-        final List<Collection<Cycle>> badSmallComponents = new ArrayList<>();
+        final List<Cycle> bigLambda = new ArrayList<>(); // bad small components
 
-        List<Cycle> spiMinusBadSmallComponents;
-        while (!spi.isIdentity() && !(spiMinusBadSmallComponents = ListUtils.subtract(
-                spi.stream().filter(c -> c.size() > 1).collect(Collectors.toList()),
-                badSmallComponents.stream().flatMap(Collection::stream).collect(Collectors.toList()))).isEmpty()) {
-            final var _2move = searchFor2MoveFromOrientedCycle(spi, pi);
+        List<Cycle> bigTheta; // unmarked cycles
+        while (!(bigTheta = ListUtils.subtract(spi.stream().filter(c -> c.size() > 1).collect(Collectors.toList()), bigLambda)).isEmpty()) {
+            final var _2move = searchFor2MoveFromOrientedCycle(bigTheta, pi);
             if (_2move != null) {
                 pi = computeProduct(_2move, pi).asNCycle();
                 distance += 1;
             } else {
-                List<Cycle> mu = new ArrayList<>();
-                final var initialFactor = spiMinusBadSmallComponents.stream().filter(c -> c.size() > 1)
-                        .findFirst().get();
-                mu.add(new Cycle(initialFactor.get(0), initialFactor.get(1), initialFactor.get(2)));
+                List<Cycle> bigGamma = new ArrayList<>();
+                final var gamma = bigTheta.stream().filter(c -> c.size() > 1).findFirst().get();
+                bigGamma.add(new Cycle(gamma.get(0), gamma.get(1), gamma.get(2)));
 
                 var badSmallComponent = false;
-                // O(n)
+
                 for (var i = 0; i < 8; i++) {
-                    final var norm = getNorm(mu);
+                    final var norm = get3Norm(bigGamma);
 
-                    mu = extend(mu, spi, pi);
+                    bigGamma = extend(bigGamma, spi, pi);
 
-                    if (norm == getNorm(mu)) {
+                    if (norm == get3Norm(bigGamma)) {
                         badSmallComponent = true;
                         break;
                     }
 
-                    final var _11_8Seq = searchForSeq(mu, pi, _11_8cases);
-                    if (_11_8Seq != null) {
-                        for (final var rho : _11_8Seq)
+                    final var seq = searchForSeq(bigGamma, pi, _11_8cases);
+                    if (seq != null) {
+                        for (final var rho : seq)
                             pi = computeProduct(rho, pi).asNCycle();
-                        distance += _11_8Seq.size();
-                        badSmallComponent = false;
+                        distance += seq.size();
                         break;
                     }
                 }
 
-                if (badSmallComponent)
-                    badSmallComponents.add(mu);
+                if (badSmallComponent) {
+                    bigGamma.forEach(c -> bigLambda.add(c));
+                }
+            }
+
+            if (get3Norm(bigLambda) >= 8) {
+                final var _11_8Seq = searchForSeq(bigLambda, pi, _11_8cases);
+                for (final var rho : _11_8Seq) {
+                    pi = computeProduct(rho, pi).asNCycle();
+                }
+                distance += _11_8Seq.size();
+                bigLambda.clear();
             }
 
             spi = computeProduct(true, sigma, pi.getInverse());
         }
 
-        // Bad small components
-        final List<Cycle> mu = new ArrayList<>();
-        final var iterator = badSmallComponents.iterator();
-        while (iterator.hasNext()) {
-            mu.addAll(iterator.next());
-            iterator.remove();
-            if (getNorm(mu) >= 16) {
-                final var _11_8Seq = searchForSeq(mu, pi, _11_8cases);
-                for (final var rho : _11_8Seq) {
-                    pi = computeProduct(rho, pi).asNCycle();
-                }
-                distance += _11_8Seq.size();
-                spi = computeProduct(true, sigma, pi.getInverse());
-            }
-        }
-
+        // At this point 3-norm of spi is less than 8
         while (!spi.isIdentity()) {
             final var _2move = searchFor2MoveFromOrientedCycle(spi, pi);
             if (_2move != null) {

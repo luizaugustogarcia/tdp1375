@@ -46,8 +46,10 @@ public abstract class BaseAlgorithm {
         return true;
     }
 
-    public int getNorm(final Collection<Cycle> mu) {
-        return mu.stream().mapToInt(Cycle::getNorm).sum();
+    public int get3Norm(final Collection<Cycle> mu) {
+        final var numberOfEvenCycles = (int) mu.stream().filter((cycle) -> cycle.size() % 2 == 1).count();
+        final var numberOfSymbols = mu.stream().mapToInt(Cycle::size).sum();
+        return (numberOfSymbols - numberOfEvenCycles) / 2;
     }
 
     protected boolean isOutOfInterval(final int x, final int left, final int right) {
@@ -217,9 +219,9 @@ public abstract class BaseAlgorithm {
     }
 
     protected List<Cycle> searchForSeq(final List<Cycle> mu, final Cycle pi,
-                                       final Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> _cases) {
+                                       final Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> cases) {
         final var allSymbols = mu.stream().flatMap(c -> Bytes.asList(c.getSymbols()).stream()).collect(Collectors.toSet());
-        final var _pi = new ByteArrayList(7);
+        final var _pi = new ByteArrayList(allSymbols.size());
         for (final var symbol : pi.getSymbols()) {
             if (allSymbols.contains(symbol)) {
                 _pi.add(symbol);
@@ -227,18 +229,18 @@ public abstract class BaseAlgorithm {
         }
 
         final var config = new Configuration(new MulticyclePermutation(mu), new Cycle(_pi));
-        if (_cases.getFirst().containsKey(config)) {
-            return config.translatedSorting(_cases.getSecond().get(config.hashCode()).stream()
-                    .filter(_c -> _c.equals(config)).findFirst().get(), _cases.getFirst().get(config));
+        if (cases.getFirst().containsKey(config)) {
+            return config.translatedSorting(cases.getSecond().get(config.hashCode()).stream()
+                    .filter(_c -> _c.equals(config)).findFirst().get(), cases.getFirst().get(config));
         }
 
         return null;
     }
 
     protected void apply3_2_Unoriented(final MulticyclePermutation spi, final Cycle pi) {
-        final var initialFactor = spi.stream().filter(c -> c.size() > 1).findFirst().get();
+        final var segment = spi.stream().filter(c -> c.size() > 1).findFirst().get();
         List<Cycle> mu = new ArrayList<>();
-        mu.add(new Cycle(initialFactor.get(0), initialFactor.get(1), initialFactor.get(2)));
+        mu.add(new Cycle(segment.get(0), segment.get(1), segment.get(2)));
         for (var i = 0; i < 2; i++) {
             mu = extend(mu, spi, pi);
             final var rhos = searchForSeq(mu, pi, _3_2cases);

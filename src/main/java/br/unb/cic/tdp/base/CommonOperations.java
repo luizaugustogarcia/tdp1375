@@ -206,46 +206,6 @@ public class CommonOperations implements Serializable {
         return true;
     }
 
-    public static Triplet<MulticyclePermutation, Cycle, List<Cycle>> canonicalize(final MulticyclePermutation spi,
-                                                                                  final Cycle pi, final List<Cycle> rhos) {
-        var maxSymbol = pi.getMaxSymbol();
-
-        final var substitutionMatrix = new byte[maxSymbol + 1];
-
-        for (var i = 0; i < pi.size(); i++) {
-            substitutionMatrix[pi.get(i)] = (byte) i;
-        }
-
-        final var _pi = Arrays.copyOf(pi.getSymbols(), pi.size());
-
-        replace(_pi, substitutionMatrix);
-
-        final var _rhos = new ArrayList<Cycle>();
-        if (rhos != null) {
-            for (final var rho : rhos) {
-                final var _rho = Arrays.copyOf(rho.getSymbols(), 3);
-                replace(_rho, substitutionMatrix);
-                _rhos.add(new Cycle(_rho));
-            }
-        }
-
-        final var _spi = new MulticyclePermutation();
-
-        for (final var cycle : spi) {
-            final var _cycle = Arrays.copyOf(cycle.getSymbols(), cycle.size());
-            replace(_cycle, substitutionMatrix);
-            _spi.add(new Cycle(_cycle));
-        }
-
-        return new Triplet<>(_spi, new Cycle(_pi), _rhos);
-    }
-
-    public static void replace(final byte[] array, final byte[] substitutionMatrix) {
-        for (var i = 0; i < array.length; i++) {
-            array[i] = substitutionMatrix[array[i]];
-        }
-    }
-
     /**
      * Find a sorting sequence whose approximation ratio lies between 1 and
      * <code>maxRatio</code>.
@@ -266,8 +226,6 @@ public class CommonOperations implements Serializable {
 
         final var lowerBound = (n - mu.getNumberOfEvenCycles()) / 2;
         final var minAchievableRatio = (float) (rhos.size() + lowerBound) / ((n - initialNumberOfEvenCycles) / 2);
-
-        final var spiCycleIndex = cycleIndex(mu, pi);
 
         // Do not allow it to exceed the max ratio
         if (minAchievableRatio <= maxRatio) {
@@ -300,10 +258,10 @@ public class CommonOperations implements Serializable {
     }
 
     /**
-     * Search for a 2-move given by an oriented cycle in \spi.
+     * Search for a 2-move given by an oriented cycle.
      */
-    public static Cycle searchFor2MoveFromOrientedCycle(final MulticyclePermutation spi, final Cycle pi) {
-        for (final var cycle : spi.stream().filter(c -> isOriented(pi, c))
+    public static Cycle searchFor2MoveFromOrientedCycle(final List<Cycle> mu, final Cycle pi) {
+        for (final var cycle : mu.stream().filter(c -> isOriented(pi, c))
                 .collect(Collectors.toList())) {
             final var before = cycle.isEven() ? 1 : 0;
             for (var i = 0; i < cycle.size() - 2; i++) {
@@ -356,36 +314,6 @@ public class CommonOperations implements Serializable {
 
     public static <T> Generator<T> combinations(final Collection<T> collection, final int k) {
         return Factory.createSimpleCombinationGenerator(Factory.createVector(collection), k);
-    }
-
-    /**
-     * Search for a 2-move given first by two odd cycles in \spi. If such move is not found, then search in the oriented cycles of \spi.
-     */
-    public static Cycle searchFor2MoveOddCycles(final MulticyclePermutation spi, final Cycle pi) {
-        final var oddCycles = spi.stream().filter(c -> !c.isEven()).collect(Collectors.toList());
-        for (final var c1 : oddCycles)
-            for (final var c2 : oddCycles)
-                if (c1 != c2) {
-                    for (final var a : getSegmentsOfLength2(c1))
-                        for (final var b : c2.getSymbols()) {
-                            for (final var rho : combinations(Arrays.asList(a.get(0), a.get(1), b), 3)) {
-                                final var rho1 = new Cycle(rho.getVector().stream().mapToInt(i -> i).toArray());
-                                if (pi.isApplicable(rho1)) {
-                                    return rho1;
-                                }
-                            }
-                        }
-                }
-
-        return searchFor2MoveFromOrientedCycle(spi, pi);
-    }
-
-    public static List<Cycle> getSegmentsOfLength2(final Cycle cycle) {
-        final List<Cycle> result = new ArrayList<>();
-        for (var i = 0; i < cycle.size(); i++) {
-            result.add(new Cycle(cycle.get(i), cycle.image(cycle.get(i))));
-        }
-        return result;
     }
 
     /**
