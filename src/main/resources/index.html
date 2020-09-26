@@ -56,7 +56,7 @@
                 <li><a href="dfs/(0 5 2)(1 4 3).html">the unoriented intersecting pair</a></li>
             </ol>
             No configuration with $3$-norm equals to $10$ was reached during the search.
-            The search found the full configuration <a href="dfs/(0 5 2)(1 10 3)(4 9 7)(6 11 8).html">(0 5 2)(1 10 3)(4 9 7)(6 11 8)</a> which does not allow a $\frac{11}{8}$-sequence. However, note that this configuration is not valid, since in this case, $\esigma\epi\esigma^{-1}$ ($\epi$ conjugated by $\esigma$) is not a $(n+1)$-cycle. Intuitively, this means that there are no $\epi$ and $\esigma$ such that $\spi$ contains a component with the form of this invalid configuration.
+            The search found the full configuration <a href="dfs/(0 5 2)(1 10 3)(4 9 7)(6 11 8).html">(0 5 2)(1 10 3)(4 9 7)(6 11 8)</a> which does not allow a $\frac{11}{8}$-sequence. However, note that this configuration is not valid, since in this case, $\spi\epi=\esigma=(0\;5\;2)(1\;10\;3)(4\;9\;7)(6\;11\;8)(0\;1\;2\;3\;4\;5\;6\;7\;8\;9\;10\;11)=(0\;10\;8\;7\;6\;4\;2\;1)(3\;9)(5\;11)$, and thus $\esigma$ is not a $(n+1)$-cycle. Intuitively, this means that there are no $\epi$ and $\esigma$ such that $\spi$ contains a component with the form of this invalid configuration.
 
             <h3>Lemma 3: If $\spi$ consists only of bad small components and $\norm{\spi}_3 \geq 8$, then a $\frac{11}{8}$-sequence of transpositions exists.</h3>
 
@@ -74,19 +74,29 @@
 
             <h2>Auxiliary results</h2>
 
-            <h3>Lemma 4: If there is an even (odd-length) $k$-cycle $\gamma=(a\dots b\dots c\dots)$ in $\spi$ such that $k\geq 7$ and $(a,b,c)$ is an oriented triple, then there is a $\frac{4}{3}$-sequence.</h3>
+            <h3>Lemma 4: If there is $5$-cycle $\gamma=(a\;d\;b\;e\;c)$ in $\spi$ such that $(a,b,c)$ is an oriented triplet, then there is a $2$-move or a $(3,2)$-sequence.</h3>
+            Proof. All possible forms of $\epi$ relatively to the positions of the symbols of $Supp(\gamma)$ are listed below. For each one, there is a $2$-move or a $(3,2)$-sequence.
+            <br>
+            (1) $\epi=(a\dots b\dots c\dots d\dots e\dots)$. $\tau_1=(a\;b\;c)$, $\tau_2=(b\;c\;d)$, $\tau_1=(c\;d\;e)$.<br>
+            (2) $\epi=(a\dots b\dots c\dots e\dots d\dots)$. $\tau_1=(b\;e\;d)$.<br>
+            (3) $\epi=(a\dots b\dots e\dots c\dots d\dots)$. $\tau_1=(a\;e\;c)$.<br>
+            (4) $\epi=(a\dots e\dots b\dots d\dots c\dots)$. $\tau_1=(a\;d\;c)$.<br>
+            (5) $\epi=(a\dots b\dots e\dots d\dots c\dots)$. $\tau_1=(a\;d\;c)$.<br>
+            (6) $\epi=(a\dots d\dots b\dots e\dots c\dots)$. $\tau_1=(a\;d\;b)$.
+
+            <h3>Lemma 5: If there is an even (odd-length) $k$-cycle $\gamma=(a\dots b\dots c\dots)$ in $\spi$ such that $k\geq 7$ and $(a,b,c)$ is an oriented triple, then there is a $\frac{4}{3}$-sequence.</h3>
 
             Proof. If $(a\;b\;c)$ is a $2$-move, then the lemma holds since a $2$-move is a $(1,1)$-sequence, which in turn is $\frac{4}{3}$-sequence. Thus, w.l.o.g, suppose
             \[\gamma=(\underbrace{d\;e\dots b}_{odd}\;|\;\underbrace{f\dots c}_{even}\;|\;\underbrace{g\dots a}_{even}\;|).\]
             Vertical bars are used to indicate the positions in $\gamma$ that would be affected by the application of $(a\;b\;c)$ (breaking $\gamma$ into $3$ smaller cycles), and subscripts to indicate the length parity of the resulting cycles. Note that the cycle $\gamma$ can be rewritten as the product
             \[\gamma=(\underbrace{a\dots}_{odd})(\underbrace{b\dots}_{odd})(\underbrace{c\dots}_{odd})(a\;d\;e\;b\;f\;c\;g).\]
-            For each of the $71$ distinct possible forms of $\epi$, related to the symbols of $(a\;d\;e\;b\;f\;c\;g)$, there is a $\frac{4}{3}$-sequence of transpositions. The case analysis can be visualised <a href="oriented-7-cycle/index.html">here</a>. For this consider $a=0$, $b=1$, $c=2$, $d=3$, $e=4$, $f=5$ and $g=6$.
+            For each of the $71$ distinct possible forms of $\epi$, related to the symbols of the support of $(a\;d\;e\;b\;f\;c\;g)$, there is a $\frac{4}{3}$-sequence of transpositions. The case analysis can be visualised <a href="oriented-7-cycle/index.html">here</a>. For this consider $a=0$, $b=1$, $c=2$, $d=3$, $e=4$, $f=5$ and $g=6$.
 
-            <h3>Lemma 5: If $\spi\neq\iota$, then there is a $\frac{3}{2}$-sequence.</h3>
+            <h3>Lemma 6: If $\spi\neq\iota$, then there is a $\frac{3}{2}$-sequence.</h3>
 
             Proof. If there is an odd (even-length) cycle in $\spi$, then a $2$-move (i.e. a $(1,1)$-sequence) exists. Thus, consider $\spi$ containing only even (odd-length) cycles.
 
-            <p>(1) There is an oriented $k$-cycle $\gamma$ in $\spi$. If $k=3$, then there is a $2$-move and the lemma holds. On the other hand, if $k \geq 7$, then there is $\frac{4}{3}$-sequence given by Lemma 4. Thus, $k = 5$ and $\gamma$ is the bad oriented $5$-cycle. Assuming $\gamma=(a\;d\;b\;e\;c)$, then $\tau_1=(a\;b\;e)$, $\tau_2=(a\;b\;c)$ and $\tau_3=(b\;c\;d)$ is a $(3,2)$-sequence.
+            <p>(1) There is an oriented $\kappa$-cycle $\gamma$ in $\spi$. If $\kappa=3$, then there is a $2$-move and the lemma holds. If $\kappa = 5$, then Lemma 4 gives a $2$-move or a $(3,2)$-sequence. On the other hand, if $\kappa \geq 7$, then a $2$-move or a $(4,3)$-sequence, which contains a $(3,2)$-sequence, is given by Lemma 5.
                 <br>
                 (2) All the cycles of $\spi$ are unoriented. Let $\gamma=(a\;b\;c)$ be a segment of a cycle of $\spi$. We have two subcases:<br>
                 &nbsp;&nbsp;(2.a) $\gamma$ interleaves with another segment $\delta=(d\;e\;f)$. In this case, $\epi=(a\dots f\dots c\dots e\dots b\dots d\dots )$. Then, $\tau_1=(a\;c\;b)$, $\tau_2=(d\;e\;f)$ and $\tau_3=(a\;c\;b)$ is a $(3,2)$-sequence.<br>

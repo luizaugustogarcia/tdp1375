@@ -36,10 +36,9 @@ public class OddCycles {
                 final var move = iterator.next();
                 final var rho1 = move.getKey();
 
-                final var c = canonicalize(spi, pi, Collections.singletonList(rho1));
-                final var configuration = new Configuration(c.first, c.second);
+                final var configuration = new Configuration(spi, pi);
                 if (!verifiedConfigurations.contains(configuration)) {
-                    result.add(new Pair<>(configuration, c.third));
+                    result.add(new Pair<>(configuration, Collections.singletonList(rho1)));
                     verifiedConfigurations.add(configuration);
                 }
 

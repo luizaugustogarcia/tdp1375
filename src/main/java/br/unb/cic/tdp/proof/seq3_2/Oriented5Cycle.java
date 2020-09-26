@@ -12,8 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Stack;
 
-import static br.unb.cic.tdp.base.CommonOperations.searchFor2MoveOddCycles;
-import static br.unb.cic.tdp.base.CommonOperations.searchForSortingSeq;
+import static br.unb.cic.tdp.base.CommonOperations.*;
 
 public class Oriented5Cycle {
 
@@ -33,23 +32,19 @@ public class Oriented5Cycle {
 
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
             final var pi = new Cycle(Bytes.toArray(permutation.getVector()));
+            final var config = new Configuration(spi, pi);
 
-            // It is the case to avoid combinations originating 2-moves because the symbols
-            // in the only cycle of spi are indeed the symbols of the actual 5-cycle
-            if (pi.isOriented(triple) && searchFor2MoveOddCycles(spi, pi) == null) {
-                final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), spi.getNumberOfEvenCycles(),
-                        1.5F);
+            if (pi.isOriented(triple)) {
+                if (!verifiedConfigurations.contains(config)) {
+                    verifiedConfigurations.add(config);
 
-                if (!rhos.isEmpty()) {
-                    if (rhos.size() > 1) {
-                        final var config = new Configuration(spi, pi);
-                        if (!verifiedConfigurations.contains(config)) {
-                            result.add(new Pair<>(config, rhos));
-                            verifiedConfigurations.add(config);
-                        }
+                    final var _2Move = searchFor2MoveFromOrientedCycle(spi, pi);
+
+                    if (_2Move == null) {
+                        final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), 1, 1.5F);
+                        assert !rhos.isEmpty() : "ERROR";
+                        result.add(new Pair<>(config, rhos));
                     }
-                } else {
-                    throw new RuntimeException("ERROR");
                 }
             }
         }
