@@ -58,14 +58,14 @@ public class EliasAndHartman extends BaseAlgorithm {
         final var _2_2Seq = searchFor2_2Seq(spi, pi);
         if (_2_2Seq != null) {
             pi = computeProduct(_2_2Seq.getSecond(), _2_2Seq.getFirst(), pi).asNCycle();
-            distance += 2;
             spi = computeProduct(true, sigma, pi.getInverse());
+            distance += 2;
         }
 
         while (thereAreOddCycles(spi)) {
             apply2MoveTwoOddCycles(spi, pi);
-            distance += 1;
             spi = computeProduct(true, sigma, pi.getInverse());
+            distance += 1;
         }
 
         final List<Cycle> bigLambda = new ArrayList<>(); // bad small components
@@ -75,6 +75,7 @@ public class EliasAndHartman extends BaseAlgorithm {
             final var _2move = searchFor2MoveFromOrientedCycle(bigTheta, pi);
             if (_2move != null) {
                 pi = computeProduct(_2move, pi).asNCycle();
+                spi = computeProduct(true, sigma, pi.getInverse());
                 distance += 1;
             } else {
                 List<Cycle> bigGamma = new ArrayList<>();
@@ -97,13 +98,14 @@ public class EliasAndHartman extends BaseAlgorithm {
                     if (seq != null) {
                         for (final var rho : seq)
                             pi = computeProduct(rho, pi).asNCycle();
+                        spi = computeProduct(true, sigma, pi.getInverse());
                         distance += seq.size();
                         break;
                     }
                 }
 
                 if (badSmallComponent) {
-                    bigGamma.forEach(c -> bigLambda.add(c));
+                    bigLambda.addAll(bigGamma);
                 }
             }
 
@@ -112,11 +114,10 @@ public class EliasAndHartman extends BaseAlgorithm {
                 for (final var rho : _11_8Seq) {
                     pi = computeProduct(rho, pi).asNCycle();
                 }
+                spi = computeProduct(true, sigma, pi.getInverse());
                 distance += _11_8Seq.size();
                 bigLambda.clear();
             }
-
-            spi = computeProduct(true, sigma, pi.getInverse());
         }
 
         // At this point 3-norm of spi is less than 8
