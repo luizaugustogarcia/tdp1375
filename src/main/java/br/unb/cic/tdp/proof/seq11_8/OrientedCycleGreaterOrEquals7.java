@@ -27,7 +27,7 @@ public class OrientedCycleGreaterOrEquals7 {
     public static void generate(final String outputDir) throws IOException {
         Files.createDirectories(Paths.get(outputDir + "/oriented-7-cycle/"));
 
-        final var out = new PrintStream(new File(outputDir + "oriented-7-cycle\\index.html"));
+        final var out = new PrintStream(new File(outputDir + "/oriented-7-cycle/index.html"));
         out.println("<html>\n" +
                 "\t<head>\n" +
                 "\t\t<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css\" integrity=\"sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh\" crossorigin=\"anonymous\">\n" +
