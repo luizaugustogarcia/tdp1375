@@ -60,12 +60,12 @@ public class ProofGenerator {
         // Known sortings found by Elias and Hartman
         final var knownSortings = loadKnownSortings(path);
 
-        final var shouldAlsoUseBruteForce = args.length > 1 && args[1].equalsIgnoreCase("true");
+        final var shouldAlsoUseBranchAndBound = args.length > 1 && args[1].equalsIgnoreCase("true");
         if (args.length > 2)
             numberOfCoresToUse = Integer.parseInt(args[2]);
 
-        Extensions.generate(knownSortings, shouldAlsoUseBruteForce, args[0]);
-        Combinations.generate(knownSortings, shouldAlsoUseBruteForce, args[0]);
+        Extensions.generate(knownSortings, shouldAlsoUseBranchAndBound, args[0]);
+        Combinations.generate(knownSortings, shouldAlsoUseBranchAndBound, args[0]);
     }
 
     public static Pair<Map<Configuration, List<Cycle>>,
@@ -86,9 +86,9 @@ public class ProofGenerator {
     }
 
     public static List<Cycle> searchForSorting(final Configuration config, final Pair<Map<Configuration, List<Cycle>>,
-            Map<Integer, List<Configuration>>> knownSortings, final boolean shouldAlsoUseBruteForce) {
+            Map<Integer, List<Configuration>>> knownSortings, final boolean shouldAlsoUseBranchAndBound) {
         if (knownSortings.getFirst().containsKey(config)) {
-            // can be empty if it was brute force sorted
+            // can be empty if it was branch and bound sorted
             if (knownSortings.getFirst().get(config).isEmpty()) {
                 return null;
             }
@@ -104,7 +104,7 @@ public class ProofGenerator {
             return sorting.get();
         }
 
-        if (shouldAlsoUseBruteForce && config.getSpi().stream().anyMatch(Cycle::isLong)) {
+        if (shouldAlsoUseBranchAndBound && config.getSpi().stream().anyMatch(Cycle::isLong)) {
             final var _sorting = searchFor11_8SeqParallel(config.getSpi(), config.getPi());
             knownSortings.getFirst().put(config, _sorting);
             knownSortings.getSecond().computeIfAbsent(config.hashCode(), key -> new ArrayList<>());
