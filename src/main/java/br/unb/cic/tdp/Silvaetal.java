@@ -136,7 +136,7 @@ public class Silvaetal extends BaseAlgorithm {
         final var cycleIndex = cycleIndex(spi, pi);
 
         // Type 3 extension
-        // The outer loop is O(1) since, at this point, ||mu|| never exceeds 16
+        // O(1) since, at this point, ||mu||_3 never exceeds 8
         for (var muCycle : mu) {
             if (muCycle.size() < cycleIndex[muCycle.get(0)].size()) {
                 final var spiCycle = align(cycleIndex[muCycle.get(0)], muCycle);
@@ -201,9 +201,6 @@ public class Silvaetal extends BaseAlgorithm {
                     final var _7Cycle = new Cycle(a, d, e, b, f, c, g);
                     final var allSymbols = new HashSet<>(Bytes.asList(_7Cycle.getSymbols()));
 
-                    /* This part could implemented in a more efficient way, in O(1), by generating all permutations on
-                       {a, d, e, b, f, c, g} and then check which permutation (_pi), with each symbol mapped to its
-                       position in pi, has the positions in (cyclic) ascending order. */
                     final var _pi = new ByteArrayList(7);
                     for (final var symbol : pi.getSymbols()) {
                         if (allSymbols.contains(symbol)) {
