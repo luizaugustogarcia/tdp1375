@@ -207,21 +207,10 @@ public class CommonOperations implements Serializable {
     }
 
     /**
-     * Find a sorting sequence whose approximation ratio lies between 1 and
-     * <code>maxRatio</code>.
+     * Find a sorting sequence whose approximation ratio is at most <code>maxRatio</code>.
      */
     public static List<Cycle> searchForSortingSeq(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> rhos,
-                                                  final int initialNumberOfEvenCycles, final float maxRatio) {
-        return searchForSortingSeq(pi, mu, rhos, initialNumberOfEvenCycles, 1, maxRatio);
-    }
-
-    /**
-     * Find a sorting sequence whose approximation ratio lies between
-     * <code>minRatio</code> and <code>maxRatio</code>.
-     */
-    private static List<Cycle> searchForSortingSeq(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> rhos,
-                                                   final int initialNumberOfEvenCycles, final float minRatio,
-                                                   final float maxRatio) {
+                                                   final int initialNumberOfEvenCycles, final float maxRatio) {
         final var n = pi.size();
 
         final var lowerBound = (n - mu.getNumberOfEvenCycles()) / 2;
@@ -233,7 +222,7 @@ public class CommonOperations implements Serializable {
             final var instantRatio = delta > 0
                     ? (float) (rhos.size() * 2) / (mu.getNumberOfEvenCycles() - initialNumberOfEvenCycles)
                     : 0;
-            if (0 < instantRatio && minRatio <= instantRatio && instantRatio <= maxRatio) {
+            if (1 <= instantRatio && instantRatio <= maxRatio) {
                 return rhos;
             } else {
                 final var iterator = generateAll0And2Moves(mu, pi).iterator();
@@ -244,8 +233,7 @@ public class CommonOperations implements Serializable {
                     final var _mu = PermutationGroups.computeProduct(mu, rho.getInverse());
                     rhos.push(rho);
                     final var solution = searchForSortingSeq(applyTransposition(pi, rho),
-                            _mu, rhos, initialNumberOfEvenCycles,
-                            minRatio, maxRatio);
+                            _mu, rhos, initialNumberOfEvenCycles, maxRatio);
                     if (!solution.isEmpty()) {
                         return rhos;
                     }
@@ -328,11 +316,9 @@ public class CommonOperations implements Serializable {
         final var executorService = Executors.newFixedThreadPool(numberOfCoresToUse);
         final var completionService = new ExecutorCompletionService<List<Cycle>>(executorService);
 
-        final var iterator = generateAll0And2Moves(spi, pi).iterator();
-
         final var submittedTasks = new ArrayList<Future<List<Cycle>>>();
-        while (iterator.hasNext()) {
-            final var move = iterator.next();
+
+        generateAll0And2Moves(spi, pi).forEach(move -> {
             final var rho = move.getKey();
             final var _partialSorting = new Stack<Cycle>();
             _partialSorting.push(rho);
@@ -340,14 +326,14 @@ public class CommonOperations implements Serializable {
                     searchForSortingSeq(CommonOperations.applyTransposition(pi, rho),
                             PermutationGroups.computeProduct(spi, rho.getInverse()), _partialSorting,
                             spi.getNumberOfEvenCycles(), 1.375F)));
-        }
+        });
 
         executorService.shutdown();
 
         List<Cycle> sorting = Collections.emptyList();
         for (int i = 0; i < submittedTasks.size(); i++) {
             final var next = completionService.take();
-            if (next.get().size() > 1 || next.get().size() == 1 && is11_8(spi, pi, next.get())) {
+            if (next.get().size() > 0) {
                 sorting = next.get();
                 break;
             }
@@ -356,5 +342,13 @@ public class CommonOperations implements Serializable {
         executorService.shutdownNow();
 
         return sorting;
+    }
+
+    public static void main(String[] args) {
+        final Cycle pi = new Cycle("0 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1");
+        final Cycle sigma = CANONICAL_PI[21];
+        final MulticyclePermutation sigmaPiInverse = PermutationGroups.computeProduct(sigma, pi.getInverse());
+        var a = searchFor11_8SeqParallel(sigmaPiInverse, pi);
+        System.out.println(a);
     }
 }
