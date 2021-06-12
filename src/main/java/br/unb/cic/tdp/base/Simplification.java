@@ -92,8 +92,8 @@ public class Simplification {
         final var omegas = new ArrayList<List<Float>>();
         omegas.add(simplificationPi);
 
-        for (final var rho : simplificationSorting) {
-            omegas.add(applyTransposition(omegas.get(omegas.size() - 1), rho));
+        for (final var move : simplificationSorting) {
+            omegas.add(applyTransposition(omegas.get(omegas.size() - 1), move));
         }
 
         final var remove = new HashSet<Float>();
@@ -119,19 +119,19 @@ public class Simplification {
             temp.replaceAll(s -> replaceBy.getOrDefault(s, s));
             final var _pi = new Cycle(Bytes.toArray(temp));
 
-            final var rho = computeProduct(false, _pi, pi.getInverse());
-            if (!rho.isIdentity()) {
-                sorting.add(rho.asNCycle());
+            final var move = computeProduct(false, _pi, pi.getInverse());
+            if (!move.isIdentity()) {
+                sorting.add(move.asNCycle());
             }
         }
 
         return sorting;
     }
 
-    public static List<Float> applyTransposition(final List<Float> pi, final List<Float> rho) {
-        final var a = rho.get(0);
-        final var b = rho.get(1);
-        final var c = rho.get(2);
+    public static List<Float> applyTransposition(final List<Float> pi, final List<Float> move) {
+        final var a = move.get(0);
+        final var b = move.get(1);
+        final var c = move.get(2);
 
         final var indexes = new int[3];
         for (var i = 0; i < pi.size(); i++) {
@@ -164,14 +164,14 @@ public class Simplification {
         var sPi = simplifiedConfig.getPi();
         var fPi = simplificationPi;
 
-        for (final var rho : simplifiedConfig.translatedSorting(equivalentConfig, sorting)) {
+        for (final var move : simplifiedConfig.translatedSorting(equivalentConfig, sorting)) {
             final var finalSPi = sPi;
             final var finalFPi = fPi;
 
-            result.add(Bytes.asList(rho.getSymbols()).stream()
+            result.add(Bytes.asList(move.getSymbols()).stream()
                     .map(s -> finalFPi.get(finalSPi.indexOf(s))).collect(Collectors.toList()));
 
-            sPi = CommonOperations.applyTransposition(sPi, rho);
+            sPi = CommonOperations.applyTransposition(sPi, move);
             fPi = applyTransposition(fPi, result.get(result.size() - 1));
         }
 
@@ -185,14 +185,14 @@ public class Simplification {
 
         final var simplificationSorting = new ArrayList<List<Float>>();
 
-        for (final var rho : sorting) {
+        for (final var move : sorting) {
             final var finalPi = pi;
             final var fSimplificationPi = _simplificationPi;
 
-            simplificationSorting.add(Bytes.asList(rho.getSymbols()).stream()
+            simplificationSorting.add(Bytes.asList(move.getSymbols()).stream()
                     .map(s -> fSimplificationPi.get(finalPi.indexOf(s))).collect(Collectors.toList()));
 
-            pi = CommonOperations.applyTransposition(pi, rho);
+            pi = CommonOperations.applyTransposition(pi, move);
             _simplificationPi = Simplification.applyTransposition(_simplificationPi,
                     simplificationSorting.get(simplificationSorting.size() - 1));
         }

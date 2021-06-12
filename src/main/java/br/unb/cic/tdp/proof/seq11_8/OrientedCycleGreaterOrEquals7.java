@@ -66,19 +66,19 @@ public class OrientedCycleGreaterOrEquals7 {
                 if (pi.isOriented(orientedTriple)) {
                     final var config = new Configuration(spi, pi);
 
-                    final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), 1, 1.375F);
+                    final var moves = searchForSortingSeq(pi, spi, new Stack<>(), 1, 1.375F);
 
-                    assert !rhos.isEmpty() : "ERROR";
+                    assert !moves.isEmpty() : "ERROR";
 
                     out.println("<div style=\"margin-bottom: 10px; background-color: rgba(153, 255, 153, 0.15)\">");
                     out.println("$\\bar{\\pi}$: " + pi + "<br>");
                     out.println("Hash code: " + config.hashCode() + "<br>");
                     out.println("$\frac{11}{8}$-SEQUENCE" + "<br>");
                     var _spi = spi;
-                    for (int i = 0; i < rhos.size(); i++) {
-                        final var rho = rhos.get(i);
-                        out.println(String.format("%d: %s <br>", i + 1, rho));
-                        out.println((_spi = computeProduct(_spi, rho.getInverse())) + "<br>");
+                    for (int i = 0; i < moves.size(); i++) {
+                        final var move = moves.get(i);
+                        out.println(String.format("%d: %s <br>", i + 1, move));
+                        out.println((_spi = computeProduct(_spi, move.getInverse())) + "<br>");
                     }
                     out.println("</div>");
                 }

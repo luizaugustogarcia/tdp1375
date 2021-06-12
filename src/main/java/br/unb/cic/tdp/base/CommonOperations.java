@@ -90,10 +90,10 @@ public class CommonOperations implements Serializable {
         return -1;
     }
 
-    public static Cycle applyTransposition(final Cycle pi, final Cycle rho) {
-        final var a = rho.get(0);
-        final var b = rho.get(1);
-        final var c = rho.get(2);
+    public static Cycle applyTransposition(final Cycle pi, final Cycle move) {
+        final var a = move.get(0);
+        final var b = move.get(1);
+        final var c = move.get(2);
 
         final var indexes = new int[3];
         for (var i = 0; i < pi.size(); i++) {
@@ -169,20 +169,20 @@ public class CommonOperations implements Serializable {
     }
 
     /**
-     * Checks whether or not a given sequence of \rho's is a 11/8-sequence.
+     * Checks whether or not a given sequence of \move's is a 11/8-sequence.
      */
-    public static boolean is11_8(MulticyclePermutation spi, Cycle pi, final List<Cycle> rhos) {
+    public static boolean is11_8(MulticyclePermutation spi, Cycle pi, final List<Cycle> moves) {
         final var before = spi.getNumberOfEvenCycles();
-        for (final var rho : rhos) {
-            if (pi.isApplicable(rho)) {
-                pi = applyTransposition(pi, rho);
-                spi = PermutationGroups.computeProduct(spi, rho.getInverse());
+        for (final var move : moves) {
+            if (pi.isApplicable(move)) {
+                pi = applyTransposition(pi, move);
+                spi = PermutationGroups.computeProduct(spi, move.getInverse());
             } else {
                 return false;
             }
         }
         final var after = spi.getNumberOfEvenCycles();
-        return after > before && (float) rhos.size() / ((after - before) / 2) <= ((float) 11 / 8);
+        return after > before && (float) moves.size() / ((after - before) / 2) <= ((float) 11 / 8);
     }
 
     public static boolean areSymbolsInCyclicOrder(final Cycle target, byte... symbols) {
@@ -209,35 +209,35 @@ public class CommonOperations implements Serializable {
     /**
      * Find a sorting sequence whose approximation ratio is at most <code>maxRatio</code>.
      */
-    public static List<Cycle> searchForSortingSeq(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> rhos,
+    public static List<Cycle> searchForSortingSeq(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> moves,
                                                    final int initialNumberOfEvenCycles, final float maxRatio) {
         final var n = pi.size();
 
         final var lowerBound = (n - mu.getNumberOfEvenCycles()) / 2;
-        final var minAchievableRatio = (float) (rhos.size() + lowerBound) / ((n - initialNumberOfEvenCycles) / 2);
+        final var minAchievableRatio = (float) (moves.size() + lowerBound) / ((n - initialNumberOfEvenCycles) / 2);
 
         // Do not allow it to exceed the max ratio
         if (minAchievableRatio <= maxRatio) {
             final var delta = (mu.getNumberOfEvenCycles() - initialNumberOfEvenCycles);
             final var instantRatio = delta > 0
-                    ? (float) (rhos.size() * 2) / (mu.getNumberOfEvenCycles() - initialNumberOfEvenCycles)
+                    ? (float) (moves.size() * 2) / (mu.getNumberOfEvenCycles() - initialNumberOfEvenCycles)
                     : 0;
             if (1 <= instantRatio && instantRatio <= maxRatio) {
-                return rhos;
+                return moves;
             } else {
                 final var iterator = generateAll0And2Moves(mu, pi).iterator();
                 while (iterator.hasNext()) {
                     final var pair = iterator.next();
-                    final var rho = pair.getFirst();
+                    final var move = pair.getFirst();
 
-                    final var _mu = PermutationGroups.computeProduct(mu, rho.getInverse());
-                    rhos.push(rho);
-                    final var solution = searchForSortingSeq(applyTransposition(pi, rho),
-                            _mu, rhos, initialNumberOfEvenCycles, maxRatio);
-                    if (!solution.isEmpty()) {
-                        return rhos;
+                    final var _mu = PermutationGroups.computeProduct(mu, move.getInverse());
+                    moves.push(move);
+                    final var sorting = searchForSortingSeq(applyTransposition(pi, move),
+                            _mu, moves, initialNumberOfEvenCycles, maxRatio);
+                    if (!sorting.isEmpty()) {
+                        return moves;
                     }
-                    rhos.pop();
+                    moves.pop();
                 }
             }
         }
@@ -291,10 +291,10 @@ public class CommonOperations implements Serializable {
                                     // skip (-2)-moves
                                     return !is_2Move;
                                 }).map(k -> {
-                                    final var rho = new Cycle(pi.get(i), pi.get(j), pi.get(k));
-                                    final var delta = PermutationGroups.computeProduct(spi, rho.getInverse()).getNumberOfEvenCycles() - numberOfEvenCycles;
+                                    final var move = new Cycle(pi.get(i), pi.get(j), pi.get(k));
+                                    final var delta = PermutationGroups.computeProduct(spi, move.getInverse()).getNumberOfEvenCycles() - numberOfEvenCycles;
                                     if (delta >= 0) {
-                                        return new Pair<>(rho, delta);
+                                        return new Pair<>(move, delta);
                                     }
                                     return null;
                                 }))).filter(p -> p != null);
@@ -318,13 +318,13 @@ public class CommonOperations implements Serializable {
 
         final var submittedTasks = new ArrayList<Future<List<Cycle>>>();
 
-        generateAll0And2Moves(spi, pi).forEach(move -> {
-            final var rho = move.getKey();
+        generateAll0And2Moves(spi, pi).forEach(m -> {
+            final var move = m.getKey();
             final var _partialSorting = new Stack<Cycle>();
-            _partialSorting.push(rho);
+            _partialSorting.push(move);
             submittedTasks.add(completionService.submit(() ->
-                    searchForSortingSeq(CommonOperations.applyTransposition(pi, rho),
-                            PermutationGroups.computeProduct(spi, rho.getInverse()), _partialSorting,
+                    searchForSortingSeq(CommonOperations.applyTransposition(pi, move),
+                            PermutationGroups.computeProduct(spi, move.getInverse()), _partialSorting,
                             spi.getNumberOfEvenCycles(), 1.375F)));
         });
 

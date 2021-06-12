@@ -44,9 +44,9 @@ public class ListCases {
 
                                         line = reader.readLine();
 
-                                        final var rho = line.split(": ")[1].replace(" ", ",")
+                                        final var move = line.split(": ")[1].replace(" ", ",")
                                                 .replace("<br>", "");
-                                        sorting.add(new Cycle(rho));
+                                        sorting.add(new Cycle(move));
                                     }
                                     writer.println(spi + "->" + sorting.toString());
                                 }

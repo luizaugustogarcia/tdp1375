@@ -164,25 +164,25 @@ public class Configuration {
         if (matchedSignature.isMirror()) {
             final var pis = Lists.newArrayList(config.getPi());
             final var spis = Lists.newArrayList(new MulticyclePermutation[]{config.getSpi()});
-            var mirroredRhos = new ArrayList<Cycle>();
-            for (final var rho : sorting) {
-                pis.add(computeProduct(rho, pis.get(pis.size() - 1)).asNCycle());
-                spis.add(computeProduct(spis.get(spis.size() - 1), rho.getInverse()));
-                mirroredRhos.add(rho.getInverse().conjugateBy(spis.get(spis.size() - 1)).asNCycle());
+            var mirroredMoves = new ArrayList<Cycle>();
+            for (final var move : sorting) {
+                pis.add(computeProduct(move, pis.get(pis.size() - 1)).asNCycle());
+                spis.add(computeProduct(spis.get(spis.size() - 1), move.getInverse()));
+                mirroredMoves.add(move.getInverse().conjugateBy(spis.get(spis.size() - 1)).asNCycle());
             }
-            shiftedOrMirroredSorting = mirroredRhos;
+            shiftedOrMirroredSorting = mirroredMoves;
         }
 
         final var translatedSorting = new ArrayList<Cycle>();
 
         var pi = matchedSignature.getPi();
         var _pi = this.pi;
-        for (final var rho : shiftedOrMirroredSorting) {
+        for (final var move : shiftedOrMirroredSorting) {
             translatedSorting.add(new Cycle(
-                    _pi.get(pi.indexOf(rho.get(0))),
-                    _pi.get(pi.indexOf(rho.get(1))),
-                    _pi.get(pi.indexOf(rho.get(2)))));
-            pi = applyTransposition(pi, rho);
+                    _pi.get(pi.indexOf(move.get(0))),
+                    _pi.get(pi.indexOf(move.get(1))),
+                    _pi.get(pi.indexOf(move.get(2)))));
+            pi = applyTransposition(pi, move);
             _pi = applyTransposition(_pi, translatedSorting.get(translatedSorting.size() - 1));
         }
 
@@ -194,13 +194,13 @@ public class Configuration {
         if (signature.isMirror()) {
             final var pis = Lists.newArrayList(this.getPi());
             final var spis = Lists.newArrayList(new MulticyclePermutation[]{this.getSpi()});
-            var mirroredRhos = new ArrayList<Cycle>();
-            for (final var rho : sorting) {
-                pis.add(computeProduct(rho, pis.get(pis.size() - 1)).asNCycle());
-                spis.add(computeProduct(spis.get(spis.size() - 1), rho.getInverse()));
-                mirroredRhos.add(rho.getInverse().conjugateBy(spis.get(spis.size() - 1)).asNCycle());
+            var mirroredMoves = new ArrayList<Cycle>();
+            for (final var move : sorting) {
+                pis.add(computeProduct(move, pis.get(pis.size() - 1)).asNCycle());
+                spis.add(computeProduct(spis.get(spis.size() - 1), move.getInverse()));
+                mirroredMoves.add(move.getInverse().conjugateBy(spis.get(spis.size() - 1)).asNCycle());
             }
-            return mirroredRhos;
+            return mirroredMoves;
         }
 
         return sorting;

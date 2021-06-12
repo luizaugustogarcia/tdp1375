@@ -85,8 +85,8 @@ public class Silvaetal extends BaseAlgorithm {
 
                         final var seq = searchForSeq(bigGamma, pi, _11_8cases);
                         if (seq != null) {
-                            for (final var rho : seq)
-                                pi = computeProduct(rho, pi).asNCycle();
+                            for (final var move : seq)
+                                pi = computeProduct(move, pi).asNCycle();
                             spi = computeProduct(true, sigma, pi.getInverse());
                             distance += seq.size();
                             break;
@@ -101,8 +101,8 @@ public class Silvaetal extends BaseAlgorithm {
 
             if (get3Norm(bigLambda) >= 8) {
                 final var _11_8Seq = searchForSeq(bigLambda, pi, _11_8cases);
-                for (final var rho : _11_8Seq) {
-                    pi = computeProduct(rho, pi).asNCycle();
+                for (final var move : _11_8Seq) {
+                    pi = computeProduct(move, pi).asNCycle();
                 }
                 distance += _11_8Seq.size();
                 spi = computeProduct(true, sigma, pi.getInverse());
@@ -210,9 +210,9 @@ public class Silvaetal extends BaseAlgorithm {
 
                     final var config = new Configuration(new MulticyclePermutation(_7Cycle), new Cycle(_pi));
                     if (_11_8cases.getFirst().containsKey(config)) {
-                        final var rhos = config.translatedSorting(_11_8cases.getSecond().get(config.hashCode()).stream()
+                        final var moves = config.translatedSorting(_11_8cases.getSecond().get(config.hashCode()).stream()
                                 .filter(_c -> _c.equals(config)).findFirst().get(), _11_8cases.getFirst().get(config));
-                        applyMoves(pi, rhos);
+                        applyMoves(pi, moves);
                         return 4;
                     }
                 }
@@ -244,13 +244,13 @@ public class Silvaetal extends BaseAlgorithm {
             final var _4 = orientedCycle.get(i + 3);
             final var _2 = orientedCycle.image(_4);
 
-            final var rho1 = new Cycle(_0, _1, _2);
-            final var rho2 = new Cycle(_1, _2, _3);
-            final var rho3 = new Cycle(_2, _3, _4);
+            final var move1 = new Cycle(_0, _1, _2);
+            final var move2 = new Cycle(_1, _2, _3);
+            final var move3 = new Cycle(_2, _3, _4);
 
-            if (computeProduct(true, spi, rho1.getInverse(), rho2.getInverse(),
-                    rho3.getInverse()).getNumberOfEvenCycles() - even >= 4) {
-                applyMoves(pi, Arrays.asList(rho1, rho2, rho3));
+            if (computeProduct(true, spi, move1.getInverse(), move2.getInverse(),
+                    move3.getInverse()).getNumberOfEvenCycles() - even >= 4) {
+                applyMoves(pi, Arrays.asList(move1, move2, move3));
                 return;
             }
         }

@@ -37,11 +37,11 @@ public class Cases3_2 {
             if (spi.stream().noneMatch(cycle -> isOriented(pi, cycle))) {
                 final var openGates = openGatesPerCycle(spi, pi.getInverse());
                 if (openGates.values().stream().mapToInt(j -> j).sum() <= 2) {
-                    final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), 3, 1.5F);
+                    final var moves = searchForSortingSeq(pi, spi, new Stack<>(), 3, 1.5F);
 
                     final var configuration = new Configuration(spi, pi);
                     if (!verifiedConfigurations.contains(configuration)) {
-                        result.add(new Pair<>(configuration, rhos));
+                        result.add(new Pair<>(configuration, moves));
                         verifiedConfigurations.add(configuration);
                     }
                 }

@@ -184,14 +184,14 @@ public class ProofGenerator {
                         var cPi = new Cycle(_pi);
 
                         final var result = new ArrayList<Cycle>();
-                        for (final var rho : equivalentConfig.equivalentSorting(matchedSignature,
+                        for (final var move : equivalentConfig.equivalentSorting(matchedSignature,
                                 knownSortings.getFirst().get(equivalentConfig))) {
-                            final var _rho = new Cycle(cPi.get(pi.indexOf(rho.get(0))),
-                                    cPi.get(pi.indexOf(rho.get(1))), cPi.get(pi.indexOf(rho.get(2))));
-                            result.add(_rho);
+                            final var _move = new Cycle(cPi.get(pi.indexOf(move.get(0))),
+                                    cPi.get(pi.indexOf(move.get(1))), cPi.get(pi.indexOf(move.get(2))));
+                            result.add(_move);
 
-                            pi = applyTransposition(pi, rho);
-                            cPi = applyTransposition(cPi, _rho);
+                            pi = applyTransposition(pi, move);
+                            cPi = applyTransposition(cPi, _move);
                         }
                         return result;
                     }
@@ -249,10 +249,10 @@ public class ProofGenerator {
         var spi = canonicalConfig.getSpi();
         var pi = canonicalConfig.getPi();
         for (int i = 0; i < sorting.size(); i++) {
-            final var rho = sorting.get(i);
-            spis.add(spi = computeProduct(spi, rho.getInverse()));
+            final var move = sorting.get(i);
+            spis.add(spi = computeProduct(spi, move.getInverse()));
             jsSpis.add(permutationToJsArray(spi));
-            jsPis.add(cycleToJsArray(pi = computeProduct(rho, pi).asNCycle()));
+            jsPis.add(cycleToJsArray(pi = computeProduct(move, pi).asNCycle()));
         }
         context.put("spis", spis);
         context.put("jsSpis", jsSpis);
