@@ -96,8 +96,8 @@ public class EliasAndHartman extends BaseAlgorithm {
 
                     final var seq = searchForSeq(bigGamma, pi, _11_8cases);
                     if (seq != null) {
-                        for (final var rho : seq)
-                            pi = computeProduct(rho, pi).asNCycle();
+                        for (final var move : seq)
+                            pi = computeProduct(move, pi).asNCycle();
                         spi = computeProduct(true, sigma, pi.getInverse());
                         distance += seq.size();
                         break;
@@ -111,8 +111,8 @@ public class EliasAndHartman extends BaseAlgorithm {
 
             if (get3Norm(bigLambda) >= 8) {
                 final var _11_8Seq = searchForSeq(bigLambda, pi, _11_8cases);
-                for (final var rho : _11_8Seq) {
-                    pi = computeProduct(rho, pi).asNCycle();
+                for (final var move : _11_8Seq) {
+                    pi = computeProduct(move, pi).asNCycle();
                 }
                 spi = computeProduct(true, sigma, pi.getInverse());
                 distance += _11_8Seq.size();

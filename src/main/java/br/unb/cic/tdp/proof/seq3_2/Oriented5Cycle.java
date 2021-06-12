@@ -41,9 +41,9 @@ public class Oriented5Cycle {
                     final var _2Move = searchFor2MoveFromOrientedCycle(spi, pi);
 
                     if (_2Move == null) {
-                        final var rhos = searchForSortingSeq(pi, spi, new Stack<>(), 1, 1.5F);
-                        assert !rhos.isEmpty() : "ERROR";
-                        result.add(new Pair<>(config, rhos));
+                        final var moves = searchForSortingSeq(pi, spi, new Stack<>(), 1, 1.5F);
+                        assert !moves.isEmpty() : "ERROR";
+                        result.add(new Pair<>(config, moves));
                     }
                 }
             }

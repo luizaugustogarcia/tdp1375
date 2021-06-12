@@ -21,10 +21,10 @@ public class OddCycles {
      * cycles in \spi$.
      */
     public static List<Pair<Configuration, List<Cycle>>> generate() {
-        return generate(new MulticyclePermutation("(0,1)(2,3)"), 1);
+        return generate(new MulticyclePermutation("(0,1)(2,3)"));
     }
 
-    private static List<Pair<Configuration, List<Cycle>>> generate(final MulticyclePermutation spi, final int moves) {
+    private static List<Pair<Configuration, List<Cycle>>> generate(final MulticyclePermutation spi) {
         final var result = new ArrayList<Pair<Configuration, List<Cycle>>>();
 
         final var verifiedConfigurations = new HashSet<Configuration>();
@@ -33,12 +33,12 @@ public class OddCycles {
             final var pi = new Cycle(Bytes.toArray(permutation.getVector())).getInverse();
             final var iterator = generateAll0And2Moves(spi, pi).iterator();
             while (iterator.hasNext()) {
-                final var move = iterator.next();
-                final var rho1 = move.getKey();
+                final var pair = iterator.next();
+                final var move = pair.getKey();
 
                 final var configuration = new Configuration(spi, pi);
                 if (!verifiedConfigurations.contains(configuration)) {
-                    result.add(new Pair<>(configuration, Collections.singletonList(rho1)));
+                    result.add(new Pair<>(configuration, Collections.singletonList(move)));
                     verifiedConfigurations.add(configuration);
                 }
 

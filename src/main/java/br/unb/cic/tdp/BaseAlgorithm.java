@@ -197,23 +197,23 @@ public abstract class BaseAlgorithm {
     }
 
     protected Pair<Cycle, Cycle> searchFor2_2Seq(final MulticyclePermutation spi, final Cycle pi) {
-        for (Pair<Cycle, Integer> rho : (Iterable<Pair<Cycle, Integer>>) generateAll0And2Moves(spi, pi)
+        for (Pair<Cycle, Integer> move : (Iterable<Pair<Cycle, Integer>>) generateAll0And2Moves(spi, pi)
                 .filter(r -> r.getSecond() == 2)::iterator) {
             final var _spi = PermutationGroups
-                    .computeProduct(spi, rho.getFirst().getInverse());
-            final var _pi = applyTransposition(pi, rho.getFirst());
-            final var rho2 = generateAll0And2Moves(_spi, _pi).filter(r -> r.getSecond() == 2).findFirst();
-            if (rho2.isPresent())
-                return new Pair<>(rho.getFirst(), rho2.get().getFirst());
+                    .computeProduct(spi, move.getFirst().getInverse());
+            final var _pi = applyTransposition(pi, move.getFirst());
+            final var secondMove = generateAll0And2Moves(_spi, _pi).filter(r -> r.getSecond() == 2).findFirst();
+            if (secondMove.isPresent())
+                return new Pair<>(move.getFirst(), secondMove.get().getFirst());
         }
 
         return null;
     }
 
-    protected void applyMoves(final Cycle pi, final List<Cycle> rhos) {
+    protected void applyMoves(final Cycle pi, final List<Cycle> moves) {
         var _pi = pi;
-        for (final var rho : rhos) {
-            _pi = applyTransposition(_pi, rho);
+        for (final var move : moves) {
+            _pi = applyTransposition(_pi, move);
         }
         pi.redefine(_pi.getSymbols());
     }
@@ -243,9 +243,9 @@ public abstract class BaseAlgorithm {
         mu.add(new Cycle(segment.get(0), segment.get(1), segment.get(2)));
         for (var i = 0; i < 2; i++) {
             mu = extend(mu, spi, pi);
-            final var rhos = searchForSeq(mu, pi, _3_2cases);
-            if (rhos != null) {
-                applyMoves(pi, rhos);
+            final var moves = searchForSeq(mu, pi, _3_2cases);
+            if (moves != null) {
+                applyMoves(pi, moves);
                 return;
             }
         }
