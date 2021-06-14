@@ -332,9 +332,9 @@ public class CommonOperations implements Serializable {
 
         List<Cycle> sorting = Collections.emptyList();
         for (int i = 0; i < submittedTasks.size(); i++) {
-            final var next = completionService.take();
-            if (next.get().size() > 0) {
-                sorting = next.get();
+            final var s = completionService.take();
+            if (s.get().size() > 0) {
+                sorting = s.get();
                 break;
             }
         }
