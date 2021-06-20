@@ -73,7 +73,7 @@ public class OrientedCycleGreaterOrEquals7 {
                     out.println("<div style=\"margin-bottom: 10px; background-color: rgba(153, 255, 153, 0.15)\">");
                     out.println("$\\bar{\\pi}$: " + pi + "<br>");
                     out.println("Hash code: " + config.hashCode() + "<br>");
-                    out.println("$\frac{11}{8}$-SEQUENCE" + "<br>");
+                    out.println("$\\frac{11}{8}$-SEQUENCE" + "<br>");
                     var _spi = spi;
                     for (int i = 0; i < moves.size(); i++) {
                         final var move = moves.get(i);

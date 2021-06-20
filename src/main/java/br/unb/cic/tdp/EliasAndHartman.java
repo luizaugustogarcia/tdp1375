@@ -36,11 +36,6 @@ public class EliasAndHartman extends BaseAlgorithm {
                 .collect(Collectors.groupingBy(Configuration::hashCode)));
     }
 
-    public static void main(String[] args) {
-        final var eliasAndHartman = new EliasAndHartman();
-        System.out.println(eliasAndHartman.sort(new Cycle(args[0])));
-    }
-
     @SuppressWarnings({"unchecked"})
     public int sort(Cycle pi) {
         pi = simplify(pi);

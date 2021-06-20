@@ -51,11 +51,11 @@ public class ProofGenerator {
         final Map<String, String> env = new HashMap<>();
         final String[] fileUri = ProofGenerator.class.getClassLoader()
                 .getResource("known-sortings").toURI().toString().split("!");
-        final FileSystem fs = FileSystems.newFileSystem(URI.create(fileUri[0]), env);
-        final Path path = fs.getPath(fileUri[1]);
+        //final FileSystem fs = FileSystems.newFileSystem(URI.create(fileUri[0]), env);
+        //final Path path = fs.getPath(fileUri[1]);
 
-        /*final Path path = Paths.get(ProofGenerator.class.getClassLoader()
-                .getResource("known-sortings").toURI());*/
+        final Path path = Paths.get(ProofGenerator.class.getClassLoader()
+                .getResource("known-sortings").toURI());
 
         // Known sortings found by Elias and Hartman
         final var knownSortings = loadKnownSortings(path);
