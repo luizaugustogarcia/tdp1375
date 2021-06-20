@@ -248,7 +248,7 @@ public class CommonOperations implements Serializable {
     /**
      * Search for a 2-move given by an oriented cycle.
      */
-    public static Cycle searchFor2MoveFromOrientedCycle(final List<Cycle> mu, final Cycle pi) {
+    public static Optional<Cycle> searchFor2MoveFromOrientedCycle(final List<Cycle> mu, final Cycle pi) {
         for (final var cycle : mu.stream().filter(c -> isOriented(pi, c))
                 .collect(Collectors.toList())) {
             final var before = cycle.isEven() ? 1 : 0;
@@ -263,14 +263,14 @@ public class CommonOperations implements Serializable {
                             after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
                             after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
                             if (after - before == 2)
-                                return new Cycle(a, b, c);
+                                return Optional.of(new Cycle(a, b, c));
                         }
                     }
                 }
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     /**

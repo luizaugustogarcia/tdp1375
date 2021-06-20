@@ -32,7 +32,10 @@ public abstract class BaseAlgorithm {
         loadSortings("cases/cases-3,2.txt").forEach(_3_2sortings::put);
         _3_2cases = new Pair<>(_3_2sortings, _3_2sortings.keySet().stream()
                 .collect(Collectors.groupingBy(Configuration::hashCode)));
+        _11_8cases = load11_8Cases();
     }
+
+    protected abstract Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases();
 
     public static boolean isOpenGate(int left, int right, Cycle[] symbolToMuCycles, Collection<Cycle> mu,
                                      Cycle piInverse) {
@@ -65,11 +68,11 @@ public abstract class BaseAlgorithm {
         return false;
     }
 
-    protected List<Cycle> extend(List<Cycle> mu, MulticyclePermutation spi, Cycle pi) {
-        Cycle piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
-        Set<Byte> muSymbols = new HashSet<>();
+    protected List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
+        final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
+        final var muSymbols = new HashSet<Byte>();
 
-        Cycle[] symbolToMuCycles = new Cycle[piInverse.size()];
+        final var symbolToMuCycles = new Cycle[piInverse.size()];
         // O(1), since at this point, ||mu|| never exceeds 16
         for (Cycle muCycle : mu)
             for (int i = 0; i < muCycle.getSymbols().length; i++) {
@@ -77,7 +80,7 @@ public abstract class BaseAlgorithm {
                 muSymbols.add(muCycle.getSymbols()[i]);
             }
 
-        Cycle[] symbolToSigmaPiInverseCycles = new Cycle[piInverse.size()];
+        final var symbolToSigmaPiInverseCycles = new Cycle[piInverse.size()];
         for (Cycle cycle : spi)
             for (int i = 0; i < cycle.getSymbols().length; i++)
                 symbolToSigmaPiInverseCycles[cycle.getSymbols()[i]] = cycle;
@@ -87,15 +90,15 @@ public abstract class BaseAlgorithm {
         // exceeds 16
         for (Cycle muCycle : mu) {
             for (int i = 0; i < muCycle.getSymbols().length; i++) {
-                int left = piInverse.indexOf(muCycle.get(i));
-                int right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
+                final var left = piInverse.indexOf(muCycle.get(i));
+                final var right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
                 // O(n)
                 if (isOpenGate(left, right, symbolToMuCycles, mu, piInverse)) {
-                    Cycle intersectingCycle = getIntersectingCycle(left, right, symbolToSigmaPiInverseCycles, piInverse);
-                    if (intersectingCycle != null
-                            && !contains(muSymbols, symbolToSigmaPiInverseCycles[intersectingCycle.get(0)])) {
-                        byte a = intersectingCycle.get(0), b = intersectingCycle.image(a),
-                                c = intersectingCycle.image(b);
+                    final var intersectingCycle = getIntersectingCycle(left, right, symbolToSigmaPiInverseCycles, piInverse);
+                    if (intersectingCycle.isPresent()
+                            && !contains(muSymbols, symbolToSigmaPiInverseCycles[intersectingCycle.get().get(0)])) {
+                        byte a = intersectingCycle.get().get(0), b = intersectingCycle.get().image(a),
+                                c = intersectingCycle.get().image(b);
                         final var newMu = new ArrayList<>(mu);
                         newMu.add(new Cycle(a, b, c));
                         return newMu;
@@ -108,19 +111,19 @@ public abstract class BaseAlgorithm {
         // O(n)
         for (Cycle muCycle : mu) {
             for (int i = 0; i < muCycle.getSymbols().length; i++) {
-                int left = piInverse.indexOf(muCycle.get(i));
-                int right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
-                int gates = left < right ? right - left : piInverse.size() - (left - right);
+                final var left = piInverse.indexOf(muCycle.get(i));
+                final var right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
+                final var gates = left < right ? right - left : piInverse.size() - (left - right);
                 for (int j = 1; j < gates; j++) {
-                    int index = (j + left) % piInverse.size();
+                    final var index = (j + left) % piInverse.size();
                     if (symbolToMuCycles[piInverse.get(index)] == null) {
-                        Cycle intersectingCycle = symbolToSigmaPiInverseCycles[piInverse.get(index)];
+                        final var intersectingCycle = symbolToSigmaPiInverseCycles[piInverse.get(index)];
                         if (intersectingCycle != null && intersectingCycle.size() > 1
                                 && !contains(muSymbols, symbolToSigmaPiInverseCycles[intersectingCycle.get(0)])) {
-                            byte a = piInverse.get(index);
-                            byte b = intersectingCycle.image(a);
+                            final var a = piInverse.get(index);
+                            final var b = intersectingCycle.image(a);
                             if (isOutOfInterval(piInverse.indexOf(b), left, right)) {
-                                byte c = intersectingCycle.image(b);
+                                final var c = intersectingCycle.image(b);
                                 final var newMu = new ArrayList<>(mu);
                                 newMu.add(new Cycle(a, b, c));
                                 return newMu;
@@ -131,24 +134,24 @@ public abstract class BaseAlgorithm {
             }
         }
 
-        return null;
+        return mu;
     }
 
-    private Cycle getIntersectingCycle(int left, int right, Cycle[] symbolToSigmaPiInverseCycles,
+    private Optional<Cycle> getIntersectingCycle(int left, int right, Cycle[] symbolToSigmaPiInverseCycles,
                                         Cycle piInverse) {
-        int gates = left < right ? right - left : piInverse.size() - (left - right);
+        final var gates = left < right ? right - left : piInverse.size() - (left - right);
         for (int i = 1; i < gates; i++) {
-            int index = (i + left) % piInverse.size();
-            Cycle intersectingCycle = symbolToSigmaPiInverseCycles[piInverse.get(index)];
+            final var index = (i + left) % piInverse.size();
+            final var intersectingCycle = symbolToSigmaPiInverseCycles[piInverse.get(index)];
             if (intersectingCycle != null && intersectingCycle.size() > 1) {
-                byte a = piInverse.get(index);
-                byte b = intersectingCycle.image(a);
+                final var a = piInverse.get(index);
+                final var b = intersectingCycle.image(a);
                 if (isOutOfInterval(piInverse.indexOf(b), left, right)) {
-                    return intersectingCycle.getStartingBy(a);
+                    return Optional.of(intersectingCycle.getStartingBy(a));
                 }
             }
         }
-        return null;
+        return Optional.empty();
     }
 
     @SneakyThrows
@@ -218,7 +221,7 @@ public abstract class BaseAlgorithm {
         pi.redefine(_pi.getSymbols());
     }
 
-    protected List<Cycle> searchForSeq(final List<Cycle> mu, final Cycle pi,
+    protected Optional<List<Cycle>> searchForSeq(final List<Cycle> mu, final Cycle pi,
                                        final Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> cases) {
         final var allSymbols = mu.stream().flatMap(c -> Bytes.asList(c.getSymbols()).stream()).collect(Collectors.toSet());
         final var _pi = new ByteArrayList(allSymbols.size());
@@ -230,11 +233,11 @@ public abstract class BaseAlgorithm {
 
         final var config = new Configuration(new MulticyclePermutation(mu), new Cycle(_pi));
         if (cases.getFirst().containsKey(config)) {
-            return config.translatedSorting(cases.getSecond().get(config.hashCode()).stream()
-                    .filter(_c -> _c.equals(config)).findFirst().get(), cases.getFirst().get(config));
+            return Optional.of(config.translatedSorting(cases.getSecond().get(config.hashCode()).stream()
+                    .filter(_c -> _c.equals(config)).findFirst().get(), cases.getFirst().get(config)));
         }
 
-        return null;
+        return Optional.empty();
     }
 
     protected void apply3_2_Unoriented(final MulticyclePermutation spi, final Cycle pi) {
@@ -244,8 +247,8 @@ public abstract class BaseAlgorithm {
         for (var i = 0; i < 2; i++) {
             mu = extend(mu, spi, pi);
             final var moves = searchForSeq(mu, pi, _3_2cases);
-            if (moves != null) {
-                applyMoves(pi, moves);
+            if (moves.isPresent()) {
+                applyMoves(pi, moves.get());
                 return;
             }
         }
