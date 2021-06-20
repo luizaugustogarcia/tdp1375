@@ -39,8 +39,7 @@ public class Oriented5Cycle {
                     verifiedConfigurations.add(config);
 
                     final var _2Move = searchFor2MoveFromOrientedCycle(spi, pi);
-
-                    if (_2Move == null) {
+                    if (_2Move.isEmpty()) {
                         final var moves = searchForSortingSeq(pi, spi, new Stack<>(), 1, 1.5F);
                         assert !moves.isEmpty() : "ERROR";
                         result.add(new Pair<>(config, moves));

@@ -48,7 +48,7 @@ public class Extensions {
         if (file.exists()) {
             try (final var fr = new FileReader(file)) {
                 try (final var input = new BufferedReader(fr, 50 * 1024)) {
-                    String last = null, line = null;
+                    String last = null, line;
                     // checks whether the file generation was finished
                     while ((line = input.readLine()) != null) {
                         last = line;
@@ -66,9 +66,9 @@ public class Extensions {
         }
 
         var sorting = searchForSorting(config.getSecond(), knownSortings, shouldAlsoUseBruteForce);
-        if (sorting != null) {
+        if (sorting.isPresent()) {
             try (final var writer = new FileWriter((file))) {
-                renderSorting(canonicalConfig, canonicalConfig.translatedSorting(config.getSecond(), sorting), writer);
+                renderSorting(canonicalConfig, canonicalConfig.translatedSorting(config.getSecond(), sorting.get()), writer);
             }
             return;
         } else {
@@ -127,7 +127,7 @@ public class Extensions {
 
             final Consumer<List<Pair<String, Configuration>>> extend = extensions -> {
                 for (final var extension : extensions) {
-                    final var hasSorting = searchForSorting(extension.getSecond(), knownSortings, shouldAlsoUseBruteForce) != null;
+                    final var hasSorting = searchForSorting(extension.getSecond(), knownSortings, shouldAlsoUseBruteForce).isPresent();
                     out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
                             "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
                     out.println(extension.getFirst() + "<br>");
@@ -290,7 +290,7 @@ public class Extensions {
         for (final var index : newIndices) {
             for (int i = 0; i < gates.size(); i++) {
                 int left = gates.get(i), right = gates.get((i + 1) % gates.size());
-                if ((left < right && left < index && index <= right) ||
+                if ((left < index && index <= right) ||
                         (right < left && (left < index || index <= right))) {
                     gatesFallenInto.add(new Pair<>(left, right));
                 }

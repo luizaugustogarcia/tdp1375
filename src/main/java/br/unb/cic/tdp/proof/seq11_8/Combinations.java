@@ -60,9 +60,9 @@ public class Combinations {
         }
 
         var sorting = searchForSorting(config.getSecond(), knownSortings, shouldAlsoUseBruteForce);
-        if (sorting != null) {
+        if (sorting.isPresent()) {
             try (final var writer = new FileWriter(new File(outputDir + "/comb/" + canonicalConfig.getSpi() + ".html"))) {
-                renderSorting(canonicalConfig, canonicalConfig.translatedSorting(config.getSecond(), sorting), writer);
+                renderSorting(canonicalConfig, canonicalConfig.translatedSorting(config.getSecond(), sorting.get()), writer);
             }
             return;
         } else {
@@ -120,7 +120,7 @@ public class Combinations {
             out.println("THE EXTENSIONS ARE:");
 
             for (final var extension : extend(canonicalConfig)) {
-                final var hasSorting = searchForSorting(extension.getSecond(), knownSortings, shouldAlsoUseBruteForce) != null;
+                final var hasSorting = searchForSorting(extension.getSecond(), knownSortings, shouldAlsoUseBruteForce).isPresent();
                 out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
                         "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
                 out.println(extension.getFirst() + "<br>");
