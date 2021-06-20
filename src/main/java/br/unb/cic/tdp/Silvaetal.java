@@ -3,6 +3,7 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.ByteArrayList;
 import com.google.common.primitives.Bytes;
@@ -224,35 +225,26 @@ public class Silvaetal extends BaseAlgorithm {
 
     private void apply3_2(final MulticyclePermutation spi, final Cycle pi) {
         var orientedCycle = spi.stream().filter(c -> c.size() == 5 && isOriented(pi, c))
-                .findFirst().orElse(null);
+                .findFirst();
 
-        if (orientedCycle != null) {
-            apply3_2BadOriented5Cycle(orientedCycle, spi, pi);
+        if (orientedCycle.isPresent()) {
+            apply3_2BadOriented5Cycle(orientedCycle.get(), pi);
         } else {
             apply3_2_Unoriented(spi, pi);
         }
     }
 
-    private void apply3_2BadOriented5Cycle(final Cycle orientedCycle, final MulticyclePermutation spi, final Cycle pi) {
-        final var even = spi.getNumberOfEvenCycles();
+    private static void apply3_2BadOriented5Cycle(final Cycle orientedCycle, final Cycle pi) {
+        final var a = orientedCycle.get(0);
+        final var d = orientedCycle.image(a);
+        final var b = orientedCycle.image(d);
+        final var e = orientedCycle.image(b);
+        final var c = orientedCycle.image(e);
 
-        for (var i = 0; i <= orientedCycle.size() - 5; i++) {
-            final var _0 = orientedCycle.get(0);
-            final var _3 = orientedCycle.image(_0);
-            final var _1 = orientedCycle.image(_3);
+        final var move1 = new Cycle(a, b, c);
+        final var move2 = new Cycle(b, c, d);
+        final var move3 = new Cycle(c, d, e);
 
-            final var _4 = orientedCycle.get(i + 3);
-            final var _2 = orientedCycle.image(_4);
-
-            final var move1 = new Cycle(_0, _1, _2);
-            final var move2 = new Cycle(_1, _2, _3);
-            final var move3 = new Cycle(_2, _3, _4);
-
-            if (computeProduct(true, spi, move1.getInverse(), move2.getInverse(),
-                    move3.getInverse()).getNumberOfEvenCycles() - even >= 4) {
-                applyMoves(pi, Arrays.asList(move1, move2, move3));
-                return;
-            }
-        }
+        applyMoves(pi, Arrays.asList(move1, move2, move3));
     }
 }
