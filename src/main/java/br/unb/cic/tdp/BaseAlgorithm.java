@@ -35,9 +35,11 @@ public abstract class BaseAlgorithm {
         _11_8cases = load11_8Cases();
     }
 
+    public abstract List<Cycle> sort(Cycle pi);
+
     protected abstract Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases();
 
-    public static boolean isOpenGate(int left, int right, Cycle[] symbolToMuCycles, Collection<Cycle> mu,
+    private static boolean isOpenGate(int left, int right, Cycle[] symbolToMuCycles, Collection<Cycle> mu,
                                      Cycle piInverse) {
         int gates = left < right ? right - left : piInverse.size() - (left - right);
         for (int i = 1; i < gates; i++) {
@@ -49,19 +51,19 @@ public abstract class BaseAlgorithm {
         return true;
     }
 
-    public int get3Norm(final Collection<Cycle> mu) {
+    protected int get3Norm(final Collection<Cycle> mu) {
         final var numberOfEvenCycles = (int) mu.stream().filter((cycle) -> cycle.size() % 2 == 1).count();
         final var numberOfSymbols = mu.stream().mapToInt(Cycle::size).sum();
         return (numberOfSymbols - numberOfEvenCycles) / 2;
     }
 
-    protected boolean isOutOfInterval(final int x, final int left, final int right) {
+    private boolean isOutOfInterval(final int x, final int left, final int right) {
         if (left < right)
             return x < left || x > right;
         return false;
     }
 
-    protected boolean contains(final Set<Byte> muSymbols, final Cycle cycle) {
+    private boolean contains(final Set<Byte> muSymbols, final Cycle cycle) {
         for (final Byte symbol : cycle.getSymbols())
             if (muSymbols.contains(symbol))
                 return true;
@@ -182,24 +184,27 @@ public abstract class BaseAlgorithm {
         return result;
     }
 
-    public abstract int sort(Cycle pi);
-
-    protected void apply2MoveTwoOddCycles(final MulticyclePermutation spi, final Cycle pi) {
+    protected Cycle apply2MoveTwoOddCycles(final MulticyclePermutation spi, final Cycle pi) {
         final var oddCycles = spi.stream().filter(c -> !c.isEven()).limit(2).collect(Collectors.toList());
         byte a = oddCycles.get(0).get(0), b = oddCycles.get(0).get(1), c = oddCycles.get(1).get(0);
 
+        final Cycle _2Move;
         if (areSymbolsInCyclicOrder(pi, a, b, c)) {
-            applyMoves(pi, Collections.singletonList(new Cycle(a, b, c)));
+            _2Move = new Cycle(a, b, c);
         } else {
-            applyMoves(pi, Collections.singletonList(new Cycle(a, c, b)));
+            _2Move = new Cycle(a, c, b);
         }
+
+        applyMoves(pi, Collections.singletonList(_2Move));
+
+        return _2Move;
     }
 
     protected boolean thereAreOddCycles(final MulticyclePermutation spi) {
         return spi.stream().anyMatch(c -> !c.isEven());
     }
 
-    protected Pair<Cycle, Cycle> searchFor2_2Seq(final MulticyclePermutation spi, final Cycle pi) {
+    protected Optional<Pair<Cycle, Cycle>> searchFor2_2Seq(final MulticyclePermutation spi, final Cycle pi) {
         for (Pair<Cycle, Integer> move : (Iterable<Pair<Cycle, Integer>>) generateAll0And2Moves(spi, pi)
                 .filter(r -> r.getSecond() == 2)::iterator) {
             final var _spi = PermutationGroups
@@ -207,10 +212,10 @@ public abstract class BaseAlgorithm {
             final var _pi = applyTransposition(pi, move.getFirst());
             final var secondMove = generateAll0And2Moves(_spi, _pi).filter(r -> r.getSecond() == 2).findFirst();
             if (secondMove.isPresent())
-                return new Pair<>(move.getFirst(), secondMove.get().getFirst());
+                return Optional.of(new Pair<>(move.getFirst(), secondMove.get().getFirst()));
         }
 
-        return null;
+        return Optional.empty();
     }
 
     protected void applyMoves(final Cycle pi, final List<Cycle> moves) {
@@ -240,7 +245,7 @@ public abstract class BaseAlgorithm {
         return Optional.empty();
     }
 
-    protected void apply3_2_Unoriented(final MulticyclePermutation spi, final Cycle pi) {
+    protected List<Cycle> apply3_2_Unoriented(final MulticyclePermutation spi, final Cycle pi) {
         final var segment = spi.stream().filter(c -> c.size() > 1).findFirst().get();
         List<Cycle> mu = new ArrayList<>();
         mu.add(new Cycle(segment.get(0), segment.get(1), segment.get(2)));
@@ -249,8 +254,11 @@ public abstract class BaseAlgorithm {
             final var moves = searchForSeq(mu, pi, _3_2cases);
             if (moves.isPresent()) {
                 applyMoves(pi, moves.get());
-                return;
+                return moves.get();
             }
         }
+
+        // the article contains the proof that there will always be a (3,2)-sequence at this point
+        throw new RuntimeException("ERROR");
     }
 }

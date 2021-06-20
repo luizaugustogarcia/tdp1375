@@ -18,26 +18,25 @@ import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 public class Silvaetal extends BaseAlgorithm {
 
     @SuppressWarnings({"unchecked"})
-    public int sort(Cycle pi) {
+    public List<Cycle> sort(Cycle pi) {
+        final var sorting = new ArrayList<Cycle>();
+
         final var n = pi.size();
 
         final var sigma = CANONICAL_PI[n];
 
         var spi = computeProduct(true, n, sigma, pi.getInverse());
 
-        var distance = 0;
-
         final var _2_2Seq = searchFor2_2Seq(spi, pi);
-        if (_2_2Seq != null) {
-            pi = computeProduct(_2_2Seq.getSecond(), _2_2Seq.getFirst(), pi).asNCycle();
+        if (_2_2Seq.isPresent()) {
+            pi = computeProduct(_2_2Seq.get().getSecond(), _2_2Seq.get().getFirst(), pi).asNCycle();
             spi = computeProduct(true, sigma, pi.getInverse());
-            distance += 2;
+            sorting.addAll(Arrays.asList(_2_2Seq.get().getFirst(), _2_2Seq.get().getSecond()));
         }
 
         while (thereAreOddCycles(spi)) {
-            apply2MoveTwoOddCycles(spi, pi);
+            sorting.add(apply2MoveTwoOddCycles(spi, pi));
             spi = computeProduct(true, sigma, pi.getInverse());
-            distance += 1;
         }
 
         final List<Cycle> bigLambda = new ArrayList<>(); // bad small components
@@ -48,11 +47,11 @@ public class Silvaetal extends BaseAlgorithm {
             if (_2move.isPresent()) {
                 pi = computeProduct(_2move.get(), pi).asNCycle();
                 spi = computeProduct(true, sigma, pi.getInverse());
-                distance += 1;
+                sorting.add(_2move.get());
             } else {
                 final var orientedCycle = searchForOrientedCycleBiggerThan5(bigTheta, pi);
                 if (orientedCycle != null) {
-                    distance += apply4_3SeqOrientedCase(orientedCycle, pi);
+                    sorting.addAll(apply4_3SeqOrientedCase(orientedCycle, pi));
                     spi = computeProduct(true, sigma, pi.getInverse());
                 } else {
                     List<Cycle> bigGamma = new ArrayList<>();
@@ -76,7 +75,7 @@ public class Silvaetal extends BaseAlgorithm {
                             for (final var move : seq.get())
                                 pi = computeProduct(move, pi).asNCycle();
                             spi = computeProduct(true, sigma, pi.getInverse());
-                            distance += seq.get().size();
+                            sorting.addAll(seq.get());
                             break;
                         }
                     }
@@ -92,7 +91,7 @@ public class Silvaetal extends BaseAlgorithm {
                 for (final var move : _11_8Seq.get()) {
                     pi = computeProduct(move, pi).asNCycle();
                 }
-                distance += _11_8Seq.get().size();
+                sorting.addAll(_11_8Seq.get());
                 spi = computeProduct(true, sigma, pi.getInverse());
                 bigLambda.clear();
             }
@@ -103,15 +102,14 @@ public class Silvaetal extends BaseAlgorithm {
             final var _2move = searchFor2MoveFromOrientedCycle(spi, pi);
             if (_2move.isPresent()) {
                 pi = computeProduct(_2move.get(), pi).asNCycle();
-                distance += 1;
+                sorting.add(_2move.get());
             } else {
-                apply3_2(spi, pi);
-                distance += 3;
+                sorting.addAll(apply3_2(spi, pi));
             }
             spi = computeProduct(true, sigma, pi.getInverse());
         }
 
-        return distance;
+        return sorting;
     }
 
     @Override
@@ -124,7 +122,7 @@ public class Silvaetal extends BaseAlgorithm {
                 .collect(Collectors.groupingBy(Configuration::hashCode)));
     }
 
-    public List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
+    protected List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
         final var extension = super.extend(mu, spi, pi);
         if (extension != mu) {
             return extension;
@@ -158,7 +156,7 @@ public class Silvaetal extends BaseAlgorithm {
         return mu;
     }
 
-    public Cycle align(final Cycle spiCycle, final Cycle segment) {
+    private Cycle align(final Cycle spiCycle, final Cycle segment) {
         for (var i = 0; i < segment.size(); i++) {
             var symbol = segment.get(i);
             final var index = spiCycle.indexOf(symbol);
@@ -182,7 +180,7 @@ public class Silvaetal extends BaseAlgorithm {
                 .orElse(null);
     }
 
-    private int apply4_3SeqOrientedCase(final Cycle orientedCycle, final Cycle pi) {
+    private List<Cycle> apply4_3SeqOrientedCase(final Cycle orientedCycle, final Cycle pi) {
         for (var j = 0; j < orientedCycle.size(); j++) {
             final var a = orientedCycle.get(j);
             final var d = orientedCycle.image(a);
@@ -211,37 +209,49 @@ public class Silvaetal extends BaseAlgorithm {
                         final var moves = config.translatedSorting(_11_8cases.getSecond().get(config.hashCode()).stream()
                                 .filter(_c -> _c.equals(config)).findFirst().get(), _11_8cases.getFirst().get(config));
                         applyMoves(pi, moves);
-                        return 4;
+                        return moves;
                     }
                 }
             }
         }
 
+        // the article contains the proof that there will always be a (4,3)-sequence at this point
         throw new RuntimeException("ERROR");
     }
 
-    private void apply3_2(final MulticyclePermutation spi, final Cycle pi) {
+    private List<Cycle> apply3_2(final MulticyclePermutation spi, final Cycle pi) {
         var orientedCycle = spi.stream().filter(c -> c.size() == 5 && isOriented(pi, c))
                 .findFirst();
 
         if (orientedCycle.isPresent()) {
-            apply3_2BadOriented5Cycle(orientedCycle.get(), pi);
+            return apply3_2BadOriented5Cycle(orientedCycle.get(), pi);
         } else {
-            apply3_2_Unoriented(spi, pi);
+            return apply3_2_Unoriented(spi, pi);
         }
     }
 
-    private void apply3_2BadOriented5Cycle(final Cycle orientedCycle, final Cycle pi) {
+    private List<Cycle> apply3_2BadOriented5Cycle(final Cycle orientedCycle, final Cycle pi) {
         final var a = orientedCycle.get(0);
         final var d = orientedCycle.image(a);
         final var b = orientedCycle.image(d);
         final var e = orientedCycle.image(b);
         final var c = orientedCycle.image(e);
 
-        final var move1 = new Cycle(a, b, c);
-        final var move2 = new Cycle(b, c, d);
-        final var move3 = new Cycle(c, d, e);
+        final var moves = Arrays.asList(new Cycle(a, b, c), new Cycle(b, c, d), new Cycle(c, d, e));
 
-        applyMoves(pi, Arrays.asList(move1, move2, move3));
+        applyMoves(pi, moves);
+
+        return moves;
+    }
+
+    public static void main(String[] args) {
+        final var silvaetal = new Silvaetal();
+        var pi = new Cycle(args[0]);
+        final var moves = silvaetal.sort(pi);
+        System.out.println(pi);
+        for (Cycle move : moves) {
+            pi = PermutationGroups.computeProduct(move, pi).asNCycle();
+            System.out.println(pi);
+        }
     }
 }
