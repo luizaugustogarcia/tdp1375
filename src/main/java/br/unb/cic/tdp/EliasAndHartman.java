@@ -4,6 +4,7 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.util.Pair;
+import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.apache.commons.collections.ListUtils;
 
@@ -17,27 +18,10 @@ import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 public class EliasAndHartman extends BaseAlgorithm {
 
-    @SneakyThrows
-    @Override
-    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases() {
-        final var _11_8sortings = new HashMap<Configuration, List<Cycle>>();
-
-        Files.lines(Paths.get(this.getClass().getClassLoader()
-                .getResource("known-sortings").toURI())).forEach(line -> {
-            final var lineSplit = line.trim().split("->");
-            if (lineSplit.length > 1) {
-                final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1]);
-                _11_8sortings.put(new Configuration(spi),
-                        Arrays.stream(lineSplit[1].split(";")).map(Cycle::new).collect(Collectors.toList()));
-            }
-        });
-
-        return new Pair<>(_11_8sortings, _11_8sortings.keySet().stream()
-                .collect(Collectors.groupingBy(Configuration::hashCode)));
-    }
-
     @SuppressWarnings({"unchecked"})
-    public int sort(Cycle pi) {
+    public List<Cycle> sort(Cycle pi) {
+        final var sorting = new ArrayList<Cycle>();
+
         pi = simplify(pi);
 
         final var n = pi.size();
@@ -46,19 +30,16 @@ public class EliasAndHartman extends BaseAlgorithm {
 
         var spi = computeProduct(true, n, sigma, pi.getInverse());
 
-        var distance = 0;
-
         final var _2_2Seq = searchFor2_2Seq(spi, pi);
-        if (_2_2Seq != null) {
-            pi = computeProduct(_2_2Seq.getSecond(), _2_2Seq.getFirst(), pi).asNCycle();
+        if (_2_2Seq.isPresent()) {
+            pi = computeProduct(_2_2Seq.get().getSecond(), _2_2Seq.get().getFirst(), pi).asNCycle();
             spi = computeProduct(true, sigma, pi.getInverse());
-            distance += 2;
+            sorting.addAll(Arrays.asList(_2_2Seq.get().getFirst(), _2_2Seq.get().getSecond()));
         }
 
         while (thereAreOddCycles(spi)) {
-            apply2MoveTwoOddCycles(spi, pi);
+            sorting.add(apply2MoveTwoOddCycles(spi, pi));
             spi = computeProduct(true, sigma, pi.getInverse());
-            distance += 1;
         }
 
         final List<Cycle> bigLambda = new ArrayList<>(); // bad small components
@@ -69,7 +50,7 @@ public class EliasAndHartman extends BaseAlgorithm {
             if (_2move.isPresent()) {
                 pi = computeProduct(_2move.get(), pi).asNCycle();
                 spi = computeProduct(true, sigma, pi.getInverse());
-                distance += 1;
+                sorting.add(_2move.get());
             } else {
                 List<Cycle> bigGamma = new ArrayList<>();
                 final var gamma = bigTheta.stream().filter(c -> c.size() > 1).findFirst().get();
@@ -92,7 +73,7 @@ public class EliasAndHartman extends BaseAlgorithm {
                         for (final var move : seq.get())
                             pi = computeProduct(move, pi).asNCycle();
                         spi = computeProduct(true, sigma, pi.getInverse());
-                        distance += seq.get().size();
+                        sorting.addAll(seq.get());
                         break;
                     }
                 }
@@ -108,7 +89,7 @@ public class EliasAndHartman extends BaseAlgorithm {
                     pi = computeProduct(move, pi).asNCycle();
                 }
                 spi = computeProduct(true, sigma, pi.getInverse());
-                distance += _11_8Seq.get().size();
+                sorting.addAll(_11_8Seq.get());
                 bigLambda.clear();
             }
         }
@@ -118,14 +99,32 @@ public class EliasAndHartman extends BaseAlgorithm {
             final var _2move = searchFor2MoveFromOrientedCycle(spi, pi);
             if (_2move.isPresent()) {
                 pi = computeProduct(_2move.get(), pi).asNCycle();
-                distance += 1;
+                sorting.add(_2move.get());
             } else {
-                apply3_2_Unoriented(spi, pi);
-                distance += 3;
+                sorting.addAll(apply3_2_Unoriented(spi, pi));
             }
             spi = computeProduct(true, sigma, pi.getInverse());
         }
 
-        return distance;
+        return sorting;
+    }
+
+    @SneakyThrows
+    @Override
+    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases() {
+        final var _11_8sortings = new HashMap<Configuration, List<Cycle>>();
+
+        Files.lines(Paths.get(this.getClass().getClassLoader()
+                .getResource("known-sortings").toURI())).forEach(line -> {
+            final var lineSplit = line.trim().split("->");
+            if (lineSplit.length > 1) {
+                final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1]);
+                _11_8sortings.put(new Configuration(spi),
+                        Arrays.stream(lineSplit[1].split(";")).map(Cycle::new).collect(Collectors.toList()));
+            }
+        });
+
+        return new Pair<>(_11_8sortings, _11_8sortings.keySet().stream()
+                .collect(Collectors.groupingBy(Configuration::hashCode)));
     }
 }

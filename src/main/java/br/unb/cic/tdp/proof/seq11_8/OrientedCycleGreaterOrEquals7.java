@@ -3,6 +3,7 @@ package br.unb.cic.tdp.proof.seq11_8;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.permutation.PermutationGroups;
 import com.google.common.primitives.Bytes;
 import org.paukov.combinatorics.Factory;
 
@@ -15,6 +16,7 @@ import java.util.HashSet;
 import java.util.Stack;
 
 import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
+import static br.unb.cic.tdp.base.CommonOperations.searchFor2MoveFromOrientedCycle;
 import static br.unb.cic.tdp.base.CommonOperations.searchForSortingSeq;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
