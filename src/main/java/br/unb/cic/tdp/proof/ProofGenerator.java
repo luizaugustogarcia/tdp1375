@@ -85,23 +85,23 @@ public class ProofGenerator {
                 .collect(Collectors.groupingBy(Configuration::hashCode)));
     }
 
-    public static List<Cycle> searchForSorting(final Configuration config, final Pair<Map<Configuration, List<Cycle>>,
+    public static Optional<List<Cycle>> searchForSorting(final Configuration config, final Pair<Map<Configuration, List<Cycle>>,
             Map<Integer, List<Configuration>>> knownSortings, final boolean shouldAlsoUseBranchAndBound) {
         if (knownSortings.getFirst().containsKey(config)) {
             // can be empty if it was branch and bound sorted
             if (knownSortings.getFirst().get(config).isEmpty()) {
-                return null;
+                return Optional.empty();
             }
 
-            return config.translatedSorting(knownSortings.getSecond().get(config.hashCode()).stream()
-                    .filter(c -> c.equals(config)).findFirst().get(), knownSortings.getFirst().get(config));
+            return Optional.of(config.translatedSorting(knownSortings.getSecond().get(config.hashCode()).stream()
+                    .filter(c -> c.equals(config)).findFirst().get(), knownSortings.getFirst().get(config)));
         }
 
         var sorting = simplifications(toListOfListOfFloats(config.getSpi()), new HashSet<>())
                 .stream().map(s -> searchForSorting(config, s, knownSortings)).filter(Objects::nonNull).findFirst();
 
         if (sorting.isPresent()) {
-            return sorting.get();
+            return Optional.of(sorting.get());
         }
 
         if (shouldAlsoUseBranchAndBound && config.getSpi().stream().anyMatch(Cycle::isLong)) {
@@ -114,10 +114,10 @@ public class ProofGenerator {
             });
 
             if (!_sorting.isEmpty())
-                return _sorting;
+                return Optional.of(_sorting);
         }
 
-        return null;
+        return Optional.empty();
     }
 
     private static List<Cycle> searchForSorting(final Configuration config, final List<List<Float>> simplificationSpi,
@@ -137,10 +137,12 @@ public class ProofGenerator {
 
             sorting = mimicSorting(simplificationPi, simplificationSorting);
         } else {
-            sorting = searchForSortingSubConfiguration(simplifiedConfig, knownSortings);
-            if (sorting != null) {
+            final var _sorting = searchForSortingSubConfiguration(simplifiedConfig, knownSortings);
+            if (_sorting.isPresent()) {
                 sorting = mimicSorting(simplificationPi,
-                        simplificationSorting(simplifiedConfig, sorting, simplificationPi));
+                        simplificationSorting(simplifiedConfig, _sorting.get(), simplificationPi));
+            } else {
+                sorting = null;
             }
         }
 
@@ -151,9 +153,9 @@ public class ProofGenerator {
         return sorting;
     }
 
-    private static List<Cycle> searchForSortingSubConfiguration(final Configuration config,
-                                                                final Pair<Map<Configuration, List<Cycle>>,
-                                                                        Map<Integer, List<Configuration>>> knownSortings) {
+    private static Optional<List<Cycle>> searchForSortingSubConfiguration(final Configuration config,
+                                                                          final Pair<Map<Configuration, List<Cycle>>,
+                                                                          Map<Integer, List<Configuration>>> knownSortings) {
         for (int i = 3; i <= config.getSpi().size(); i++) {
             for (final var mu : combinations(config.getSpi(), i)) {
                 final var _config = toConfiguration(mu.getVector(), config.getPi());
@@ -193,13 +195,14 @@ public class ProofGenerator {
                             pi = applyTransposition(pi, move);
                             cPi = applyTransposition(cPi, _move);
                         }
-                        return result;
+
+                        return Optional.of(result);
                     }
                 }
             }
         }
 
-        return null;
+        return Optional.empty();
     }
 
     private static Configuration toConfiguration(final List<Cycle> spi, final Cycle pi) {

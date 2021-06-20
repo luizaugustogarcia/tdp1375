@@ -9,10 +9,7 @@ import org.apache.commons.collections.ListUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
@@ -21,7 +18,8 @@ import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 public class EliasAndHartman extends BaseAlgorithm {
 
     @SneakyThrows
-    public EliasAndHartman() {
+    @Override
+    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases() {
         final var _11_8sortings = new HashMap<Configuration, List<Cycle>>();
 
         Files.lines(Paths.get(this.getClass().getClassLoader()
@@ -34,7 +32,7 @@ public class EliasAndHartman extends BaseAlgorithm {
             }
         });
 
-        _11_8cases = new Pair<>(_11_8sortings, _11_8sortings.keySet().stream()
+        return new Pair<>(_11_8sortings, _11_8sortings.keySet().stream()
                 .collect(Collectors.groupingBy(Configuration::hashCode)));
     }
 
@@ -73,8 +71,8 @@ public class EliasAndHartman extends BaseAlgorithm {
         List<Cycle> bigTheta; // unmarked cycles
         while (!(bigTheta = ListUtils.subtract(spi.stream().filter(c -> c.size() > 1).collect(Collectors.toList()), bigLambda)).isEmpty()) {
             final var _2move = searchFor2MoveFromOrientedCycle(bigTheta, pi);
-            if (_2move != null) {
-                pi = computeProduct(_2move, pi).asNCycle();
+            if (_2move.isPresent()) {
+                pi = computeProduct(_2move.get(), pi).asNCycle();
                 spi = computeProduct(true, sigma, pi.getInverse());
                 distance += 1;
             } else {
@@ -95,11 +93,11 @@ public class EliasAndHartman extends BaseAlgorithm {
                     }
 
                     final var seq = searchForSeq(bigGamma, pi, _11_8cases);
-                    if (seq != null) {
-                        for (final var move : seq)
+                    if (seq.isPresent()) {
+                        for (final var move : seq.get())
                             pi = computeProduct(move, pi).asNCycle();
                         spi = computeProduct(true, sigma, pi.getInverse());
-                        distance += seq.size();
+                        distance += seq.get().size();
                         break;
                     }
                 }
@@ -111,11 +109,11 @@ public class EliasAndHartman extends BaseAlgorithm {
 
             if (get3Norm(bigLambda) >= 8) {
                 final var _11_8Seq = searchForSeq(bigLambda, pi, _11_8cases);
-                for (final var move : _11_8Seq) {
+                for (final var move : _11_8Seq.get()) {
                     pi = computeProduct(move, pi).asNCycle();
                 }
                 spi = computeProduct(true, sigma, pi.getInverse());
-                distance += _11_8Seq.size();
+                distance += _11_8Seq.get().size();
                 bigLambda.clear();
             }
         }
@@ -123,8 +121,8 @@ public class EliasAndHartman extends BaseAlgorithm {
         // At this point 3-norm of spi is less than 8
         while (!spi.isIdentity()) {
             final var _2move = searchFor2MoveFromOrientedCycle(spi, pi);
-            if (_2move != null) {
-                pi = computeProduct(_2move, pi).asNCycle();
+            if (_2move.isPresent()) {
+                pi = computeProduct(_2move.get(), pi).asNCycle();
                 distance += 1;
             } else {
                 apply3_2_Unoriented(spi, pi);
@@ -134,13 +132,5 @@ public class EliasAndHartman extends BaseAlgorithm {
         }
 
         return distance;
-    }
-
-    public List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
-        final var extension = super.extend(mu, spi, pi);
-        if (extension != null) {
-            return extension;
-        }
-        return mu;
     }
 }
