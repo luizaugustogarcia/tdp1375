@@ -343,12 +343,4 @@ public class CommonOperations implements Serializable {
 
         return sorting;
     }
-
-    public static void main(String[] args) {
-        final Cycle pi = new Cycle("0 20 19 18 17 16 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1");
-        final Cycle sigma = CANONICAL_PI[21];
-        final MulticyclePermutation sigmaPiInverse = PermutationGroups.computeProduct(sigma, pi.getInverse());
-        var a = searchFor11_8SeqParallel(sigmaPiInverse, pi);
-        System.out.println(a);
-    }
 }
