@@ -124,44 +124,44 @@ public class CommonOperations implements Serializable {
     }
 
     /**
-     * Creates an array where the cycles in <code>spi</code> can be accessed by the symbols of <code>pi</code>
+     * Creates an array where the cycles in <code>bigGamma</code> can be accessed by the symbols of <code>pi</code>
      * (being the indexes of the resulting array).
      */
-    public static Cycle[] cycleIndex(final List<Cycle> spi, final Cycle pi) {
+    public static Cycle[] cycleIndex(final List<Cycle> bigGamma, final Cycle pi) {
         final var index = new Cycle[pi.getMaxSymbol() + 1];
-        for (final var muCycle : spi) {
-            for (final int symbol : muCycle.getSymbols()) {
-                index[symbol] = muCycle;
+        for (final var cycle : bigGamma) {
+            for (final int symbol : cycle.getSymbols()) {
+                index[symbol] = cycle;
             }
         }
         return index;
     }
 
-    public static boolean isOpenGate(final List<Cycle> cycles, final Cycle piInverse, final Cycle[] cyclesBySymbols,
+    public static boolean isOpenGate(final List<Cycle> bigGamma, final Cycle piInverse, final Cycle[] cycleIndex,
                                      final int right, final int left) {
         final var gates = left < right ? right - left : piInverse.size() - (left - right);
         for (var i = 1; i < gates; i++) {
             final var index = (i + left) % piInverse.size();
-            final var cycle = cyclesBySymbols[piInverse.get(index)];
-            if (cycle != null && cycles.contains(cycle))
+            final var cycle = cycleIndex[piInverse.get(index)];
+            if (cycle != null && bigGamma.contains(cycle))
                 return false;
         }
         return true;
     }
 
-    public static Map<Cycle, Integer> openGatesPerCycle(final List<Cycle> cycles, final Cycle piInverse) {
-        final var cycleIndex = cycleIndex(cycles, piInverse);
+    public static Map<Cycle, Integer> openGatesPerCycle(final List<Cycle> bigGamma, final Cycle piInverse) {
+        final var cycleIndex = cycleIndex(bigGamma, piInverse);
 
         final Map<Cycle, Integer> result = new HashMap<>();
-        for (final var muCycle : cycles) {
-            for (var i = 0; i < muCycle.getSymbols().length; i++) {
-                final var left = piInverse.indexOf(muCycle.get(i));
-                final var right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
+        for (final var cycle : bigGamma) {
+            for (var i = 0; i < cycle.getSymbols().length; i++) {
+                final var left = piInverse.indexOf(cycle.get(i));
+                final var right = piInverse.indexOf(cycle.image(cycle.get(i)));
                 // O(n)
-                if (isOpenGate(cycles, piInverse, cycleIndex, right, left)) {
-                    if (!result.containsKey(muCycle))
-                        result.put(muCycle, 0);
-                    result.put(muCycle, result.get(muCycle) + 1);
+                if (isOpenGate(bigGamma, piInverse, cycleIndex, right, left)) {
+                    if (!result.containsKey(cycle))
+                        result.put(cycle, 0);
+                    result.put(cycle, result.get(cycle) + 1);
                 }
             }
         }
@@ -185,11 +185,11 @@ public class CommonOperations implements Serializable {
         return after > before && (float) moves.size() / ((after - before) / 2) <= ((float) 11 / 8);
     }
 
-    public static boolean areSymbolsInCyclicOrder(final Cycle target, byte... symbols) {
-        final var symbolIndexes = new byte[target.getMaxSymbol() + 1];
+    public static boolean areSymbolsInCyclicOrder(final Cycle cycle, byte... symbols) {
+        final var symbolIndexes = new byte[cycle.getMaxSymbol() + 1];
 
-        for (var i = 0; i < target.size(); i++) {
-            symbolIndexes[target.get(i)] = (byte) i;
+        for (var i = 0; i < cycle.size(); i++) {
+            symbolIndexes[cycle.get(i)] = (byte) i;
         }
 
         boolean leap = false;
@@ -209,31 +209,31 @@ public class CommonOperations implements Serializable {
     /**
      * Find a sorting sequence whose approximation ratio is at most <code>maxRatio</code>.
      */
-    public static List<Cycle> searchForSortingSeq(final Cycle pi, final MulticyclePermutation mu, final Stack<Cycle> moves,
+    public static List<Cycle> searchForSortingSeq(final Cycle pi, final MulticyclePermutation bigGamma, final Stack<Cycle> moves,
                                                    final int initialNumberOfEvenCycles, final float maxRatio) {
         final var n = pi.size();
 
-        final var lowerBound = (n - mu.getNumberOfEvenCycles()) / 2;
+        final var lowerBound = (n - bigGamma.getNumberOfEvenCycles()) / 2;
         final var minAchievableRatio = (float) (moves.size() + lowerBound) / ((n - initialNumberOfEvenCycles) / 2);
 
         // Do not allow it to exceed the max ratio
         if (minAchievableRatio <= maxRatio) {
-            final var delta = (mu.getNumberOfEvenCycles() - initialNumberOfEvenCycles);
+            final var delta = (bigGamma.getNumberOfEvenCycles() - initialNumberOfEvenCycles);
             final var instantRatio = delta > 0
-                    ? (float) (moves.size() * 2) / (mu.getNumberOfEvenCycles() - initialNumberOfEvenCycles)
+                    ? (float) (moves.size() * 2) / (bigGamma.getNumberOfEvenCycles() - initialNumberOfEvenCycles)
                     : 0;
             if (1 <= instantRatio && instantRatio <= maxRatio) {
                 return moves;
             } else {
-                final var iterator = generateAll0And2Moves(mu, pi).iterator();
+                final var iterator = generateAll0And2Moves(bigGamma, pi).iterator();
                 while (iterator.hasNext()) {
                     final var pair = iterator.next();
                     final var move = pair.getFirst();
 
-                    final var _mu = PermutationGroups.computeProduct(mu, move.getInverse());
+                    final var _bigGamma = PermutationGroups.computeProduct(bigGamma, move.getInverse());
                     moves.push(move);
                     final var sorting = searchForSortingSeq(applyTransposition(pi, move),
-                            _mu, moves, initialNumberOfEvenCycles, maxRatio);
+                            _bigGamma, moves, initialNumberOfEvenCycles, maxRatio);
                     if (!sorting.isEmpty()) {
                         return moves;
                     }
@@ -248,8 +248,8 @@ public class CommonOperations implements Serializable {
     /**
      * Search for a 2-move given by an oriented cycle.
      */
-    public static Optional<Cycle> searchFor2MoveFromOrientedCycle(final List<Cycle> mu, final Cycle pi) {
-        for (final var cycle : mu.stream().filter(c -> isOriented(pi, c))
+    public static Optional<Cycle> searchFor2MoveFromOrientedCycle(final List<Cycle> spi, final Cycle pi) {
+        for (final var cycle : spi.stream().filter(c -> isOriented(pi, c))
                 .collect(Collectors.toList())) {
             final var before = cycle.isEven() ? 1 : 0;
             for (var i = 0; i < cycle.size() - 2; i++) {

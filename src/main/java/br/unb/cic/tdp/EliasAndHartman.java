@@ -112,19 +112,19 @@ public class EliasAndHartman extends BaseAlgorithm {
     @SneakyThrows
     @Override
     protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases() {
-        final var _11_8sortings = new HashMap<Configuration, List<Cycle>>();
+        final var _11_8Sortings = new HashMap<Configuration, List<Cycle>>();
 
         Files.lines(Paths.get(this.getClass().getClassLoader()
                 .getResource("known-sortings").toURI())).forEach(line -> {
             final var lineSplit = line.trim().split("->");
             if (lineSplit.length > 1) {
                 final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1]);
-                _11_8sortings.put(new Configuration(spi),
+                _11_8Sortings.put(new Configuration(spi),
                         Arrays.stream(lineSplit[1].split(";")).map(Cycle::new).collect(Collectors.toList()));
             }
         });
 
-        return new Pair<>(_11_8sortings, _11_8sortings.keySet().stream()
+        return new Pair<>(_11_8Sortings, _11_8Sortings.keySet().stream()
                 .collect(Collectors.groupingBy(Configuration::hashCode)));
     }
 }
