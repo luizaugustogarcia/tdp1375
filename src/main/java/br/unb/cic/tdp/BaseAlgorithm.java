@@ -39,18 +39,6 @@ public abstract class BaseAlgorithm {
 
     protected abstract Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases();
 
-    private static boolean isOpenGate(int left, int right, Cycle[] symbolToMuCycles, Collection<Cycle> mu,
-                                     Cycle piInverse) {
-        int gates = left < right ? right - left : piInverse.size() - (left - right);
-        for (int i = 1; i < gates; i++) {
-            int index = (i + left) % piInverse.size();
-            Cycle cycle = symbolToMuCycles[piInverse.get(index)];
-            if (cycle != null && mu.contains(cycle))
-                return false;
-        }
-        return true;
-    }
-
     protected int get3Norm(final Collection<Cycle> mu) {
         final var numberOfEvenCycles = (int) mu.stream().filter((cycle) -> cycle.size() % 2 == 1).count();
         final var numberOfSymbols = mu.stream().mapToInt(Cycle::size).sum();
@@ -88,10 +76,10 @@ public abstract class BaseAlgorithm {
         // exceeds 16
         for (Cycle cycle : bigGamma) {
             for (int i = 0; i < cycle.getSymbols().length; i++) {
-                final var left = piInverse.indexOf(cycle.get(i));
-                final var right = piInverse.indexOf(cycle.image(cycle.get(i)));
                 // O(n)
-                if (isOpenGate(left, right, bigGammaCycleIndex, bigGamma, piInverse)) {
+                if (isOpenGate(i, cycle, piInverse, bigGammaCycleIndex)) {
+                    final var left = piInverse.indexOf(cycle.get(i));
+                    final var right = piInverse.indexOf(cycle.image(cycle.get(i)));
                     final var intersectingCycle = getIntersectingCycle(left, right, spiCycleIndex, piInverse);
                     if (intersectingCycle.isPresent()
                             && !contains(bigGammaSymbols, spiCycleIndex[intersectingCycle.get().get(0)])) {

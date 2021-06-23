@@ -4,7 +4,6 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Pair;
-import br.unb.cic.tdp.util.Triplet;
 import cern.colt.list.ByteArrayList;
 import cern.colt.list.FloatArrayList;
 import lombok.SneakyThrows;
@@ -137,13 +136,12 @@ public class CommonOperations implements Serializable {
         return index;
     }
 
-    public static boolean isOpenGate(final List<Cycle> bigGamma, final Cycle piInverse, final Cycle[] cycleIndex,
-                                     final int right, final int left) {
-        final var gates = left < right ? right - left : piInverse.size() - (left - right);
-        for (var i = 1; i < gates; i++) {
+    public static boolean isOpenGate(int pos, final Cycle cycle, final Cycle piInverse, final Cycle[] cycleIndex) {
+        final var left = piInverse.indexOf(cycle.get(pos));
+        final var right = piInverse.indexOf(cycle.image(cycle.get(pos)));
+        for (var i = 1; i < (left < right ? right - left : piInverse.size() - (left - right)); i++) {
             final var index = (i + left) % piInverse.size();
-            final var cycle = cycleIndex[piInverse.get(index)];
-            if (cycle != null && bigGamma.contains(cycle))
+            if (cycleIndex[piInverse.get(index)] != null)
                 return false;
         }
         return true;
@@ -155,10 +153,8 @@ public class CommonOperations implements Serializable {
         final Map<Cycle, Integer> result = new HashMap<>();
         for (final var cycle : bigGamma) {
             for (var i = 0; i < cycle.getSymbols().length; i++) {
-                final var left = piInverse.indexOf(cycle.get(i));
-                final var right = piInverse.indexOf(cycle.image(cycle.get(i)));
                 // O(n)
-                if (isOpenGate(bigGamma, piInverse, cycleIndex, right, left)) {
+                if (isOpenGate(i, cycle, piInverse, cycleIndex)) {
                     if (!result.containsKey(cycle))
                         result.put(cycle, 0);
                     result.put(cycle, result.get(cycle) + 1);
