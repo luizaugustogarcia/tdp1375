@@ -39,18 +39,6 @@ public abstract class BaseAlgorithm {
 
     protected abstract Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases();
 
-    private static boolean isOpenGate(int left, int right, Cycle[] symbolToMuCycles, Collection<Cycle> mu,
-                                     Cycle piInverse) {
-        int gates = left < right ? right - left : piInverse.size() - (left - right);
-        for (int i = 1; i < gates; i++) {
-            int index = (i + left) % piInverse.size();
-            Cycle cycle = symbolToMuCycles[piInverse.get(index)];
-            if (cycle != null && mu.contains(cycle))
-                return false;
-        }
-        return true;
-    }
-
     protected int get3Norm(final Collection<Cycle> mu) {
         final var numberOfEvenCycles = (int) mu.stream().filter((cycle) -> cycle.size() % 2 == 1).count();
         final var numberOfSymbols = mu.stream().mapToInt(Cycle::size).sum();
@@ -70,40 +58,36 @@ public abstract class BaseAlgorithm {
         return false;
     }
 
-    protected List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
+    protected List<Cycle> extend(final List<Cycle> bigGamma, final MulticyclePermutation spi, final Cycle pi) {
         final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
-        final var muSymbols = new HashSet<Byte>();
 
-        final var symbolToMuCycles = new Cycle[piInverse.size()];
+        final var bigGammaSymbols = new HashSet<Byte>();
         // O(1), since at this point, ||mu|| never exceeds 16
-        for (Cycle muCycle : mu)
-            for (int i = 0; i < muCycle.getSymbols().length; i++) {
-                symbolToMuCycles[muCycle.getSymbols()[i]] = muCycle;
-                muSymbols.add(muCycle.getSymbols()[i]);
+        for (Cycle cycle : bigGamma)
+            for (int i = 0; i < cycle.getSymbols().length; i++) {
+                bigGammaSymbols.add(cycle.getSymbols()[i]);
             }
 
-        final var symbolToSigmaPiInverseCycles = new Cycle[piInverse.size()];
-        for (Cycle cycle : spi)
-            for (int i = 0; i < cycle.getSymbols().length; i++)
-                symbolToSigmaPiInverseCycles[cycle.getSymbols()[i]] = cycle;
+        final var bigGammaCycleIndex = cycleIndex(bigGamma, pi);
+        final var spiCycleIndex = cycleIndex(spi, pi);
 
         // Type 1 extension
         // These two outer loops are O(1), since at this point, ||mu|| never
         // exceeds 16
-        for (Cycle muCycle : mu) {
-            for (int i = 0; i < muCycle.getSymbols().length; i++) {
-                final var left = piInverse.indexOf(muCycle.get(i));
-                final var right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
+        for (Cycle cycle : bigGamma) {
+            for (int i = 0; i < cycle.getSymbols().length; i++) {
                 // O(n)
-                if (isOpenGate(left, right, symbolToMuCycles, mu, piInverse)) {
-                    final var intersectingCycle = getIntersectingCycle(left, right, symbolToSigmaPiInverseCycles, piInverse);
+                if (isOpenGate(i, cycle, piInverse, bigGammaCycleIndex)) {
+                    final var left = piInverse.indexOf(cycle.get(i));
+                    final var right = piInverse.indexOf(cycle.image(cycle.get(i)));
+                    final var intersectingCycle = getIntersectingCycle(left, right, spiCycleIndex, piInverse);
                     if (intersectingCycle.isPresent()
-                            && !contains(muSymbols, symbolToSigmaPiInverseCycles[intersectingCycle.get().get(0)])) {
+                            && !contains(bigGammaSymbols, spiCycleIndex[intersectingCycle.get().get(0)])) {
                         byte a = intersectingCycle.get().get(0), b = intersectingCycle.get().image(a),
                                 c = intersectingCycle.get().image(b);
-                        final var newMu = new ArrayList<>(mu);
-                        newMu.add(new Cycle(a, b, c));
-                        return newMu;
+                        final var _bigGamma = new ArrayList<>(bigGamma);
+                        _bigGamma.add(new Cycle(a, b, c));
+                        return _bigGamma;
                     }
                 }
             }
@@ -111,24 +95,24 @@ public abstract class BaseAlgorithm {
 
         // Type 2 extension
         // O(n)
-        for (Cycle muCycle : mu) {
-            for (int i = 0; i < muCycle.getSymbols().length; i++) {
-                final var left = piInverse.indexOf(muCycle.get(i));
-                final var right = piInverse.indexOf(muCycle.image(muCycle.get(i)));
+        for (Cycle cycle : bigGamma) {
+            for (int i = 0; i < cycle.getSymbols().length; i++) {
+                final var left = piInverse.indexOf(cycle.get(i));
+                final var right = piInverse.indexOf(cycle.image(cycle.get(i)));
                 final var gates = left < right ? right - left : piInverse.size() - (left - right);
                 for (int j = 1; j < gates; j++) {
                     final var index = (j + left) % piInverse.size();
-                    if (symbolToMuCycles[piInverse.get(index)] == null) {
-                        final var intersectingCycle = symbolToSigmaPiInverseCycles[piInverse.get(index)];
+                    if (bigGammaCycleIndex[piInverse.get(index)] == null) {
+                        final var intersectingCycle = spiCycleIndex[piInverse.get(index)];
                         if (intersectingCycle != null && intersectingCycle.size() > 1
-                                && !contains(muSymbols, symbolToSigmaPiInverseCycles[intersectingCycle.get(0)])) {
+                                && !contains(bigGammaSymbols, spiCycleIndex[intersectingCycle.get(0)])) {
                             final var a = piInverse.get(index);
                             final var b = intersectingCycle.image(a);
                             if (isOutOfInterval(piInverse.indexOf(b), left, right)) {
                                 final var c = intersectingCycle.image(b);
-                                final var newMu = new ArrayList<>(mu);
-                                newMu.add(new Cycle(a, b, c));
-                                return newMu;
+                                final var _bigGamma = new ArrayList<>(bigGamma);
+                                _bigGamma.add(new Cycle(a, b, c));
+                                return _bigGamma;
                             }
                         }
                     }
@@ -136,15 +120,15 @@ public abstract class BaseAlgorithm {
             }
         }
 
-        return mu;
+        return bigGamma;
     }
 
-    private Optional<Cycle> getIntersectingCycle(int left, int right, Cycle[] symbolToSigmaPiInverseCycles,
+    private Optional<Cycle> getIntersectingCycle(int left, int right, Cycle[] spiCycleIndex,
                                         Cycle piInverse) {
         final var gates = left < right ? right - left : piInverse.size() - (left - right);
         for (int i = 1; i < gates; i++) {
             final var index = (i + left) % piInverse.size();
-            final var intersectingCycle = symbolToSigmaPiInverseCycles[piInverse.get(index)];
+            final var intersectingCycle = spiCycleIndex[piInverse.get(index)];
             if (intersectingCycle != null && intersectingCycle.size() > 1) {
                 final var a = piInverse.get(index);
                 final var b = intersectingCycle.image(a);

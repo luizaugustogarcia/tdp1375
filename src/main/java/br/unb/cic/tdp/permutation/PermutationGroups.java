@@ -1,6 +1,5 @@
 package br.unb.cic.tdp.permutation;
 
-import br.unb.cic.tdp.base.CommonOperations;
 import cc.redberry.core.utils.BitArray;
 import cern.colt.list.ByteArrayList;
 

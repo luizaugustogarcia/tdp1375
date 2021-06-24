@@ -122,9 +122,9 @@ public class Silvaetal extends BaseAlgorithm {
                 .collect(Collectors.groupingBy(Configuration::hashCode)));
     }
 
-    protected List<Cycle> extend(final List<Cycle> mu, final MulticyclePermutation spi, final Cycle pi) {
-        final var extension = super.extend(mu, spi, pi);
-        if (extension != mu) {
+    protected List<Cycle> extend(final List<Cycle> bigGamma, final MulticyclePermutation spi, final Cycle pi) {
+        final var extension = super.extend(bigGamma, spi, pi);
+        if (extension != bigGamma) {
             return extension;
         }
 
@@ -133,27 +133,27 @@ public class Silvaetal extends BaseAlgorithm {
 
         // Type 3 extension
         // O(1) since, at this point, ||mu||_3 never exceeds 8
-        for (var muCycle : mu) {
-            if (muCycle.size() < cycleIndex[muCycle.get(0)].size()) {
-                final var spiCycle = align(cycleIndex[muCycle.get(0)], muCycle);
-                muCycle = muCycle.getStartingBy(spiCycle.get(0));
-                final var newSymbols = Arrays.copyOf(muCycle.getSymbols(), muCycle.getSymbols().length + 2);
-                newSymbols[muCycle.getSymbols().length] = spiCycle
-                        .image(muCycle.get(muCycle.getSymbols().length - 1));
-                newSymbols[muCycle.getSymbols().length + 1] = spiCycle
-                        .image(newSymbols[muCycle.getSymbols().length]);
+        for (var cycle : bigGamma) {
+            if (cycle.size() < cycleIndex[cycle.get(0)].size()) {
+                final var spiCycle = align(cycleIndex[cycle.get(0)], cycle);
+                cycle = cycle.getStartingBy(spiCycle.get(0));
+                final var newSymbols = Arrays.copyOf(cycle.getSymbols(), cycle.getSymbols().length + 2);
+                newSymbols[cycle.getSymbols().length] = spiCycle
+                        .image(cycle.get(cycle.getSymbols().length - 1));
+                newSymbols[cycle.getSymbols().length + 1] = spiCycle
+                        .image(newSymbols[cycle.getSymbols().length]);
 
-                final List<Cycle> newMu = new ArrayList<>(mu);
-                newMu.remove(muCycle);
-                newMu.add(new Cycle(newSymbols));
+                final List<Cycle> _bigGamma = new ArrayList<>(bigGamma);
+                _bigGamma.remove(cycle);
+                _bigGamma.add(new Cycle(newSymbols));
 
-                final var openGates = openGatesPerCycle(newMu, piInverse);
+                final var openGates = openGatesPerCycle(_bigGamma, piInverse);
                 if (openGates.values().stream().mapToInt(j -> j).sum() <= 2)
-                    return newMu;
+                    return _bigGamma;
             }
         }
 
-        return mu;
+        return bigGamma;
     }
 
     private Cycle align(final Cycle spiCycle, final Cycle segment) {
@@ -175,8 +175,8 @@ public class Silvaetal extends BaseAlgorithm {
         return null;
     }
 
-    private Cycle searchForOrientedCycleBiggerThan5(final List<Cycle> mu, final Cycle pi) {
-        return mu.stream().filter(c -> c.size() > 5 && isOriented(pi, c)).findFirst()
+    private Cycle searchForOrientedCycleBiggerThan5(final List<Cycle> bigGamma, final Cycle pi) {
+        return bigGamma.stream().filter(c -> c.size() > 5 && isOriented(pi, c)).findFirst()
                 .orElse(null);
     }
 
