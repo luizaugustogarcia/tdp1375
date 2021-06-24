@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 public class CommonOperations implements Serializable {
 
     public static final Cycle[] CANONICAL_PI;
-    public static int numberOfCoresToUse = Runtime.getRuntime().availableProcessors();
+    public static int numberOfThreads = Runtime.getRuntime().availableProcessors();
 
     static {
         CANONICAL_PI = new Cycle[50];
@@ -309,7 +309,7 @@ public class CommonOperations implements Serializable {
 
     @SneakyThrows
     public static List<Cycle> searchFor11_8SeqParallel(final MulticyclePermutation spi, final Cycle pi) {
-        final var executorService = Executors.newFixedThreadPool(numberOfCoresToUse);
+        final var executorService = Executors.newFixedThreadPool(numberOfThreads);
         final var completionService = new ExecutorCompletionService<List<Cycle>>(executorService);
 
         final var submittedTasks = new ArrayList<Future<List<Cycle>>>();

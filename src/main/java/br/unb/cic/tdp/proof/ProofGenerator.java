@@ -16,7 +16,6 @@ import org.apache.velocity.app.Velocity;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.*;
@@ -62,7 +61,7 @@ public class ProofGenerator {
 
         final var shouldAlsoUseBranchAndBound = args.length > 1 && args[1].equalsIgnoreCase("true");
         if (args.length > 2)
-            numberOfCoresToUse = Integer.parseInt(args[2]);
+            numberOfThreads = Integer.parseInt(args[2]);
 
         Extensions.generate(knownSortings, shouldAlsoUseBranchAndBound, args[0]);
         Combinations.generate(knownSortings, shouldAlsoUseBranchAndBound, args[0]);
