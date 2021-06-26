@@ -215,7 +215,7 @@ public class Silvaetal extends BaseAlgorithm {
             }
         }
 
-        // the article contains the proof that there will always be a (4,3)-sequence at this point
+        // the article contains the proof that there will always be a (4,3)-sequence
         throw new RuntimeException("ERROR");
     }
 
