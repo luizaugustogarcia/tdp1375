@@ -137,10 +137,10 @@ public class CommonOperations implements Serializable {
     }
 
     public static boolean isOpenGate(int pos, final Cycle cycle, final Cycle piInverse, final Cycle[] cycleIndex) {
-        final var left = piInverse.indexOf(cycle.get(pos));
-        final var right = piInverse.indexOf(cycle.image(cycle.get(pos)));
-        for (var i = 1; i < (left < right ? right - left : piInverse.size() - (left - right)); i++) {
-            final var index = (i + left) % piInverse.size();
+        final var aPos = piInverse.indexOf(cycle.get(pos));
+        final var bPos = piInverse.indexOf(cycle.image(cycle.get(pos)));
+        for (var i = 1; i < (aPos < bPos ? bPos - aPos : piInverse.size() - (aPos - bPos)); i++) {
+            final var index = (i + aPos) % piInverse.size();
             if (cycleIndex[piInverse.get(index)] != null)
                 return false;
         }

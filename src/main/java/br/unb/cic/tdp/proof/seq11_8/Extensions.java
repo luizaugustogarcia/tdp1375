@@ -196,7 +196,7 @@ public class Extensions {
                     for (int c = b; c < signature.length; c++) {
                         if (!(a == b && b == c)) {
                             result.add(new Pair<>(String.format("a=%d b=%d c=%d", a, b, c),
-                                    fromSignature(unorientedExtension(signature, newCycleLabel, a, b, c).elements())));
+                                    ofSignature(unorientedExtension(signature, newCycleLabel, a, b, c).elements())));
                         }
                     }
                 }
@@ -225,7 +225,7 @@ public class Extensions {
                 for (int c = b; c < signature.length; c++) {
                     if (!(a == b && b == c)) {
                         result.add(new Pair<>(String.format("a=%d b=%d c=%d", a, b, c),
-                                fromSignature(unorientedExtension(signature, newCycleLabel, a, b, c).elements())));
+                                ofSignature(unorientedExtension(signature, newCycleLabel, a, b, c).elements())));
                     }
                 }
             }
@@ -266,13 +266,13 @@ public class Extensions {
                 for (int a = 0; a < signature.length; a++) {
                     for (int b = a; b < signature.length; b++) {
                         final var extendedSignature = unorientedExtension(signature, (byte) label, a, b).elements();
-                        var extension = fromSignature(extendedSignature);
+                        var extension = ofSignature(extendedSignature);
                         if (extension.getNumberOfOpenGates() <= 2) {
                             result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
                         }
 
                         if (_cyclesSizes.get((byte) label) == 3 && !areInTheSameGate(_symbolIndexes.get((byte) label), a, b)) {
-                            extension = fromSignature(makeOriented5Cycle(extendedSignature, label));
+                            extension = ofSignature(makeOriented5Cycle(extendedSignature, label));
                             result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s, turn oriented", a, b,
                                     cyclesByLabel.get(label)), extension));
                         }

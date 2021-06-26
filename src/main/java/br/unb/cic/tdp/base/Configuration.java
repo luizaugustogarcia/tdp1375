@@ -89,7 +89,7 @@ public class Configuration {
                 Math.floor(a) == Math.floor(b) && Math.floor(a) == Math.floor(c) && c < a && a < b && c < b);
     }
 
-    public static Configuration fromSignature(float[] signature) {
+    public static Configuration ofSignature(float[] signature) {
         final var pi = CANONICAL_PI[signature.length];
 
         final var cyclesByLabel = new HashMap<Byte, List<Byte>>();
@@ -127,7 +127,7 @@ public class Configuration {
 
     public Configuration getCanonical() {
         if (canonical == null) {
-            canonical = fromSignature(getEquivalentSignatures().stream()
+            canonical = ofSignature(getEquivalentSignatures().stream()
                     .sorted(comparing(Signature::hashCode)).findFirst().get().getContent());
         }
         return canonical;
