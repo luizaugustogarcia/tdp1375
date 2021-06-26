@@ -245,7 +245,9 @@ public class Silvaetal extends BaseAlgorithm {
     }
 
     public static void main(String[] args) {
+        System.out.println("Loading cases into memory...");
         final var silvaetal = new Silvaetal();
+        System.out.println("Finished loading...");
         var pi = new Cycle(args[0]);
         final var moves = silvaetal.sort(pi);
         System.out.println(pi);

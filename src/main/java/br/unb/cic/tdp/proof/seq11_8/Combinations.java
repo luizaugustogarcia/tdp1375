@@ -173,7 +173,7 @@ public class Combinations {
                 else
                     info = "unoriented necklace of size 6";
 
-                result.add(new Pair<>("pos=" + i + " add " + info, Configuration.fromSignature(signature.elements())));
+                result.add(new Pair<>("pos=" + i + " add " + info, Configuration.ofSignature(signature.elements())));
             }
         }
         return result;
