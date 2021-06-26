@@ -24,14 +24,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         updateIndexes();
     }
 
-    public Cycle(final int... symbols) {
-        this.symbols = new byte[symbols.length];
-
-        for (var i = 0; i < this.symbols.length; i++)
-            this.symbols[i] = (byte) symbols[i];
-        updateIndexes();
-    }
-
     public Cycle(final byte... symbols) {
         this.symbols = symbols;
         updateIndexes();
@@ -41,7 +33,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         this(cycle.replace("(", "").replace(")", "").split(",|\\s"));
     }
 
-    public Cycle(final String[] strSymbols) {
+    private Cycle(final String[] strSymbols) {
         this.symbols = new byte[strSymbols.length];
         for (var i = 0; i < strSymbols.length; i++) {
             final var strSymbol = strSymbols[i];

@@ -78,9 +78,9 @@ public abstract class BaseAlgorithm {
             for (int i = 0; i < cycle.getSymbols().length; i++) {
                 // O(n)
                 if (isOpenGate(i, cycle, piInverse, bigGammaCycleIndex)) {
-                    final var left = piInverse.indexOf(cycle.get(i));
-                    final var right = piInverse.indexOf(cycle.image(cycle.get(i)));
-                    final var intersectingCycle = getIntersectingCycle(left, right, spiCycleIndex, piInverse);
+                    final var aPos = piInverse.indexOf(cycle.get(i));
+                    final var bPos = piInverse.indexOf(cycle.image(cycle.get(i)));
+                    final var intersectingCycle = getIntersectingCycle(aPos, bPos, spiCycleIndex, piInverse);
                     if (intersectingCycle.isPresent()
                             && !contains(bigGammaSymbols, spiCycleIndex[intersectingCycle.get().get(0)])) {
                         byte a = intersectingCycle.get().get(0), b = intersectingCycle.get().image(a),
@@ -97,18 +97,17 @@ public abstract class BaseAlgorithm {
         // O(n)
         for (Cycle cycle : bigGamma) {
             for (int i = 0; i < cycle.getSymbols().length; i++) {
-                final var left = piInverse.indexOf(cycle.get(i));
-                final var right = piInverse.indexOf(cycle.image(cycle.get(i)));
-                final var gates = left < right ? right - left : piInverse.size() - (left - right);
-                for (int j = 1; j < gates; j++) {
-                    final var index = (j + left) % piInverse.size();
+                final var aPos = piInverse.indexOf(cycle.get(i));
+                final var bPos = piInverse.indexOf(cycle.image(cycle.get(i)));
+                for (int j = 1; j < (aPos < bPos ? bPos - aPos : piInverse.size() - (aPos - bPos)); j++) {
+                    final var index = (j + aPos) % piInverse.size();
                     if (bigGammaCycleIndex[piInverse.get(index)] == null) {
                         final var intersectingCycle = spiCycleIndex[piInverse.get(index)];
                         if (intersectingCycle != null && intersectingCycle.size() > 1
                                 && !contains(bigGammaSymbols, spiCycleIndex[intersectingCycle.get(0)])) {
                             final var a = piInverse.get(index);
                             final var b = intersectingCycle.image(a);
-                            if (isOutOfInterval(piInverse.indexOf(b), left, right)) {
+                            if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
                                 final var c = intersectingCycle.image(b);
                                 final var _bigGamma = new ArrayList<>(bigGamma);
                                 _bigGamma.add(new Cycle(a, b, c));
@@ -123,16 +122,15 @@ public abstract class BaseAlgorithm {
         return bigGamma;
     }
 
-    private Optional<Cycle> getIntersectingCycle(int left, int right, Cycle[] spiCycleIndex,
+    private Optional<Cycle> getIntersectingCycle(int aPos, int bPos, Cycle[] spiCycleIndex,
                                         Cycle piInverse) {
-        final var gates = left < right ? right - left : piInverse.size() - (left - right);
-        for (int i = 1; i < gates; i++) {
-            final var index = (i + left) % piInverse.size();
+        for (int i = 1; i < (aPos < bPos ? bPos - aPos : piInverse.size() - (aPos - bPos)); i++) {
+            final var index = (i + aPos) % piInverse.size();
             final var intersectingCycle = spiCycleIndex[piInverse.get(index)];
             if (intersectingCycle != null && intersectingCycle.size() > 1) {
                 final var a = piInverse.get(index);
                 final var b = intersectingCycle.image(a);
-                if (isOutOfInterval(piInverse.indexOf(b), left, right)) {
+                if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
                     return Optional.of(intersectingCycle.getStartingBy(a));
                 }
             }
