@@ -267,11 +267,11 @@ public class Extensions {
                     for (int b = a; b < signature.length; b++) {
                         final var extendedSignature = unorientedExtension(signature, (byte) label, a, b).elements();
                         var extension = ofSignature(extendedSignature);
-                        if (extension.getNumberOfOpenGates() <= 2) {
-                            result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
-                        }
-
-                        if (_cyclesSizes.get((byte) label) == 3 && !areInTheSameGate(_symbolIndexes.get((byte) label), a, b)) {
+                        if (areInTheSameGate(_symbolIndexes.get((byte) label), a, b)) {
+                            if (extension.getNumberOfOpenGates() <= 2) {
+                                result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
+                            }
+                        } else if (_cyclesSizes.get((byte) label) == 3) {
                             extension = ofSignature(makeOriented5Cycle(extendedSignature, label));
                             result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s, turn oriented", a, b,
                                     cyclesByLabel.get(label)), extension));
