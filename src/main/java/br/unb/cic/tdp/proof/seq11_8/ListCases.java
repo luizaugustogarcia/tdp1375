@@ -10,21 +10,21 @@ import java.util.ArrayList;
 
 public class ListCases {
 
-    public static void main(String[] args) throws IOException {
-        list("C:\\Users\\USER-Admin\\Desktop\\proof\\dfs", "C:\\Users\\USER-Admin\\Temp\\cases-dfs.txt");
-        list("C:\\Users\\USER-Admin\\Desktop\\proof\\comb", "C:\\Users\\USER-Admin\\Temp\\cases-comb.txt");
-    }
+//    public static void main(String[] args) throws IOException {
+//        list("/home/luiz/Temp/tdp1375/dfs/", "/home/luiz/Projects/tdp1375/src/main/resources/cases/cases-dfs.txt");
+//        list("/home/luiz/Temp/tdp1375/comb/", "/home/luiz/Projects/tdp1375/src/main/resources/cases/cases-comb.txt");
+//    }
 
     public static void list(final String inputDir, final String outputFile) throws IOException {
-        try (final var writer = new PrintWriter(new File(outputFile))) {
+        try (final var writer = new PrintWriter(outputFile)) {
             Files.list(new File(inputDir).toPath())
                     .forEach(path -> {
                         try {
                             final var reader = new BufferedReader(new FileReader(path.toFile()));
                             var line = reader.readLine();
                             MulticyclePermutation spi = null;
-                            while (line != null) {
-                                line = reader.readLine().trim();
+                            while ((line = reader.readLine()) != null) {
+                                line = line.trim();
 
                                 if (line.startsWith("<h6>")) {
                                     spi = new MulticyclePermutation(line.trim().replace("<h6>", "")
@@ -34,7 +34,7 @@ public class ListCases {
                                     return;
                                 }
                                 final var sorting = new ArrayList<Cycle>();
-                                if (line.trim().equals("HAS (11/8)-SEQUENCE")) {
+                                if (line.trim().equals("ALLOWS (11/8)-SEQUENCE")) {
                                     while ((line = reader.readLine()) != null) {
                                         line = line.trim();
 
