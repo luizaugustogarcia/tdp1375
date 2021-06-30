@@ -161,6 +161,7 @@ public abstract class BaseAlgorithm {
 
         threadPool.shutdown();
 
+        // unbounded
         threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 
         return result;

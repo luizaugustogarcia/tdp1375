@@ -23,7 +23,11 @@ public class Silvaetal extends BaseAlgorithm {
 
         final var n = pi.size();
 
-        final var sigma = CANONICAL_PI[n];
+        final var _sigma = new byte[n];
+        for (int i = 0; i < pi.size(); i++) {
+            _sigma[i] = (byte)i;
+        }
+        final var sigma = new Cycle(_sigma);
 
         var spi = computeProduct(true, n, sigma, pi.getInverse());
 
