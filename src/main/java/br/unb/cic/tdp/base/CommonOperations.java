@@ -182,11 +182,7 @@ public class CommonOperations implements Serializable {
     }
 
     public static boolean areSymbolsInCyclicOrder(final Cycle cycle, byte... symbols) {
-        final var symbolIndexes = new byte[cycle.getMaxSymbol() + 1];
-
-        for (var i = 0; i < cycle.size(); i++) {
-            symbolIndexes[cycle.get(i)] = (byte) i;
-        }
+        final var symbolIndexes = cycle.getSymbolIndexes();
 
         boolean leap = false;
         for (int i = 0; i < symbols.length; i++) {
