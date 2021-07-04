@@ -3,13 +3,13 @@ package br.unb.cic.tdp.permutation;
 import cern.colt.list.ByteArrayList;
 import org.apache.commons.lang.ArrayUtils;
 
-import java.util.Arrays;
+import java.util.*;
 
 import static br.unb.cic.tdp.base.CommonOperations.areSymbolsInCyclicOrder;
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
-
+    private static Map<PoolKey, Cycle> pool = new HashMap();
     private byte[] symbols;
     private byte[] symbolIndexes;
     private byte minSymbol = -1;
@@ -17,29 +17,29 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     private Cycle inverse;
     private Integer hashCode;
 
-    public Cycle(final ByteArrayList lSymbols) {
-        final var content = new byte[lSymbols.size()];
-        System.arraycopy(lSymbols.elements(), 0, content, 0, lSymbols.size());
-        this.symbols = content;
-        updateIndexes();
-    }
-
-    public Cycle(final byte... symbols) {
+    private Cycle(final byte... symbols) {
         this.symbols = symbols;
         updateIndexes();
     }
 
-    public Cycle(final String cycle) {
-        this(cycle.replace("(", "").replace(")", "").split(",|\\s"));
-    }
-
-    private Cycle(final String[] strSymbols) {
-        this.symbols = new byte[strSymbols.length];
+    public static Cycle create(final String cycle) {
+        final var strSymbols = cycle.replace("(", "").replace(")", "").split(",|\\s");
+        final var symbols = new byte[strSymbols.length];
         for (var i = 0; i < strSymbols.length; i++) {
             final var strSymbol = strSymbols[i];
-            this.symbols[i] = Byte.parseByte(strSymbol);
+            symbols[i] = Byte.parseByte(strSymbol);
         }
-        updateIndexes();
+        return create(symbols);
+    }
+
+    public static Cycle create(final ByteArrayList lSymbols) {
+        final var symbols = new byte[lSymbols.size()];
+        System.arraycopy(lSymbols.elements(), 0, symbols, 0, lSymbols.size());
+        return create(symbols);
+    }
+
+    public static Cycle create(final byte... symbols) {
+        return pool.computeIfAbsent(new PoolKey(symbols), key -> new Cycle(key.symbols));
     }
 
     public byte[] getSymbols() {
@@ -73,15 +73,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return minSymbol;
     }
 
-    public void redefine(final byte[] symbols) {
-        minSymbol = -1;
-        maxSymbol = -1;
-        this.symbols = symbols;
-        updateIndexes();
-        inverse = null;
-        hashCode = null;
-    }
-
     @Override
     public String toString() {
         return defaultStringRepresentation();
@@ -93,7 +84,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             final var symbolsCopy = new byte[this.symbols.length];
             System.arraycopy(this.symbols, 0, symbolsCopy, 0, this.symbols.length);
             ArrayUtils.reverse(symbolsCopy);
-            inverse = new Cycle(symbolsCopy);
+            inverse = Cycle.create(symbolsCopy);
         }
         return inverse;
     }
@@ -175,7 +166,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         System.arraycopy(this.symbols, index, symbols, 0, symbols.length - index);
         System.arraycopy(this.symbols, 0, symbols, symbols.length - index, index);
 
-        return new Cycle(symbols);
+        return Cycle.create(symbols);
     }
 
     @Override
@@ -232,5 +223,45 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     public boolean isLong() {
         return this.size() > 3;
+    }
+
+    public byte[] getSymbolIndexes() {
+        return symbolIndexes;
+    }
+
+    private static class PoolKey {
+        private byte[] symbols;
+
+        PoolKey(final byte[] symbols) {
+            var min = 0;
+            for (int i = 0; i < symbols.length; i++) {
+                if (symbols[i] < symbols[min]) {
+                    min = i;
+                }
+            }
+
+            if (min == 0) {
+                this.symbols = symbols;
+            } else {
+                final var index = min;
+                final var _symbols = new byte[symbols.length];
+                System.arraycopy(symbols, index, _symbols, 0, symbols.length - index);
+                System.arraycopy(symbols, 0, _symbols, symbols.length - index, index);
+                this.symbols = _symbols;
+            }
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            PoolKey poolKey = (PoolKey) o;
+            return Arrays.equals(symbols, poolKey.symbols);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(symbols);
+        }
     }
 }

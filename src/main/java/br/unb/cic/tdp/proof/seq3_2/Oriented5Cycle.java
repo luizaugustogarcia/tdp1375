@@ -21,7 +21,7 @@ public class Oriented5Cycle {
      * equals to 5 that doesn't allow the application of a 2-move.
      */
     public static List<Pair<Configuration, List<Cycle>>> generate() {
-        final var orientedCycle = new Cycle("(0,3,1,4,2)");
+        final var orientedCycle = Cycle.create("(0,3,1,4,2)");
         final var triple = new byte[]{0, 1, 2};
 
         final var result = new ArrayList<Pair<Configuration, List<Cycle>>>();
@@ -31,7 +31,7 @@ public class Oriented5Cycle {
         final var spi = new MulticyclePermutation(orientedCycle);
 
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
-            final var pi = new Cycle(Bytes.toArray(permutation.getVector()));
+            final var pi = Cycle.create(Bytes.toArray(permutation.getVector()));
             final var config = new Configuration(spi, pi);
 
             if (pi.isOriented(triple)) {

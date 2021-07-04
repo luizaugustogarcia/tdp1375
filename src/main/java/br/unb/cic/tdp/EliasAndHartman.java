@@ -30,7 +30,7 @@ public class EliasAndHartman extends BaseAlgorithm {
         for (int i = 0; i < pi.size(); i++) {
             _sigma[i] = (byte)i;
         }
-        final var sigma = new Cycle(_sigma);
+        final var sigma = Cycle.create(_sigma);
 
         var spi = computeProduct(true, n, sigma, pi.getInverse());
 
@@ -42,7 +42,9 @@ public class EliasAndHartman extends BaseAlgorithm {
         }
 
         while (thereAreOddCycles(spi)) {
-            sorting.add(apply2MoveTwoOddCycles(spi, pi));
+            final var pair = apply2MoveTwoOddCycles(spi, pi);
+            sorting.add(pair.getFirst());
+            pi = pair.getSecond();
             spi = computeProduct(true, sigma, pi.getInverse());
         }
 
@@ -58,7 +60,7 @@ public class EliasAndHartman extends BaseAlgorithm {
             } else {
                 List<Cycle> bigGamma = new ArrayList<>();
                 final var gamma = bigTheta.stream().filter(c -> c.size() > 1).findFirst().get();
-                bigGamma.add(new Cycle(gamma.get(0), gamma.get(1), gamma.get(2)));
+                bigGamma.add(Cycle.create(gamma.get(0), gamma.get(1), gamma.get(2)));
 
                 var badSmallComponent = false;
 
@@ -102,10 +104,12 @@ public class EliasAndHartman extends BaseAlgorithm {
         while (!spi.isIdentity()) {
             final var _2move = searchFor2MoveFromOrientedCycle(spi, pi);
             if (_2move.isPresent()) {
-                pi = computeProduct(_2move.get(), pi).asNCycle();
                 sorting.add(_2move.get());
+                pi = computeProduct(_2move.get(), pi).asNCycle();
             } else {
-                sorting.addAll(apply3_2_Unoriented(spi, pi));
+                final var pair = apply3_2_Unoriented(spi, pi);
+                sorting.addAll(pair.getFirst());
+                pi = pair.getSecond();
             }
             spi = computeProduct(true, sigma, pi.getInverse());
         }
@@ -124,7 +128,7 @@ public class EliasAndHartman extends BaseAlgorithm {
             if (lineSplit.length > 1) {
                 final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1]);
                 _11_8Sortings.put(new Configuration(spi),
-                        Arrays.stream(lineSplit[1].split(";")).map(Cycle::new).collect(Collectors.toList()));
+                        Arrays.stream(lineSplit[1].split(";")).map(s -> Cycle.create()).collect(Collectors.toList()));
             }
         });
 

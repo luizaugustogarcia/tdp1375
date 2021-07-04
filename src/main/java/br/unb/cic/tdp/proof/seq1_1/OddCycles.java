@@ -30,7 +30,7 @@ public class OddCycles {
         final var verifiedConfigurations = new HashSet<Configuration>();
         permutation:
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
-            final var pi = new Cycle(Bytes.toArray(permutation.getVector())).getInverse();
+            final var pi = Cycle.create(Bytes.toArray(permutation.getVector())).getInverse();
             final var iterator = generateAll0And2Moves(spi, pi).iterator();
             while (iterator.hasNext()) {
                 final var pair = iterator.next();

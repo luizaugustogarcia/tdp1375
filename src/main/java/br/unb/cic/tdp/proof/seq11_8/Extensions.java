@@ -285,19 +285,19 @@ public class Extensions {
     }
 
     private static boolean areInTheSameGate(final List<Integer> gates, final int... newIndices) {
-        final var gatesFallenInto = new HashSet<Pair<Integer, Integer>>();
+        final var _gates = new HashSet<Pair<Integer, Integer>>();
 
         for (final var index : newIndices) {
             for (int i = 0; i < gates.size(); i++) {
                 int left = gates.get(i), right = gates.get((i + 1) % gates.size());
                 if ((left < index && index <= right) ||
                         (right < left && (left < index || index <= right))) {
-                    gatesFallenInto.add(new Pair<>(left, right));
+                    _gates.add(new Pair<>(left, right));
                 }
             }
         }
 
-        return gatesFallenInto.size() == 1;
+        return _gates.size() == 1;
     }
 
     private static float[] makeOriented5Cycle(final float[] extension, final int label) {

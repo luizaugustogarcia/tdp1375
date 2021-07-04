@@ -31,7 +31,7 @@ public class CommonOperations implements Serializable {
             for (var j = 0; j < i; j++) {
                 pi[j] = (byte) j;
             }
-            CANONICAL_PI[i] = new Cycle(pi);
+            CANONICAL_PI[i] = Cycle.create(pi);
         }
     }
 
@@ -49,7 +49,7 @@ public class CommonOperations implements Serializable {
             sigma.add((byte) i);
         }
 
-        MulticyclePermutation sigmaPiInverse = PermutationGroups.computeProduct(new Cycle(sigma), pi.getInverse());
+        MulticyclePermutation sigmaPiInverse = PermutationGroups.computeProduct(Cycle.create(sigma), pi.getInverse());
 
         Cycle bigCycle;
         while ((bigCycle = sigmaPiInverse.stream().filter(c -> c.size() > 3).findFirst().orElse(null)) != null) {
@@ -70,13 +70,13 @@ public class CommonOperations implements Serializable {
                 sigma.add((byte) i);
             }
 
-            sigmaPiInverse = PermutationGroups.computeProduct(new Cycle(sigma), new Cycle(newPi).getInverse());
+            sigmaPiInverse = PermutationGroups.computeProduct(Cycle.create(sigma), Cycle.create(newPi).getInverse());
 
             _pi = new FloatArrayList();
             for (int i = 0; i < newPi.size(); i++) {
                 _pi.add(newPi.get(i));
             }
-            pi = new Cycle(newPi);
+            pi = Cycle.create(newPi);
         }
 
         return pi.getStartingBy((byte) 0);
@@ -112,7 +112,7 @@ public class CommonOperations implements Serializable {
         System.arraycopy(pi.getSymbols(), indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
         System.arraycopy(pi.getSymbols(), indexes[2], result, indexes[2], pi.size() - indexes[2]);
 
-        return new Cycle(result);
+        return Cycle.create(result);
     }
 
     public static int mod(int a, int b) {
@@ -255,7 +255,7 @@ public class CommonOperations implements Serializable {
                             after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
                             after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
                             if (after - before == 2)
-                                return Optional.of(new Cycle(a, b, c));
+                                return Optional.of(Cycle.create(a, b, c));
                         }
                     }
                 }
@@ -283,7 +283,7 @@ public class CommonOperations implements Serializable {
                                     // skip (-2)-moves
                                     return !is_2Move;
                                 }).map(k -> {
-                                    final var move = new Cycle(pi.get(i), pi.get(j), pi.get(k));
+                                    final var move = Cycle.create(pi.get(i), pi.get(j), pi.get(k));
                                     final var delta = PermutationGroups.computeProduct(spi, move.getInverse()).getNumberOfEvenCycles() - numberOfEvenCycles;
                                     if (delta >= 0) {
                                         return new Pair<>(move, delta);
