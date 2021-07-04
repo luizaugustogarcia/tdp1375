@@ -16,6 +16,6 @@ To execute the proposed algorithm, run the command
 
 `mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.Silvaetal" -Dexec.args="<first_arg>"`
 
-where the first argument is the permutation to be sorted, e.g, `0,4,8,3,7,2,6,1,5,9,14,13,12,11,10`. Before executing the algorithm itself, the program has to load into memory all cases generated in the case analysis. This demands a significant amount of memory (and also takes some time). Thus, we suggest, before running the algorithm, to increase the memory available to at least 10GB, by setting the environment variable MAVEN_OPTS, using the following command
+where the first argument is the permutation to be sorted, e.g, `0,4,8,3,7,2,6,1,5,9,14,13,12,11,10`. Before executing the algorithm itself, the program has to load into memory all cases generated in the case analysis. This demands a significant amount of memory and takes about 1 minute to complete in an Intel i7™ computer with 16GB of RAM. Thus, we suggest, before running the algorithm, to increase the memory available to at least 10GB, by setting the environment variable MAVEN_OPTS, using the following command
 
 `export MAVEN_OPTS="-Xmx10G"`.
