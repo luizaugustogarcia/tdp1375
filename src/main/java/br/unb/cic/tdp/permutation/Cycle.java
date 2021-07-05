@@ -4,12 +4,15 @@ import cern.colt.list.ByteArrayList;
 import org.apache.commons.lang.ArrayUtils;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static br.unb.cic.tdp.base.CommonOperations.areSymbolsInCyclicOrder;
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
-    private static Map<PoolKey, Cycle> pool = new HashMap();
+    public static ThreadLocal<Boolean> deduplicate = new ThreadLocal<>();
+
+    private static Map<PoolKey, Cycle> pool = new ConcurrentHashMap<>();
     private byte[] symbols;
     private byte[] symbolIndexes;
     private byte minSymbol = -1;
@@ -39,7 +42,9 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public static Cycle create(final byte... symbols) {
-        return pool.computeIfAbsent(new PoolKey(symbols), key -> new Cycle(key.symbols));
+        if (deduplicate.get() != null && deduplicate.get())
+            return pool.computeIfAbsent(new PoolKey(symbols), key -> new Cycle(key.symbols));
+        return new Cycle(symbols);
     }
 
     public byte[] getSymbols() {

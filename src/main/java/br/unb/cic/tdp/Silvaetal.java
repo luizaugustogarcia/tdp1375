@@ -78,7 +78,7 @@ public class Silvaetal extends BaseAlgorithm {
                             break;
                         }
 
-                        final var seq = searchForSeq(bigGamma, pi, _11_8cases);
+                        final var seq = searchForSeq(bigGamma, pi);
                         if (seq.isPresent()) {
                             for (final var move : seq.get())
                                 pi = computeProduct(move, pi).asNCycle();
@@ -95,7 +95,7 @@ public class Silvaetal extends BaseAlgorithm {
             }
 
             if (get3Norm(bigLambda) >= 8) {
-                final var _11_8Seq = searchForSeq(bigLambda, pi, _11_8cases);
+                final var _11_8Seq = searchForSeq(bigLambda, pi);
                 for (final var move : _11_8Seq.get()) {
                     pi = computeProduct(move, pi).asNCycle();
                 }
@@ -123,13 +123,10 @@ public class Silvaetal extends BaseAlgorithm {
     }
 
     @Override
-    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases() {
-        final var _11_8sortings = new HashMap<Configuration, List<Cycle>>();
-        loadSortings("cases/cases-oriented-7cycle.txt").forEach(_11_8sortings::put);
-        loadSortings("cases/cases-dfs.txt").forEach(_11_8sortings::put);
-        loadSortings("cases/cases-comb.txt").forEach(_11_8sortings::put);
-        return new Pair<>(_11_8sortings, _11_8sortings.keySet().stream()
-                .collect(Collectors.groupingBy(Configuration::hashCode)));
+    protected void load11_8Sortings(final Map<Configuration, List<Cycle>> sortings) {
+        loadSortings("cases/cases-oriented-7cycle.txt", sortings);
+        loadSortings("cases/cases-dfs.txt", sortings);
+        loadSortings("cases/cases-comb.txt", sortings);
     }
 
     protected List<Cycle> extend(final List<Cycle> bigGamma, final MulticyclePermutation spi, final Cycle pi) {
@@ -215,9 +212,9 @@ public class Silvaetal extends BaseAlgorithm {
                     }
 
                     final var config = new Configuration(new MulticyclePermutation(_7Cycle), Cycle.create(_pi));
-                    if (_11_8cases.getFirst().containsKey(config)) {
-                        final var moves = config.translatedSorting(_11_8cases.getSecond().get(config.hashCode()).stream()
-                                .filter(_c -> _c.equals(config)).findFirst().get(), _11_8cases.getFirst().get(config));
+                    if (sortings.getFirst().containsKey(config)) {
+                        final var moves = config.translatedSorting(sortings.getSecond().get(config.hashCode()).stream()
+                                .filter(_c -> _c.equals(config)).findFirst().get(), sortings.getFirst().get(config));
                         return new Pair<>(moves, applyMoves(pi, moves));
                     }
                 }

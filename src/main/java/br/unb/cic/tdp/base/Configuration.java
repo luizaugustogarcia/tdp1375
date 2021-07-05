@@ -257,7 +257,6 @@ public class Configuration {
         return result;
     }
 
-    @AllArgsConstructor
     public class Signature {
 
         @Getter
@@ -268,6 +267,14 @@ public class Configuration {
 
         @Getter
         private final boolean mirror;
+
+        private Integer hashCode;
+
+        public Signature(final Cycle pi, final float[] content, final boolean mirror) {
+            this.pi = pi;
+            this.content = content;
+            this.mirror = mirror;
+        }
 
         @Override
         public boolean equals(final Object o) {
@@ -284,7 +291,10 @@ public class Configuration {
 
         @Override
         public int hashCode() {
-            return Arrays.hashCode(content);
+            if (hashCode == null) {
+                hashCode = Arrays.hashCode(content);
+            }
+            return hashCode;
         }
 
         @Override

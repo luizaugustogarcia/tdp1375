@@ -21,20 +21,20 @@ import static br.unb.cic.tdp.base.CommonOperations.*;
 
 public abstract class BaseAlgorithm {
 
-    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> _11_8cases;
-    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> _3_2cases;
+    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> sortings;
 
     public BaseAlgorithm() {
-        final var _3_2sortings = new HashMap<Configuration, List<Cycle>>();
-        loadSortings("cases/cases-3,2.txt").forEach(_3_2sortings::put);
-        _3_2cases = new Pair<>(_3_2sortings, _3_2sortings.keySet().stream()
+        final var sortings = new HashMap<Configuration, List<Cycle>>();
+        loadSortings("cases/cases-3,2.txt", sortings);
+        load11_8Sortings(sortings);
+        // If HashMap provided a way to get the whole Map.Entry by the key, we would not need to group the configurations by the hash code
+        this.sortings = new Pair<>(sortings, sortings.keySet().stream()
                 .collect(Collectors.groupingBy(Configuration::hashCode)));
-        _11_8cases = load11_8Cases();
     }
 
     public abstract List<Cycle> sort(Cycle pi);
 
-    protected abstract Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases();
+    protected abstract void load11_8Sortings(Map<Configuration, List<Cycle>> sortings);
 
     protected int get3Norm(final Collection<Cycle> mu) {
         final var numberOfEvenCycles = (int) mu.stream().filter((cycle) -> cycle.size() % 2 == 1).count();
@@ -136,24 +136,27 @@ public abstract class BaseAlgorithm {
     }
 
     @SneakyThrows
-    protected Map<Configuration, List<Cycle>> loadSortings(final String resource) {
+    protected void loadSortings(final String resource, final Map<Configuration, List<Cycle>> sortings) {
         final Path file = Paths.get(ProofGenerator.class.getClassLoader().getResource(resource).toURI());
-        final var result = new HashMap<Configuration, List<Cycle>>();
         final var br = new BufferedReader(new FileReader(file.toFile()), 10 * 1024 * 1024);
 
-        String line;
-        while ((line = br.readLine()) != null) {
-            final var lineSplit = line.trim().split("->");
-            final var spi = new MulticyclePermutation(lineSplit[0].replace(" ", ","));
-            final var sorting = Arrays.stream(lineSplit[1].substring(1, lineSplit[1].length() - 1)
-                            .split(", ")).map(c -> c.replace(" ", ",")).map(s -> Cycle.create(s))
-                            .collect(Collectors.toList());
-            final var config = new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
-            result.put(config, sorting);
-            //result.computeIfAbsent(config, k -> sorting);
-        }
+        try {
+            Cycle.deduplicate.set(true);
 
-        return result;
+            String line;
+            while ((line = br.readLine()) != null) {
+                final var lineSplit = line.trim().split("->");
+
+                final var spi = new MulticyclePermutation(lineSplit[0].replace(" ", ","));
+                final var sorting = Arrays.stream(lineSplit[1].substring(1, lineSplit[1].length() - 1)
+                        .split(", ")).map(c -> c.replace(" ", ",")).map(s -> Cycle.create(s))
+                        .collect(Collectors.toList());
+                final var config = new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
+                sortings.computeIfAbsent(config, k -> sorting);
+            }
+        } finally {
+            Cycle.deduplicate.set(false);
+        }
     }
 
     protected Pair<Cycle, Cycle> apply2MoveTwoOddCycles(final MulticyclePermutation spi, final Cycle pi) {
@@ -196,8 +199,7 @@ public abstract class BaseAlgorithm {
         return _pi;
     }
 
-    protected Optional<List<Cycle>> searchForSeq(final List<Cycle> mu, final Cycle pi,
-                                       final Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> cases) {
+    protected Optional<List<Cycle>> searchForSeq(final List<Cycle> mu, final Cycle pi) {
         final var allSymbols = mu.stream().flatMap(c -> Bytes.asList(c.getSymbols()).stream()).collect(Collectors.toSet());
         final var _pi = new ByteArrayList(allSymbols.size());
         for (final var symbol : pi.getSymbols()) {
@@ -207,9 +209,11 @@ public abstract class BaseAlgorithm {
         }
 
         final var config = new Configuration(new MulticyclePermutation(mu), Cycle.create(_pi));
-        if (cases.getFirst().containsKey(config)) {
-            return Optional.of(config.translatedSorting(cases.getSecond().get(config.hashCode()).stream()
-                    .filter(_c -> _c.equals(config)).findFirst().get(), cases.getFirst().get(config)));
+        if (sortings.getFirst().containsKey(config)) {
+            // If HashMap provided a way to get the whole Map.Entry by the key, we would not need to group the configurations by the hash code,
+            // and consequently search for the matching configuration by iterating the configurations with the same hash code.
+            return Optional.of(config.translatedSorting(sortings.getSecond().get(config.hashCode()).stream()
+                    .filter(_c -> _c.equals(config)).findFirst().get(), sortings.getFirst().get(config)));
         }
 
         return Optional.empty();
@@ -221,7 +225,7 @@ public abstract class BaseAlgorithm {
         mu.add(Cycle.create(segment.get(0), segment.get(1), segment.get(2)));
         for (var i = 0; i < 2; i++) {
             mu = extend(mu, spi, pi);
-            final var moves = searchForSeq(mu, pi, _3_2cases);
+            final var moves = searchForSeq(mu, pi);
             if (moves.isPresent()) {
                 return new Pair<>(moves.get(), applyMoves(pi, moves.get()));
             }

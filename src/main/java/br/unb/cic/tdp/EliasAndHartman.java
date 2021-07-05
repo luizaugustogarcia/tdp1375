@@ -3,8 +3,6 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.util.Pair;
-import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.apache.commons.collections.ListUtils;
 
@@ -74,7 +72,7 @@ public class EliasAndHartman extends BaseAlgorithm {
                         break;
                     }
 
-                    final var seq = searchForSeq(bigGamma, pi, _11_8cases);
+                    final var seq = searchForSeq(bigGamma, pi);
                     if (seq.isPresent()) {
                         for (final var move : seq.get())
                             pi = computeProduct(move, pi).asNCycle();
@@ -90,7 +88,7 @@ public class EliasAndHartman extends BaseAlgorithm {
             }
 
             if (get3Norm(bigLambda) >= 8) {
-                final var _11_8Seq = searchForSeq(bigLambda, pi, _11_8cases);
+                final var _11_8Seq = searchForSeq(bigLambda, pi);
                 for (final var move : _11_8Seq.get()) {
                     pi = computeProduct(move, pi).asNCycle();
                 }
@@ -119,20 +117,22 @@ public class EliasAndHartman extends BaseAlgorithm {
 
     @SneakyThrows
     @Override
-    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases() {
-        final var _11_8Sortings = new HashMap<Configuration, List<Cycle>>();
+    protected void load11_8Sortings(final Map<Configuration, List<Cycle>> sortings) {
+        try {
+            Cycle.deduplicate.set(true);
 
-        Files.lines(Paths.get(this.getClass().getClassLoader()
-                .getResource("known-sortings").toURI())).forEach(line -> {
-            final var lineSplit = line.trim().split("->");
-            if (lineSplit.length > 1) {
-                final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1]);
-                _11_8Sortings.put(new Configuration(spi),
-                        Arrays.stream(lineSplit[1].split(";")).map(s -> Cycle.create()).collect(Collectors.toList()));
-            }
-        });
-
-        return new Pair<>(_11_8Sortings, _11_8Sortings.keySet().stream()
-                .collect(Collectors.groupingBy(Configuration::hashCode)));
+            Files.lines(Paths.get(this.getClass().getClassLoader()
+                    .getResource("known-sortings").toURI())).forEach(line -> {
+                final var lineSplit = line.trim().split("->");
+                if (lineSplit.length > 1) {
+                    var permutation = lineSplit[0].split("#")[1];
+                    final var spi = new MulticyclePermutation(permutation);
+                    sortings.put(new Configuration(spi),
+                            Arrays.stream(lineSplit[1].split(";")).map(s -> Cycle.create(s)).collect(Collectors.toList()));
+                }
+            });
+        } finally {
+            Cycle.deduplicate.set(false);
+        }
     }
 }
