@@ -15,9 +15,7 @@ import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Stack;
 
-import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
-import static br.unb.cic.tdp.base.CommonOperations.searchFor2MoveFromOrientedCycle;
-import static br.unb.cic.tdp.base.CommonOperations.searchForSortingSeq;
+import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 public class OrientedCycleGreaterOrEquals7 {
@@ -46,7 +44,7 @@ public class OrientedCycleGreaterOrEquals7 {
                 "\t</head>\n" +
                 "<body><div style=\"margin-top: 10px; margin-left: 10px;\"> \n");
 
-        final var orientedCycle = new Cycle("0,3,4,1,5,2,6");
+        final var orientedCycle = Cycle.create("0,3,4,1,5,2,6");
         final var orientedTriple = new byte[]{0, 1, 2};
 
         out.println(orientedCycle + "<br>");
@@ -60,12 +58,12 @@ public class OrientedCycleGreaterOrEquals7 {
 
         for (final var permutation : Factory.createPermutationGenerator(
                 Factory.createVector(Bytes.asList(CANONICAL_PI[7].getSymbols())))) {
-            final var pi = new Cycle(Bytes.toArray(permutation.getVector()));
+            final var pi = Cycle.create(Bytes.toArray(permutation.getVector()));
 
             if (!verifiedPis.contains(pi)) {
                 verifiedPis.add(pi);
 
-                if (pi.isOriented(orientedTriple)) {
+                if (areSymbolsInCyclicOrder(pi, orientedTriple)) {
                     final var config = new Configuration(spi, pi);
 
                     final var moves = searchForSortingSeq(pi, spi, new Stack<>(), 1, 1.375F);

@@ -76,7 +76,7 @@ public class ProofGenerator {
             if (lineSplit.length > 1) {
                 final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1]);
                 knownSortings.put(new Configuration(spi),
-                        Arrays.stream(lineSplit[1].split(";")).map(Cycle::new).collect(Collectors.toList()));
+                        Arrays.stream(lineSplit[1].split(";")).map(s -> Cycle.create(s)).collect(Collectors.toList()));
             }
         });
 
@@ -182,12 +182,12 @@ public class ProofGenerator {
                                 .stream().filter(s -> Arrays.equals(s.getContent(), signature)).findFirst().get();
 
                         var pi = matchedSignature.getPi();
-                        var cPi = new Cycle(_pi);
+                        var cPi = Cycle.create(_pi);
 
                         final var result = new ArrayList<Cycle>();
                         for (final var move : equivalentConfig.equivalentSorting(matchedSignature,
                                 knownSortings.getFirst().get(equivalentConfig))) {
-                            final var _move = new Cycle(cPi.get(pi.indexOf(move.get(0))),
+                            final var _move = Cycle.create(cPi.get(pi.indexOf(move.get(0))),
                                     cPi.get(pi.indexOf(move.get(1))), cPi.get(pi.indexOf(move.get(2))));
                             result.add(_move);
 
@@ -315,12 +315,12 @@ public class ProofGenerator {
             var temp = new ArrayList<>(omegas.get(i - 1));
             temp.removeAll(remove);
             temp.replaceAll(s -> replaceBy.getOrDefault(s, s));
-            final var pi = new Cycle(Bytes.toArray(temp));
+            final var pi = Cycle.create(Bytes.toArray(temp));
 
             temp = new ArrayList<>(omegas.get(i));
             temp.removeAll(remove);
             temp.replaceAll(s -> replaceBy.getOrDefault(s, s));
-            final var _pi = new Cycle(Bytes.toArray(temp));
+            final var _pi = Cycle.create(Bytes.toArray(temp));
 
             final var move = computeProduct(false, _pi, pi.getInverse());
             if (!move.isIdentity()) {

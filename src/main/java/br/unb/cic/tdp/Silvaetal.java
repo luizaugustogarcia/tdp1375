@@ -27,7 +27,7 @@ public class Silvaetal extends BaseAlgorithm {
         for (int i = 0; i < pi.size(); i++) {
             _sigma[i] = (byte)i;
         }
-        final var sigma = new Cycle(_sigma);
+        final var sigma = Cycle.create(_sigma);
 
         var spi = computeProduct(true, n, sigma, pi.getInverse());
 
@@ -39,7 +39,9 @@ public class Silvaetal extends BaseAlgorithm {
         }
 
         while (thereAreOddCycles(spi)) {
-            sorting.add(apply2MoveTwoOddCycles(spi, pi));
+            final var pair = apply2MoveTwoOddCycles(spi, pi);
+            sorting.add(pair.getFirst());
+            pi = pair.getSecond();
             spi = computeProduct(true, sigma, pi.getInverse());
         }
 
@@ -55,12 +57,14 @@ public class Silvaetal extends BaseAlgorithm {
             } else {
                 final var orientedCycle = searchForOrientedCycleBiggerThan5(bigTheta, pi);
                 if (orientedCycle != null) {
-                    sorting.addAll(apply4_3SeqOrientedCase(orientedCycle, pi));
+                    final var pair = apply4_3SeqOrientedCase(orientedCycle, pi);
+                    sorting.addAll(pair.getFirst());
+                    pi = pair.getSecond();
                     spi = computeProduct(true, sigma, pi.getInverse());
                 } else {
                     List<Cycle> bigGamma = new ArrayList<>();
                     final var gamma = bigTheta.stream().filter(c -> c.size() > 1).findFirst().get();
-                    bigGamma.add(new Cycle(gamma.get(0), gamma.get(1), gamma.get(2)));
+                    bigGamma.add(Cycle.create(gamma.get(0), gamma.get(1), gamma.get(2)));
 
                     var badSmallComponent = false;
 
@@ -74,7 +78,7 @@ public class Silvaetal extends BaseAlgorithm {
                             break;
                         }
 
-                        final var seq = searchForSeq(bigGamma, pi, _11_8cases);
+                        final var seq = searchForSeq(bigGamma, pi);
                         if (seq.isPresent()) {
                             for (final var move : seq.get())
                                 pi = computeProduct(move, pi).asNCycle();
@@ -91,7 +95,7 @@ public class Silvaetal extends BaseAlgorithm {
             }
 
             if (get3Norm(bigLambda) >= 8) {
-                final var _11_8Seq = searchForSeq(bigLambda, pi, _11_8cases);
+                final var _11_8Seq = searchForSeq(bigLambda, pi);
                 for (final var move : _11_8Seq.get()) {
                     pi = computeProduct(move, pi).asNCycle();
                 }
@@ -108,7 +112,9 @@ public class Silvaetal extends BaseAlgorithm {
                 pi = computeProduct(_2move.get(), pi).asNCycle();
                 sorting.add(_2move.get());
             } else {
-                sorting.addAll(apply3_2(spi, pi));
+                final var pair = apply3_2(spi, pi);
+                pi = pair.getSecond();
+                sorting.addAll(pair.getFirst());
             }
             spi = computeProduct(true, sigma, pi.getInverse());
         }
@@ -117,13 +123,10 @@ public class Silvaetal extends BaseAlgorithm {
     }
 
     @Override
-    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases() {
-        final var _11_8sortings = new HashMap<Configuration, List<Cycle>>();
-        loadSortings("cases/cases-oriented-7cycle.txt").forEach(_11_8sortings::put);
-        loadSortings("cases/cases-dfs.txt").forEach(_11_8sortings::put);
-        loadSortings("cases/cases-comb.txt").forEach(_11_8sortings::put);
-        return new Pair<>(_11_8sortings, _11_8sortings.keySet().stream()
-                .collect(Collectors.groupingBy(Configuration::hashCode)));
+    protected void load11_8Sortings(final Map<Configuration, List<Cycle>> sortings) {
+        loadSortings("cases/cases-oriented-7cycle.txt", sortings);
+        loadSortings("cases/cases-dfs.txt", sortings);
+        loadSortings("cases/cases-comb.txt", sortings);
     }
 
     protected List<Cycle> extend(final List<Cycle> bigGamma, final MulticyclePermutation spi, final Cycle pi) {
@@ -132,7 +135,7 @@ public class Silvaetal extends BaseAlgorithm {
             return extension;
         }
 
-        final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
+        final var piInverse = pi.getInverse().startingBy(pi.getMinSymbol());
         final var cycleIndex = cycleIndex(spi, pi);
 
         // Type 3 extension
@@ -140,7 +143,7 @@ public class Silvaetal extends BaseAlgorithm {
         for (var cycle : bigGamma) {
             if (cycle.size() < cycleIndex[cycle.get(0)].size()) {
                 final var spiCycle = align(cycleIndex[cycle.get(0)], cycle);
-                cycle = cycle.getStartingBy(spiCycle.get(0));
+                cycle = cycle.startingBy(spiCycle.get(0));
                 final var newSymbols = Arrays.copyOf(cycle.getSymbols(), cycle.getSymbols().length + 2);
                 newSymbols[cycle.getSymbols().length] = spiCycle
                         .image(cycle.get(cycle.getSymbols().length - 1));
@@ -149,7 +152,7 @@ public class Silvaetal extends BaseAlgorithm {
 
                 final List<Cycle> _bigGamma = new ArrayList<>(bigGamma);
                 _bigGamma.remove(cycle);
-                _bigGamma.add(new Cycle(newSymbols));
+                _bigGamma.add(Cycle.create(newSymbols));
 
                 final var openGates = openGatesPerCycle(_bigGamma, piInverse);
                 if (openGates.values().stream().mapToInt(j -> j).sum() <= 2)
@@ -174,7 +177,7 @@ public class Silvaetal extends BaseAlgorithm {
                 symbol = segment.image(symbol);
             }
             if (match)
-                return spiCycle.getStartingBy(segment.get(i));
+                return spiCycle.startingBy(segment.get(i));
         }
         return null;
     }
@@ -184,7 +187,7 @@ public class Silvaetal extends BaseAlgorithm {
                 .orElse(null);
     }
 
-    private List<Cycle> apply4_3SeqOrientedCase(final Cycle orientedCycle, final Cycle pi) {
+    private Pair<List<Cycle>, Cycle> apply4_3SeqOrientedCase(final Cycle orientedCycle, final Cycle pi) {
         for (var j = 0; j < orientedCycle.size(); j++) {
             final var a = orientedCycle.get(j);
             final var d = orientedCycle.image(a);
@@ -198,7 +201,7 @@ public class Silvaetal extends BaseAlgorithm {
                     final var c = orientedCycle.get((j + l) % orientedCycle.size());
                     final var g = orientedCycle.image(c);
 
-                    final var _7Cycle = new Cycle(a, d, e, b, f, c, g);
+                    final var _7Cycle = Cycle.create(a, d, e, b, f, c, g);
                     final var allSymbols = new HashSet<>(Bytes.asList(_7Cycle.getSymbols()));
 
                     final var _pi = new ByteArrayList(7);
@@ -208,12 +211,11 @@ public class Silvaetal extends BaseAlgorithm {
                         }
                     }
 
-                    final var config = new Configuration(new MulticyclePermutation(_7Cycle), new Cycle(_pi));
-                    if (_11_8cases.getFirst().containsKey(config)) {
-                        final var moves = config.translatedSorting(_11_8cases.getSecond().get(config.hashCode()).stream()
-                                .filter(_c -> _c.equals(config)).findFirst().get(), _11_8cases.getFirst().get(config));
-                        applyMoves(pi, moves);
-                        return moves;
+                    final var config = new Configuration(new MulticyclePermutation(_7Cycle), Cycle.create(_pi));
+                    if (sortings.getFirst().containsKey(config)) {
+                        final var moves = config.translatedSorting(sortings.getSecond().get(config.hashCode()).stream()
+                                .filter(_c -> _c.equals(config)).findFirst().get(), sortings.getFirst().get(config));
+                        return new Pair<>(moves, applyMoves(pi, moves));
                     }
                 }
             }
@@ -223,7 +225,7 @@ public class Silvaetal extends BaseAlgorithm {
         throw new RuntimeException("ERROR");
     }
 
-    private List<Cycle> apply3_2(final MulticyclePermutation spi, final Cycle pi) {
+    private Pair<List<Cycle>, Cycle> apply3_2(final MulticyclePermutation spi, final Cycle pi) {
         var orientedCycle = spi.stream().filter(c -> c.size() == 5 && isOriented(pi, c))
                 .findFirst();
 
@@ -234,25 +236,23 @@ public class Silvaetal extends BaseAlgorithm {
         }
     }
 
-    private List<Cycle> apply3_2BadOriented5Cycle(final Cycle orientedCycle, final Cycle pi) {
+    private Pair<List<Cycle>, Cycle> apply3_2BadOriented5Cycle(final Cycle orientedCycle, final Cycle pi) {
         final var a = orientedCycle.get(0);
         final var d = orientedCycle.image(a);
         final var b = orientedCycle.image(d);
         final var e = orientedCycle.image(b);
         final var c = orientedCycle.image(e);
 
-        final var moves = Arrays.asList(new Cycle(a, b, c), new Cycle(b, c, d), new Cycle(c, d, e));
+        final var moves = Arrays.asList(Cycle.create(a, b, c), Cycle.create(b, c, d), Cycle.create(c, d, e));
 
-        applyMoves(pi, moves);
-
-        return moves;
+        return new Pair<>(moves, applyMoves(pi, moves));
     }
 
     public static void main(String[] args) {
         System.out.println("Loading cases into memory...");
         final var silvaetal = new Silvaetal();
         System.out.println("Finished loading...");
-        var pi = new Cycle(args[0]);
+        var pi = Cycle.create(args[0]);
         final var moves = silvaetal.sort(pi);
         System.out.println(pi);
         for (Cycle move : moves) {

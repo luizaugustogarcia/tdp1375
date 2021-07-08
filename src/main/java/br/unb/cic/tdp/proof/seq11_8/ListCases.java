@@ -46,7 +46,7 @@ public class ListCases {
 
                                         final var move = line.split(": ")[1].replace(" ", ",")
                                                 .replace("<br>", "");
-                                        sorting.add(new Cycle(move));
+                                        sorting.add(Cycle.create(move));
                                     }
                                     writer.println(spi + "->" + sorting.toString());
                                 }

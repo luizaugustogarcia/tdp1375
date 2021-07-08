@@ -18,27 +18,27 @@ import static br.unb.cic.tdp.base.CommonOperations.simplify;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CommonOperationsTest {
-    final private Cycle alpha = new Cycle("0 2 7");
-    final private Cycle beta = new Cycle("1 3 5");
+    final private Cycle alpha = Cycle.create("0 2 7");
+    final private Cycle beta = Cycle.create("1 3 5");
     final private List<Cycle> bigGamma = Arrays.asList(alpha, beta);
-    final private Cycle pi = new Cycle("0 5 4 3 8 7 6 2 1");
+    final private Cycle pi = Cycle.create("0 5 4 3 8 7 6 2 1");
     final private Cycle[] cycleIndex = new Cycle[]{alpha, beta, null, beta, null, alpha, null, alpha, beta};
 
     @Test
     void testSimplify() {
-        assertEquals(new Cycle("0 4 8 3 7 2 6 1 5 9 14 13 12 11 10"), simplify(new Cycle("0 3 6 2 5 1 4 10 9 8 7")));
+        assertEquals(Cycle.create("0 4 8 3 7 2 6 1 5 9 14 13 12 11 10"), simplify(Cycle.create("0 3 6 2 5 1 4 10 9 8 7")));
     }
 
     @Test
     void testApplyTransposition() {
-        assertEquals(new Cycle("0 1 2 3 4 5 6"), applyTransposition(new Cycle("0 4 5 6 1 2 3"), new Cycle("0 4 1")));
+        assertEquals(Cycle.create("0 1 2 3 4 5 6"), applyTransposition(Cycle.create("0 4 5 6 1 2 3"), Cycle.create("0 4 1")));
     }
 
     @Test
     void testCycleIndex() {
-        final var pi = new Cycle("0 5 4 3 2 1");
-        final var c0 = new Cycle("0 2 4");
-        final var c1 = new Cycle("1 3 5");
+        final var pi = Cycle.create("0 5 4 3 2 1");
+        final var c0 = Cycle.create("0 2 4");
+        final var c1 = Cycle.create("1 3 5");
 
         final var index = CommonOperations.cycleIndex(Arrays.asList(c0, c1), pi);
         assertArrayEquals(new Cycle[]{c0, c1, c0, c1, c0, c1}, index);
@@ -62,9 +62,9 @@ class CommonOperationsTest {
 
     @Test
     void testIs11_8() {
-        final var pi = new Cycle("0 4 8 3 7 2 6 1 5 9 14 13 12 11");
+        final var pi = Cycle.create("0 4 8 3 7 2 6 1 5 9 14 13 12 11");
         final var spi = PermutationGroups.computeProduct(CANONICAL_PI[15], pi.getInverse());
-        assertTrue(is11_8(spi, pi, Arrays.asList(new Cycle("1 4 7"), new Cycle("2 8 5"), new Cycle("1 4 7"), new Cycle("3 9 6"))));
+        assertTrue(is11_8(spi, pi, Arrays.asList(Cycle.create("1 4 7"), Cycle.create("2 8 5"), Cycle.create("1 4 7"), Cycle.create("3 9 6"))));
     }
 
     @Test

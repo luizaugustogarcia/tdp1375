@@ -31,7 +31,7 @@ public class CommonOperations implements Serializable {
             for (var j = 0; j < i; j++) {
                 pi[j] = (byte) j;
             }
-            CANONICAL_PI[i] = new Cycle(pi);
+            CANONICAL_PI[i] = Cycle.create(pi);
         }
     }
 
@@ -49,7 +49,7 @@ public class CommonOperations implements Serializable {
             sigma.add((byte) i);
         }
 
-        MulticyclePermutation sigmaPiInverse = PermutationGroups.computeProduct(new Cycle(sigma), pi.getInverse());
+        MulticyclePermutation sigmaPiInverse = PermutationGroups.computeProduct(Cycle.create(sigma), pi.getInverse());
 
         Cycle bigCycle;
         while ((bigCycle = sigmaPiInverse.stream().filter(c -> c.size() > 3).findFirst().orElse(null)) != null) {
@@ -70,16 +70,16 @@ public class CommonOperations implements Serializable {
                 sigma.add((byte) i);
             }
 
-            sigmaPiInverse = PermutationGroups.computeProduct(new Cycle(sigma), new Cycle(newPi).getInverse());
+            sigmaPiInverse = PermutationGroups.computeProduct(Cycle.create(sigma), Cycle.create(newPi).getInverse());
 
             _pi = new FloatArrayList();
             for (int i = 0; i < newPi.size(); i++) {
                 _pi.add(newPi.get(i));
             }
-            pi = new Cycle(newPi);
+            pi = Cycle.create(newPi);
         }
 
-        return pi.getStartingBy((byte) 0);
+        return pi.startingBy((byte) 0);
     }
 
     private static byte leftMostSymbol(Cycle bigCycle, Cycle pi) {
@@ -112,7 +112,7 @@ public class CommonOperations implements Serializable {
         System.arraycopy(pi.getSymbols(), indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
         System.arraycopy(pi.getSymbols(), indexes[2], result, indexes[2], pi.size() - indexes[2]);
 
-        return new Cycle(result);
+        return Cycle.create(result);
     }
 
     public static int mod(int a, int b) {
@@ -170,7 +170,7 @@ public class CommonOperations implements Serializable {
     public static boolean is11_8(MulticyclePermutation spi, Cycle pi, final List<Cycle> moves) {
         final var before = spi.getNumberOfEvenCycles();
         for (final var move : moves) {
-            if (pi.isApplicable(move)) {
+            if (areSymbolsInCyclicOrder(pi, move.getSymbols())) {
                 pi = applyTransposition(pi, move);
                 spi = PermutationGroups.computeProduct(spi, move.getInverse());
             } else {
@@ -182,11 +182,7 @@ public class CommonOperations implements Serializable {
     }
 
     public static boolean areSymbolsInCyclicOrder(final Cycle cycle, byte... symbols) {
-        final var symbolIndexes = new byte[cycle.getMaxSymbol() + 1];
-
-        for (var i = 0; i < cycle.size(); i++) {
-            symbolIndexes[cycle.get(i)] = (byte) i;
-        }
+        final var symbolIndexes = cycle.getSymbolIndexes();
 
         boolean leap = false;
         for (int i = 0; i < symbols.length; i++) {
@@ -254,12 +250,12 @@ public class CommonOperations implements Serializable {
                         final var a = cycle.get(i);
                         final var b = cycle.get(j);
                         final var c = cycle.get(k);
-                        if (pi.isOriented(a, b, c)) {
+                        if (areSymbolsInCyclicOrder(pi, a, b, c)) {
                             var after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
                             after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
                             after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
                             if (after - before == 2)
-                                return Optional.of(new Cycle(a, b, c));
+                                return Optional.of(Cycle.create(a, b, c));
                         }
                     }
                 }
@@ -287,7 +283,7 @@ public class CommonOperations implements Serializable {
                                     // skip (-2)-moves
                                     return !is_2Move;
                                 }).map(k -> {
-                                    final var move = new Cycle(pi.get(i), pi.get(j), pi.get(k));
+                                    final var move = Cycle.create(pi.get(i), pi.get(j), pi.get(k));
                                     final var delta = PermutationGroups.computeProduct(spi, move.getInverse()).getNumberOfEvenCycles() - numberOfEvenCycles;
                                     if (delta >= 0) {
                                         return new Pair<>(move, delta);

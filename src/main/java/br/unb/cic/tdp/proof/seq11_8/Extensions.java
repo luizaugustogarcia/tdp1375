@@ -242,13 +242,13 @@ public class Extensions {
 
         final var signature = signature(config.getSpi(), config.getPi());
         final var _cyclesSizes = new HashMap<Byte, Byte>();
-        final var _symbolIndexes = new HashMap<Byte, List<Integer>>();
+        final var indexesByLabel = new HashMap<Byte, List<Integer>>();
         for (int i = 0; i < signature.length; i++) {
             _cyclesSizes.computeIfAbsent((byte) Math.floor(signature[i]), _s -> (byte) 0);
             _cyclesSizes.computeIfPresent((byte) Math.floor(signature[i]), (k, v) -> (byte) (v + 1));
-            _symbolIndexes.computeIfAbsent((byte) Math.floor(signature[i]), _s -> new ArrayList<>());
+            indexesByLabel.computeIfAbsent((byte) Math.floor(signature[i]), _s -> new ArrayList<>());
             int finalI = i;
-            _symbolIndexes.computeIfPresent((byte) Math.floor(signature[i]), (k, v) -> {
+            indexesByLabel.computeIfPresent((byte) Math.floor(signature[i]), (k, v) -> {
                 v.add(finalI);
                 return v;
             });
@@ -267,7 +267,7 @@ public class Extensions {
                     for (int b = a; b < signature.length; b++) {
                         final var extendedSignature = unorientedExtension(signature, (byte) label, a, b).elements();
                         var extension = ofSignature(extendedSignature);
-                        if (areInTheSameGate(_symbolIndexes.get((byte) label), a, b)) {
+                        if (remainsUnoriented(indexesByLabel.get((byte) label), a, b)) {
                             if (extension.getNumberOfOpenGates() <= 2) {
                                 result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
                             }
@@ -284,20 +284,20 @@ public class Extensions {
         return result;
     }
 
-    private static boolean areInTheSameGate(final List<Integer> gates, final int... newIndices) {
-        final var gatesFallenInto = new HashSet<Pair<Integer, Integer>>();
+    private static boolean remainsUnoriented(final List<Integer> indexes, final int... newIndices) {
+        final var intervals = new HashSet<Pair<Integer, Integer>>();
 
         for (final var index : newIndices) {
-            for (int i = 0; i < gates.size(); i++) {
-                int left = gates.get(i), right = gates.get((i + 1) % gates.size());
+            for (int i = 0; i < indexes.size(); i++) {
+                int left = indexes.get(i), right = indexes.get((i + 1) % indexes.size());
                 if ((left < index && index <= right) ||
                         (right < left && (left < index || index <= right))) {
-                    gatesFallenInto.add(new Pair<>(left, right));
+                    intervals.add(new Pair<>(left, right));
                 }
             }
         }
 
-        return gatesFallenInto.size() == 1;
+        return intervals.size() == 1;
     }
 
     private static float[] makeOriented5Cycle(final float[] extension, final int label) {
