@@ -3,50 +3,48 @@ package br.unb.cic.tdp.permutation;
 import cern.colt.list.ByteArrayList;
 import org.apache.commons.lang.ArrayUtils;
 
-import java.util.Arrays;
+import java.util.*;
 
 import static br.unb.cic.tdp.base.CommonOperations.areSymbolsInCyclicOrder;
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
-
     private byte[] symbols;
     private byte[] symbolIndexes;
     private byte minSymbol = -1;
     private byte maxSymbol = -1;
     private Cycle inverse;
-    private Integer hashCode;
 
-    public Cycle(final ByteArrayList lSymbols) {
-        final var content = new byte[lSymbols.size()];
-        System.arraycopy(lSymbols.elements(), 0, content, 0, lSymbols.size());
-        this.symbols = content;
-        updateIndexes();
-    }
-
-    public Cycle(final byte... symbols) {
+    private Cycle(final byte... symbols) {
         this.symbols = symbols;
-        updateIndexes();
+        updateInternalState();
     }
 
-    public Cycle(final String cycle) {
-        this(cycle.replace("(", "").replace(")", "").split(",|\\s"));
-    }
-
-    private Cycle(final String[] strSymbols) {
-        this.symbols = new byte[strSymbols.length];
+    public static Cycle create(final String cycle) {
+        final var strSymbols = cycle.replace("(", "").replace(")", "").split(",|\\s");
+        final var symbols = new byte[strSymbols.length];
         for (var i = 0; i < strSymbols.length; i++) {
             final var strSymbol = strSymbols[i];
-            this.symbols[i] = Byte.parseByte(strSymbol);
+            symbols[i] = Byte.parseByte(strSymbol);
         }
-        updateIndexes();
+        return create(symbols);
+    }
+
+    public static Cycle create(final ByteArrayList lSymbols) {
+        final var symbols = new byte[lSymbols.size()];
+        System.arraycopy(lSymbols.elements(), 0, symbols, 0, lSymbols.size());
+        return create(symbols);
+    }
+
+    public static Cycle create(final byte... symbols) {
+        return new Cycle(symbols);
     }
 
     public byte[] getSymbols() {
         return symbols;
     }
 
-    private void updateIndexes() {
+    private void updateInternalState() {
         for (byte symbol : symbols) {
             if (minSymbol == -1 || symbol < minSymbol) {
                 minSymbol = symbol;
@@ -73,15 +71,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return minSymbol;
     }
 
-    public void redefine(final byte[] symbols) {
-        minSymbol = -1;
-        maxSymbol = -1;
-        this.symbols = symbols;
-        updateIndexes();
-        inverse = null;
-        hashCode = null;
-    }
-
     @Override
     public String toString() {
         return defaultStringRepresentation();
@@ -93,7 +82,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             final var symbolsCopy = new byte[this.symbols.length];
             System.arraycopy(this.symbols, 0, symbolsCopy, 0, this.symbols.length);
             ArrayUtils.reverse(symbolsCopy);
-            inverse = new Cycle(symbolsCopy);
+            inverse = Cycle.create(symbolsCopy);
         }
         return inverse;
     }
@@ -103,7 +92,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     private String defaultStringRepresentation() {
-        final var _default = this.getStartingBy(minSymbol);
+        final var _default = this.startingBy(minSymbol);
 
         final var representation = new StringBuilder().append("(");
 
@@ -120,9 +109,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     @Override
     public int hashCode() {
-        if (hashCode == null)
-            hashCode = Arrays.hashCode(getStartingBy(getMinSymbol()).getSymbols());
-        return hashCode;
+        return Arrays.hashCode(startingBy(getMinSymbol()).getSymbols());
     }
 
     @Override
@@ -139,8 +126,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             return false;
         }
 
-        return Arrays.equals(getStartingBy(getMinSymbol()).getSymbols(),
-                ((Cycle) obj).getStartingBy(((Cycle) obj).getMinSymbol()).getSymbols());
+        return Arrays.equals(startingBy(getMinSymbol()).getSymbols(),
+                ((Cycle) obj).startingBy(((Cycle) obj).getMinSymbol()).getSymbols());
     }
 
     public boolean isEven() {
@@ -165,7 +152,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return (symbols.length - aIndex) + bIndex;
     }
 
-    public Cycle getStartingBy(final byte symbol) {
+    public Cycle startingBy(final byte symbol) {
         if (this.symbols[0] == symbol) {
             return this;
         }
@@ -175,7 +162,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         System.arraycopy(this.symbols, index, symbols, 0, symbols.length - index);
         System.arraycopy(this.symbols, 0, symbols, symbols.length - index, index);
 
-        return new Cycle(symbols);
+        return Cycle.create(symbols);
     }
 
     @Override
@@ -200,26 +187,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return symbol <= symbolIndexes.length - 1 && symbolIndexes[symbol] != -1;
     }
 
-    public boolean isApplicable(final Cycle rho) {
-        return areSymbolsInCyclicOrder(this, rho.getSymbols());
-    }
-
-    public boolean isOriented(final byte... symbols) {
-        assert symbols.length == 3 : "ERROR";
-        boolean leap = false;
-        for (int i = 0; i < symbols.length; i++) {
-            if (symbolIndexes[symbols[i]] > symbolIndexes[symbols[(i + 1) % symbols.length]]) {
-                if (!leap) {
-                    leap = true;
-                } else {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
     @Override
     public int size() {
         return symbols.length;
@@ -232,5 +199,9 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     public boolean isLong() {
         return this.size() > 3;
+    }
+
+    public byte[] getSymbolIndexes() {
+        return symbolIndexes;
     }
 }

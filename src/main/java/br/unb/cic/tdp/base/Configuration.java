@@ -5,7 +5,6 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Floats;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -33,9 +32,6 @@ public class Configuration {
 
     @ToString.Exclude
     private Collection<Signature> equivalentSignatures;
-
-    @ToString.Exclude
-    private Integer hashCode;
 
     @ToString.Exclude
     private Configuration canonical;
@@ -67,7 +63,7 @@ public class Configuration {
                 symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
                     final var symbolIndex = new byte[pi.getMaxSymbol() + 1];
                     final var symbolMinIndex = Bytes.asList(c.getSymbols()).stream().sorted(comparing(s -> pi.indexOf(s))).findFirst().get();
-                    c = c.getStartingBy(symbolMinIndex);
+                    c = c.startingBy(symbolMinIndex);
                     for (int j = 0; j < c.size(); j++) {
                         symbolIndex[c.get(j)] = (byte) (j + 1);
                     }
@@ -119,7 +115,7 @@ public class Configuration {
             e.getValue().addAll(orientedCycle);
         });
 
-        final var spi = cyclesByLabel.values().stream().map(c -> new Cycle(Bytes.toArray(c)))
+        final var spi = cyclesByLabel.values().stream().map(c -> Cycle.create(Bytes.toArray(c)))
                 .collect(Collectors.toCollection(MulticyclePermutation::new));
 
         return new Configuration(spi, pi);
@@ -141,10 +137,10 @@ public class Configuration {
         equivalentSignatures = new HashSet<>();
 
         for (var i = 0; i < pi.size(); i++) {
-            final var shifting = pi.getStartingBy(pi.get(i));
+            final var shifting = pi.startingBy(pi.get(i));
             equivalentSignatures.add(new Signature(shifting, signature(spi, shifting), false));
 
-            final var mirroredShifting = mirroredPi.getStartingBy(mirroredPi.get(i));
+            final var mirroredShifting = mirroredPi.startingBy(mirroredPi.get(i));
             equivalentSignatures.add(new Signature(mirroredShifting, signature(spi.getInverse(), mirroredShifting), true));
         }
 
@@ -178,7 +174,7 @@ public class Configuration {
         var pi = matchedSignature.getPi();
         var _pi = this.pi;
         for (final var move : shiftedOrMirroredSorting) {
-            translatedSorting.add(new Cycle(
+            translatedSorting.add(Cycle.create(
                     _pi.get(pi.indexOf(move.get(0))),
                     _pi.get(pi.indexOf(move.get(1))),
                     _pi.get(pi.indexOf(move.get(2)))));
@@ -224,10 +220,7 @@ public class Configuration {
     @Override
     @ToString.Include
     public int hashCode() {
-        if (this.hashCode == null) {
-            this.hashCode = getCanonical().signature.hashCode();
-        }
-        return this.hashCode;
+        return getCanonical().signature.hashCode();
     }
 
     @Override
@@ -257,7 +250,6 @@ public class Configuration {
         return result;
     }
 
-    @AllArgsConstructor
     public class Signature {
 
         @Getter
@@ -268,6 +260,12 @@ public class Configuration {
 
         @Getter
         private final boolean mirror;
+
+        public Signature(final Cycle pi, final float[] content, final boolean mirror) {
+            this.pi = pi;
+            this.content = content;
+            this.mirror = mirror;
+        }
 
         @Override
         public boolean equals(final Object o) {

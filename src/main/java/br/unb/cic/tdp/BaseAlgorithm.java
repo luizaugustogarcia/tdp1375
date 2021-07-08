@@ -15,29 +15,26 @@ import java.io.FileReader;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 
 public abstract class BaseAlgorithm {
 
-    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> _11_8cases;
-    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> _3_2cases;
+    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> sortings;
 
     public BaseAlgorithm() {
-        final var _3_2sortings = new HashMap<Configuration, List<Cycle>>();
-        loadSortings("cases/cases-3,2.txt").forEach(_3_2sortings::put);
-        _3_2cases = new Pair<>(_3_2sortings, _3_2sortings.keySet().stream()
+        final var sortings = new HashMap<Configuration, List<Cycle>>();
+        loadSortings("cases/cases-3,2.txt", sortings);
+        load11_8Sortings(sortings);
+        // If HashMap provided a way to get the whole Map.Entry by the key, we would not need to group the configurations by the hash code
+        this.sortings = new Pair<>(sortings, sortings.keySet().stream()
                 .collect(Collectors.groupingBy(Configuration::hashCode)));
-        _11_8cases = load11_8Cases();
     }
 
     public abstract List<Cycle> sort(Cycle pi);
 
-    protected abstract Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> load11_8Cases();
+    protected abstract void load11_8Sortings(Map<Configuration, List<Cycle>> sortings);
 
     protected int get3Norm(final Collection<Cycle> mu) {
         final var numberOfEvenCycles = (int) mu.stream().filter((cycle) -> cycle.size() % 2 == 1).count();
@@ -59,7 +56,7 @@ public abstract class BaseAlgorithm {
     }
 
     protected List<Cycle> extend(final List<Cycle> bigGamma, final MulticyclePermutation spi, final Cycle pi) {
-        final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
+        final var piInverse = pi.getInverse().startingBy(pi.getMinSymbol());
 
         final var bigGammaSymbols = new HashSet<Byte>();
         // O(1), since at this point, ||mu|| never exceeds 16
@@ -86,7 +83,7 @@ public abstract class BaseAlgorithm {
                         byte a = intersectingCycle.get().get(0), b = intersectingCycle.get().image(a),
                                 c = intersectingCycle.get().image(b);
                         final var _bigGamma = new ArrayList<>(bigGamma);
-                        _bigGamma.add(new Cycle(a, b, c));
+                        _bigGamma.add(Cycle.create(a, b, c));
                         return _bigGamma;
                     }
                 }
@@ -110,7 +107,7 @@ public abstract class BaseAlgorithm {
                             if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
                                 final var c = intersectingCycle.image(b);
                                 final var _bigGamma = new ArrayList<>(bigGamma);
-                                _bigGamma.add(new Cycle(a, b, c));
+                                _bigGamma.add(Cycle.create(a, b, c));
                                 return _bigGamma;
                             }
                         }
@@ -131,7 +128,7 @@ public abstract class BaseAlgorithm {
                 final var a = piInverse.get(index);
                 final var b = intersectingCycle.image(a);
                 if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
-                    return Optional.of(intersectingCycle.getStartingBy(a));
+                    return Optional.of(intersectingCycle.startingBy(a));
                 }
             }
         }
@@ -139,48 +136,35 @@ public abstract class BaseAlgorithm {
     }
 
     @SneakyThrows
-    protected Map<Configuration, List<Cycle>> loadSortings(final String resource) {
-        final var threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-
+    protected void loadSortings(final String resource, final Map<Configuration, List<Cycle>> sortings) {
         final Path file = Paths.get(ProofGenerator.class.getClassLoader().getResource(resource).toURI());
-        final var result = new ConcurrentHashMap<Configuration, List<Cycle>>();
         final var br = new BufferedReader(new FileReader(file.toFile()), 10 * 1024 * 1024);
 
         String line;
         while ((line = br.readLine()) != null) {
             final var lineSplit = line.trim().split("->");
-            threadPool.submit(() -> {
-                final var spi = new MulticyclePermutation(lineSplit[0].replace(" ", ","));
-                final var sorting = Arrays.stream(lineSplit[1].substring(1, lineSplit[1].length() - 1)
-                        .split(", ")).map(c -> c.replace(" ", ",")).map(Cycle::new)
-                        .collect(Collectors.toList());
-                final var config = new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
-                result.computeIfAbsent(config, k -> sorting);
-            });
+
+            final var spi = new MulticyclePermutation(lineSplit[0].replace(" ", ","));
+            final var sorting = Arrays.stream(lineSplit[1].substring(1, lineSplit[1].length() - 1)
+                    .split(", ")).map(c -> c.replace(" ", ",")).map(s -> Cycle.create(s))
+                    .collect(Collectors.toList());
+            final var config = new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
+            sortings.computeIfAbsent(config, k -> sorting);
         }
-
-        threadPool.shutdown();
-
-        // unbounded
-        threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-
-        return result;
     }
 
-    protected Cycle apply2MoveTwoOddCycles(final MulticyclePermutation spi, final Cycle pi) {
+    protected Pair<Cycle, Cycle> apply2MoveTwoOddCycles(final MulticyclePermutation spi, final Cycle pi) {
         final var oddCycles = spi.stream().filter(c -> !c.isEven()).limit(2).collect(Collectors.toList());
         byte a = oddCycles.get(0).get(0), b = oddCycles.get(0).get(1), c = oddCycles.get(1).get(0);
 
         final Cycle _2Move;
         if (areSymbolsInCyclicOrder(pi, a, b, c)) {
-            _2Move = new Cycle(a, b, c);
+            _2Move = Cycle.create(a, b, c);
         } else {
-            _2Move = new Cycle(a, c, b);
+            _2Move = Cycle.create(a, c, b);
         }
 
-        applyMoves(pi, Collections.singletonList(_2Move));
-
-        return _2Move;
+        return new Pair<>(_2Move, applyMoves(pi, Collections.singletonList(_2Move)));
     }
 
     protected boolean thereAreOddCycles(final MulticyclePermutation spi) {
@@ -201,16 +185,15 @@ public abstract class BaseAlgorithm {
         return Optional.empty();
     }
 
-    protected void applyMoves(final Cycle pi, final List<Cycle> moves) {
+    protected Cycle applyMoves(final Cycle pi, final List<Cycle> moves) {
         var _pi = pi;
         for (final var move : moves) {
             _pi = applyTransposition(_pi, move);
         }
-        pi.redefine(_pi.getSymbols());
+        return _pi;
     }
 
-    protected Optional<List<Cycle>> searchForSeq(final List<Cycle> mu, final Cycle pi,
-                                       final Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> cases) {
+    protected Optional<List<Cycle>> searchForSeq(final List<Cycle> mu, final Cycle pi) {
         final var allSymbols = mu.stream().flatMap(c -> Bytes.asList(c.getSymbols()).stream()).collect(Collectors.toSet());
         final var _pi = new ByteArrayList(allSymbols.size());
         for (final var symbol : pi.getSymbols()) {
@@ -219,25 +202,26 @@ public abstract class BaseAlgorithm {
             }
         }
 
-        final var config = new Configuration(new MulticyclePermutation(mu), new Cycle(_pi));
-        if (cases.getFirst().containsKey(config)) {
-            return Optional.of(config.translatedSorting(cases.getSecond().get(config.hashCode()).stream()
-                    .filter(_c -> _c.equals(config)).findFirst().get(), cases.getFirst().get(config)));
+        final var config = new Configuration(new MulticyclePermutation(mu), Cycle.create(_pi));
+        if (sortings.getFirst().containsKey(config)) {
+            // If HashMap provided a way to get the whole Map.Entry by the key, we would not need to group the configurations by the hash code,
+            // and consequently search for the matching configuration by iterating the configurations with the same hash code.
+            return Optional.of(config.translatedSorting(sortings.getSecond().get(config.hashCode()).stream()
+                    .filter(_c -> _c.equals(config)).findFirst().get(), sortings.getFirst().get(config)));
         }
 
         return Optional.empty();
     }
 
-    protected List<Cycle> apply3_2_Unoriented(final MulticyclePermutation spi, final Cycle pi) {
+    protected Pair<List<Cycle>, Cycle> apply3_2_Unoriented(final MulticyclePermutation spi, final Cycle pi) {
         final var segment = spi.stream().filter(c -> c.size() > 1).findFirst().get();
         List<Cycle> mu = new ArrayList<>();
-        mu.add(new Cycle(segment.get(0), segment.get(1), segment.get(2)));
+        mu.add(Cycle.create(segment.get(0), segment.get(1), segment.get(2)));
         for (var i = 0; i < 2; i++) {
             mu = extend(mu, spi, pi);
-            final var moves = searchForSeq(mu, pi, _3_2cases);
+            final var moves = searchForSeq(mu, pi);
             if (moves.isPresent()) {
-                applyMoves(pi, moves.get());
-                return moves.get();
+                return new Pair<>(moves.get(), applyMoves(pi, moves.get()));
             }
         }
 

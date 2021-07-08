@@ -99,7 +99,7 @@ public class EHProofTraverser {
                             final var b = Byte.parseByte(matcher.group(2));
                             final var c = Byte.parseByte(matcher.group(3));
 
-                            final var rho = new Cycle(pi.get(a), pi.get(b), pi.get(c));
+                            final var rho = Cycle.create(pi.get(a), pi.get(b), pi.get(c));
                             sorting.add(rho);
 
                             pi = applyTransposition(pi, rho);
