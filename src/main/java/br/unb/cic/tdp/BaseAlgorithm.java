@@ -56,7 +56,7 @@ public abstract class BaseAlgorithm {
     }
 
     protected List<Cycle> extend(final List<Cycle> bigGamma, final MulticyclePermutation spi, final Cycle pi) {
-        final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
+        final var piInverse = pi.getInverse().startingBy(pi.getMinSymbol());
 
         final var bigGammaSymbols = new HashSet<Byte>();
         // O(1), since at this point, ||mu|| never exceeds 16
@@ -128,7 +128,7 @@ public abstract class BaseAlgorithm {
                 final var a = piInverse.get(index);
                 final var b = intersectingCycle.image(a);
                 if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
-                    return Optional.of(intersectingCycle.getStartingBy(a));
+                    return Optional.of(intersectingCycle.startingBy(a));
                 }
             }
         }
@@ -140,22 +140,16 @@ public abstract class BaseAlgorithm {
         final Path file = Paths.get(ProofGenerator.class.getClassLoader().getResource(resource).toURI());
         final var br = new BufferedReader(new FileReader(file.toFile()), 10 * 1024 * 1024);
 
-        try {
-            Cycle.deduplicate.set(true);
+        String line;
+        while ((line = br.readLine()) != null) {
+            final var lineSplit = line.trim().split("->");
 
-            String line;
-            while ((line = br.readLine()) != null) {
-                final var lineSplit = line.trim().split("->");
-
-                final var spi = new MulticyclePermutation(lineSplit[0].replace(" ", ","));
-                final var sorting = Arrays.stream(lineSplit[1].substring(1, lineSplit[1].length() - 1)
-                        .split(", ")).map(c -> c.replace(" ", ",")).map(s -> Cycle.create(s))
-                        .collect(Collectors.toList());
-                final var config = new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
-                sortings.computeIfAbsent(config, k -> sorting);
-            }
-        } finally {
-            Cycle.deduplicate.set(false);
+            final var spi = new MulticyclePermutation(lineSplit[0].replace(" ", ","));
+            final var sorting = Arrays.stream(lineSplit[1].substring(1, lineSplit[1].length() - 1)
+                    .split(", ")).map(c -> c.replace(" ", ",")).map(s -> Cycle.create(s))
+                    .collect(Collectors.toList());
+            final var config = new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
+            sortings.computeIfAbsent(config, k -> sorting);
         }
     }
 

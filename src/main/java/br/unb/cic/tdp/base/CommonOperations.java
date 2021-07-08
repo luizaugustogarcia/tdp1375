@@ -79,7 +79,7 @@ public class CommonOperations implements Serializable {
             pi = Cycle.create(newPi);
         }
 
-        return pi.getStartingBy((byte) 0);
+        return pi.startingBy((byte) 0);
     }
 
     private static byte leftMostSymbol(Cycle bigCycle, Cycle pi) {

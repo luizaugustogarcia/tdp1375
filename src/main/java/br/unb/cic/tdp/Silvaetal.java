@@ -135,7 +135,7 @@ public class Silvaetal extends BaseAlgorithm {
             return extension;
         }
 
-        final var piInverse = pi.getInverse().getStartingBy(pi.getMinSymbol());
+        final var piInverse = pi.getInverse().startingBy(pi.getMinSymbol());
         final var cycleIndex = cycleIndex(spi, pi);
 
         // Type 3 extension
@@ -143,7 +143,7 @@ public class Silvaetal extends BaseAlgorithm {
         for (var cycle : bigGamma) {
             if (cycle.size() < cycleIndex[cycle.get(0)].size()) {
                 final var spiCycle = align(cycleIndex[cycle.get(0)], cycle);
-                cycle = cycle.getStartingBy(spiCycle.get(0));
+                cycle = cycle.startingBy(spiCycle.get(0));
                 final var newSymbols = Arrays.copyOf(cycle.getSymbols(), cycle.getSymbols().length + 2);
                 newSymbols[cycle.getSymbols().length] = spiCycle
                         .image(cycle.get(cycle.getSymbols().length - 1));
@@ -177,7 +177,7 @@ public class Silvaetal extends BaseAlgorithm {
                 symbol = segment.image(symbol);
             }
             if (match)
-                return spiCycle.getStartingBy(segment.get(i));
+                return spiCycle.startingBy(segment.get(i));
         }
         return null;
     }

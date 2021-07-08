@@ -118,21 +118,15 @@ public class EliasAndHartman extends BaseAlgorithm {
     @SneakyThrows
     @Override
     protected void load11_8Sortings(final Map<Configuration, List<Cycle>> sortings) {
-        try {
-            Cycle.deduplicate.set(true);
-
-            Files.lines(Paths.get(this.getClass().getClassLoader()
-                    .getResource("known-sortings").toURI())).forEach(line -> {
-                final var lineSplit = line.trim().split("->");
-                if (lineSplit.length > 1) {
-                    var permutation = lineSplit[0].split("#")[1];
-                    final var spi = new MulticyclePermutation(permutation);
-                    sortings.put(new Configuration(spi),
-                            Arrays.stream(lineSplit[1].split(";")).map(s -> Cycle.create(s)).collect(Collectors.toList()));
-                }
-            });
-        } finally {
-            Cycle.deduplicate.set(false);
-        }
+        Files.lines(Paths.get(this.getClass().getClassLoader()
+                .getResource("known-sortings").toURI())).forEach(line -> {
+            final var lineSplit = line.trim().split("->");
+            if (lineSplit.length > 1) {
+                var permutation = lineSplit[0].split("#")[1];
+                final var spi = new MulticyclePermutation(permutation);
+                sortings.put(new Configuration(spi),
+                        Arrays.stream(lineSplit[1].split(";")).map(s -> Cycle.create(s)).collect(Collectors.toList()));
+            }
+        });
     }
 }

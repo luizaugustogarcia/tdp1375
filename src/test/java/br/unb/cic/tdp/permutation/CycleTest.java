@@ -56,7 +56,7 @@ class CycleTest {
 
     @Test
     void getStartingBy() {
-        assertArrayEquals(new byte[] {2, 3, 4, 5, 0, 1}, cycle.getStartingBy((byte) 2).getSymbols());
+        assertArrayEquals(new byte[] {2, 3, 4, 5, 0, 1}, cycle.startingBy((byte) 2).getSymbols());
     }
 
     @Test

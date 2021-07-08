@@ -4,15 +4,11 @@ import cern.colt.list.ByteArrayList;
 import org.apache.commons.lang.ArrayUtils;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static br.unb.cic.tdp.base.CommonOperations.areSymbolsInCyclicOrder;
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
-    public static ThreadLocal<Boolean> deduplicate = new ThreadLocal<>();
-
-    private static Map<PoolKey, Cycle> pool = new ConcurrentHashMap<>();
     private byte[] symbols;
     private byte[] symbolIndexes;
     private byte minSymbol = -1;
@@ -42,8 +38,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public static Cycle create(final byte... symbols) {
-        if (deduplicate.get() != null && deduplicate.get())
-            return pool.computeIfAbsent(new PoolKey(symbols), key -> new Cycle(key.symbols));
         return new Cycle(symbols);
     }
 
@@ -99,7 +93,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     private String defaultStringRepresentation() {
-        final var _default = this.getStartingBy(minSymbol);
+        final var _default = this.startingBy(minSymbol);
 
         final var representation = new StringBuilder().append("(");
 
@@ -117,7 +111,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     @Override
     public int hashCode() {
         if (hashCode == null)
-            hashCode = Arrays.hashCode(getStartingBy(getMinSymbol()).getSymbols());
+            hashCode = Arrays.hashCode(startingBy(getMinSymbol()).getSymbols());
         return hashCode;
     }
 
@@ -135,8 +129,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             return false;
         }
 
-        return Arrays.equals(getStartingBy(getMinSymbol()).getSymbols(),
-                ((Cycle) obj).getStartingBy(((Cycle) obj).getMinSymbol()).getSymbols());
+        return Arrays.equals(startingBy(getMinSymbol()).getSymbols(),
+                ((Cycle) obj).startingBy(((Cycle) obj).getMinSymbol()).getSymbols());
     }
 
     public boolean isEven() {
@@ -161,7 +155,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return (symbols.length - aIndex) + bIndex;
     }
 
-    public Cycle getStartingBy(final byte symbol) {
+    public Cycle startingBy(final byte symbol) {
         if (this.symbols[0] == symbol) {
             return this;
         }
@@ -232,41 +226,5 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     public byte[] getSymbolIndexes() {
         return symbolIndexes;
-    }
-
-    private static class PoolKey {
-        private byte[] symbols;
-
-        PoolKey(final byte[] symbols) {
-            var min = 0;
-            for (int i = 0; i < symbols.length; i++) {
-                if (symbols[i] < symbols[min]) {
-                    min = i;
-                }
-            }
-
-            if (min == 0) {
-                this.symbols = symbols;
-            } else {
-                final var index = min;
-                final var _symbols = new byte[symbols.length];
-                System.arraycopy(symbols, index, _symbols, 0, symbols.length - index);
-                System.arraycopy(symbols, 0, _symbols, symbols.length - index, index);
-                this.symbols = _symbols;
-            }
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            PoolKey poolKey = (PoolKey) o;
-            return Arrays.equals(symbols, poolKey.symbols);
-        }
-
-        @Override
-        public int hashCode() {
-            return Arrays.hashCode(symbols);
-        }
     }
 }

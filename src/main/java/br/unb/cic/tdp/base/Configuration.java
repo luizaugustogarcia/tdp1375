@@ -5,7 +5,6 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Floats;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -67,7 +66,7 @@ public class Configuration {
                 symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
                     final var symbolIndex = new byte[pi.getMaxSymbol() + 1];
                     final var symbolMinIndex = Bytes.asList(c.getSymbols()).stream().sorted(comparing(s -> pi.indexOf(s))).findFirst().get();
-                    c = c.getStartingBy(symbolMinIndex);
+                    c = c.startingBy(symbolMinIndex);
                     for (int j = 0; j < c.size(); j++) {
                         symbolIndex[c.get(j)] = (byte) (j + 1);
                     }
@@ -141,10 +140,10 @@ public class Configuration {
         equivalentSignatures = new HashSet<>();
 
         for (var i = 0; i < pi.size(); i++) {
-            final var shifting = pi.getStartingBy(pi.get(i));
+            final var shifting = pi.startingBy(pi.get(i));
             equivalentSignatures.add(new Signature(shifting, signature(spi, shifting), false));
 
-            final var mirroredShifting = mirroredPi.getStartingBy(mirroredPi.get(i));
+            final var mirroredShifting = mirroredPi.startingBy(mirroredPi.get(i));
             equivalentSignatures.add(new Signature(mirroredShifting, signature(spi.getInverse(), mirroredShifting), true));
         }
 
