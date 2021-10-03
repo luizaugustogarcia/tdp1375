@@ -26,9 +26,9 @@ public class EliasAndHartman extends BaseAlgorithm {
 
         final var n = pi.size();
 
-        final var _sigma = new byte[n];
+        final var _sigma = new int[n];
         for (int i = 0; i < pi.size(); i++) {
-            _sigma[i] = (byte)i;
+            _sigma[i] = (int)i;
         }
         final var sigma = Cycle.create(_sigma);
 

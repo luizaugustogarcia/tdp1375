@@ -185,7 +185,7 @@ public class Extensions {
     private static List<Pair<String, Configuration>> type1Extensions(final Configuration config) {
         final var result = new ArrayList<Pair<String, Configuration>>();
 
-        final var newCycleLabel = (byte) (config.getSpi().size() + 1);
+        final var newCycleLabel = (int) (config.getSpi().size() + 1);
 
         final var signature = signature(config.getSpi(), config.getPi());
 
@@ -216,7 +216,7 @@ public class Extensions {
 
         final var result = new ArrayList<Pair<String, Configuration>>();
 
-        final var newCycleLabel = (byte) (config.getSpi().size() + 1);
+        final var newCycleLabel = (int) (config.getSpi().size() + 1);
 
         final var signature = signature(config.getSpi(), config.getPi());
 
@@ -241,14 +241,14 @@ public class Extensions {
         final var result = new ArrayList<Pair<String, Configuration>>();
 
         final var signature = signature(config.getSpi(), config.getPi());
-        final var _cyclesSizes = new HashMap<Byte, Byte>();
-        final var indexesByLabel = new HashMap<Byte, List<Integer>>();
+        final var _cyclesSizes = new HashMap<Integer, Integer>();
+        final var indexesByLabel = new HashMap<Integer, List<Integer>>();
         for (int i = 0; i < signature.length; i++) {
-            _cyclesSizes.computeIfAbsent((byte) Math.floor(signature[i]), _s -> (byte) 0);
-            _cyclesSizes.computeIfPresent((byte) Math.floor(signature[i]), (k, v) -> (byte) (v + 1));
-            indexesByLabel.computeIfAbsent((byte) Math.floor(signature[i]), _s -> new ArrayList<>());
+            _cyclesSizes.computeIfAbsent((int) Math.floor(signature[i]), _s -> (int) 0);
+            _cyclesSizes.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> (int) (v + 1));
+            indexesByLabel.computeIfAbsent((int) Math.floor(signature[i]), _s -> new ArrayList<>());
             int finalI = i;
-            indexesByLabel.computeIfPresent((byte) Math.floor(signature[i]), (k, v) -> {
+            indexesByLabel.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> {
                 v.add(finalI);
                 return v;
             });
@@ -265,13 +265,13 @@ public class Extensions {
             if (!isOriented(signature, label)) {
                 for (int a = 0; a < signature.length; a++) {
                     for (int b = a; b < signature.length; b++) {
-                        final var extendedSignature = unorientedExtension(signature, (byte) label, a, b).elements();
+                        final var extendedSignature = unorientedExtension(signature, (int) label, a, b).elements();
                         var extension = ofSignature(extendedSignature);
-                        if (remainsUnoriented(indexesByLabel.get((byte) label), a, b)) {
+                        if (remainsUnoriented(indexesByLabel.get((int) label), a, b)) {
                             if (extension.getNumberOfOpenGates() <= 2) {
                                 result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
                             }
-                        } else if (_cyclesSizes.get((byte) label) == 3) {
+                        } else if (_cyclesSizes.get((int) label) == 3) {
                             extension = ofSignature(makeOriented5Cycle(extendedSignature, label));
                             result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s, turn oriented", a, b,
                                     cyclesByLabel.get(label)), extension));
@@ -324,7 +324,7 @@ public class Extensions {
     }
 
 
-    private static FloatArrayList unorientedExtension(final float[] signature, final byte label, final int... positions) {
+    private static FloatArrayList unorientedExtension(final float[] signature, final int label, final int... positions) {
         Preconditions.checkArgument(1 < positions.length && positions.length <= 3);
         Arrays.sort(positions);
         final var extension = new FloatArrayList(signature);

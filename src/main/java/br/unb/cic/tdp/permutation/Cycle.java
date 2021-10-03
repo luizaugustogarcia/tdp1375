@@ -1,51 +1,50 @@
 package br.unb.cic.tdp.permutation;
 
-import cern.colt.list.ByteArrayList;
+import cern.colt.list.IntArrayList;
 import org.apache.commons.lang.ArrayUtils;
 
 import java.util.*;
 
-import static br.unb.cic.tdp.base.CommonOperations.areSymbolsInCyclicOrder;
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
-    private byte[] symbols;
-    private byte[] symbolIndexes;
-    private byte minSymbol = -1;
-    private byte maxSymbol = -1;
+    private int[] symbols;
+    private int[] symbolIndexes;
+    private int minSymbol = -1;
+    private int maxSymbol = -1;
     private Cycle inverse;
 
-    private Cycle(final byte... symbols) {
+    private Cycle(final int... symbols) {
         this.symbols = symbols;
         updateInternalState();
     }
 
     public static Cycle create(final String cycle) {
         final var strSymbols = cycle.replace("(", "").replace(")", "").split(",|\\s");
-        final var symbols = new byte[strSymbols.length];
+        final var symbols = new int[strSymbols.length];
         for (var i = 0; i < strSymbols.length; i++) {
             final var strSymbol = strSymbols[i];
-            symbols[i] = Byte.parseByte(strSymbol);
+            symbols[i] = Integer.parseInt(strSymbol);
         }
         return create(symbols);
     }
 
-    public static Cycle create(final ByteArrayList lSymbols) {
-        final var symbols = new byte[lSymbols.size()];
+    public static Cycle create(final IntArrayList lSymbols) {
+        final var symbols = new int[lSymbols.size()];
         System.arraycopy(lSymbols.elements(), 0, symbols, 0, lSymbols.size());
         return create(symbols);
     }
 
-    public static Cycle create(final byte... symbols) {
+    public static Cycle create(final int... symbols) {
         return new Cycle(symbols);
     }
 
-    public byte[] getSymbols() {
+    public int[] getSymbols() {
         return symbols;
     }
 
     private void updateInternalState() {
-        for (byte symbol : symbols) {
+        for (int symbol : symbols) {
             if (minSymbol == -1 || symbol < minSymbol) {
                 minSymbol = symbol;
             }
@@ -54,20 +53,20 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             }
         }
 
-        symbolIndexes = new byte[maxSymbol + 1];
+        symbolIndexes = new int[maxSymbol + 1];
 
-        Arrays.fill(symbolIndexes, (byte) -1);
+        Arrays.fill(symbolIndexes, (int) -1);
 
         for (var i = 0; i < symbols.length; i++) {
-            symbolIndexes[symbols[i]] = (byte) i;
+            symbolIndexes[symbols[i]] = (int) i;
         }
     }
 
-    public byte getMaxSymbol() {
+    public int getMaxSymbol() {
         return maxSymbol;
     }
 
-    public byte getMinSymbol() {
+    public int getMinSymbol() {
         return minSymbol;
     }
 
@@ -79,7 +78,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     @Override
     public Cycle getInverse() {
         if (inverse == null) {
-            final var symbolsCopy = new byte[this.symbols.length];
+            final var symbolsCopy = new int[this.symbols.length];
             System.arraycopy(this.symbols, 0, symbolsCopy, 0, this.symbols.length);
             ArrayUtils.reverse(symbolsCopy);
             inverse = Cycle.create(symbolsCopy);
@@ -134,15 +133,15 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return this.size() % 2 == 1;
     }
 
-    public byte image(final byte a) {
+    public int image(final int a) {
         return symbols[(symbolIndexes[a] + 1) % symbols.length];
     }
 
-    public byte pow(final byte a, final int power) {
+    public int pow(final int a, final int power) {
         return symbols[mod(symbolIndexes[a] + power, symbols.length)];
     }
 
-    public int getK(final byte a, final byte b) {
+    public int getK(final int a, final int b) {
         final var aIndex = indexOf(a);
         final var bIndex = indexOf(b);
 
@@ -152,13 +151,13 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return (symbols.length - aIndex) + bIndex;
     }
 
-    public Cycle startingBy(final byte symbol) {
+    public Cycle startingBy(final int symbol) {
         if (this.symbols[0] == symbol) {
             return this;
         }
 
         final var index = indexOf(symbol);
-        final var symbols = new byte[this.symbols.length];
+        final var symbols = new int[this.symbols.length];
         System.arraycopy(this.symbols, index, symbols, 0, symbols.length - index);
         System.arraycopy(this.symbols, 0, symbols, symbols.length - index, index);
 
@@ -175,15 +174,15 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return this.defaultStringRepresentation().compareTo(o.defaultStringRepresentation());
     }
 
-    public byte get(final int i) {
+    public int get(final int i) {
         return symbols[i];
     }
 
-    public int indexOf(final byte symbol) {
+    public int indexOf(final int symbol) {
         return symbolIndexes[symbol];
     }
 
-    public boolean contains(final byte symbol) {
+    public boolean contains(final int symbol) {
         return symbol <= symbolIndexes.length - 1 && symbolIndexes[symbol] != -1;
     }
 
@@ -201,7 +200,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return this.size() > 3;
     }
 
-    public byte[] getSymbolIndexes() {
+    public int[] getSymbolIndexes() {
         return symbolIndexes;
     }
 }

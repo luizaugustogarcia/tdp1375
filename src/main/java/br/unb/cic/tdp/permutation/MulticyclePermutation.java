@@ -1,7 +1,7 @@
 package br.unb.cic.tdp.permutation;
 
-import cern.colt.list.ByteArrayList;
-import com.google.common.primitives.Bytes;
+import cern.colt.list.IntArrayList;
+import com.google.common.primitives.Ints;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -15,8 +15,8 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
     }
 
     public MulticyclePermutation(final String permutation) {
-        var cycle = new ByteArrayList();
-        byte symbol = 0;
+        var cycle = new IntArrayList();
+        int symbol = 0;
         for (var i = 0; i < permutation.length(); i++) {
             final var current = permutation.charAt(i);
             if (current != '(') {
@@ -24,12 +24,12 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
                     cycle.add(symbol);
                     symbol = 0;
                     this.add(Cycle.create(cycle));
-                    cycle = new ByteArrayList();
+                    cycle = new IntArrayList();
                 } else if (current == ',') {
                     cycle.add(symbol);
                     symbol = 0;
                 } else {
-                    symbol = (byte) (symbol * 10 + Character.getNumericValue(current));
+                    symbol = (int) (symbol * 10 + Character.getNumericValue(current));
                 }
             }
         }
@@ -84,8 +84,8 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
         return this.stream().mapToInt(Cycle::size).sum();
     }
 
-    public List<Byte> getSymbols() {
-        return this.stream().flatMap(cycle -> Bytes.asList(cycle.getSymbols()).stream()).collect(Collectors.toList());
+    public List<Integer> getSymbols() {
+        return this.stream().flatMap(cycle -> Ints.asList(cycle.getSymbols()).stream()).collect(Collectors.toList());
     }
 
     public int get3Norm() {
