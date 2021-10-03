@@ -7,6 +7,8 @@ import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.proof.ProofGenerator;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.ByteArrayList;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.primitives.Bytes;
 import lombok.SneakyThrows;
 
@@ -21,20 +23,16 @@ import static br.unb.cic.tdp.base.CommonOperations.*;
 
 public abstract class BaseAlgorithm {
 
-    protected Pair<Map<Configuration, List<Cycle>>, Map<Integer, List<Configuration>>> sortings;
+    protected Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings = HashMultimap.create();
 
     public BaseAlgorithm() {
-        final var sortings = new HashMap<Configuration, List<Cycle>>();
         loadSortings("cases/cases-3,2.txt", sortings);
         load11_8Sortings(sortings);
-        // If HashMap provided a way to get the whole Map.Entry by the key, we would not need to group the configurations by the hash code
-        this.sortings = new Pair<>(sortings, sortings.keySet().stream()
-                .collect(Collectors.groupingBy(Configuration::hashCode)));
     }
 
     public abstract List<Cycle> sort(Cycle pi);
 
-    protected abstract void load11_8Sortings(Map<Configuration, List<Cycle>> sortings);
+    protected abstract void load11_8Sortings(Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings);
 
     protected int get3Norm(final Collection<Cycle> mu) {
         final var numberOfEvenCycles = (int) mu.stream().filter((cycle) -> cycle.size() % 2 == 1).count();
@@ -151,7 +149,7 @@ public abstract class BaseAlgorithm {
     }
 
     @SneakyThrows
-    protected void loadSortings(final String resource, final Map<Configuration, List<Cycle>> sortings) {
+    protected void loadSortings(final String resource, final Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings) {
         final Path file = Paths.get(ProofGenerator.class.getClassLoader().getResource(resource).toURI());
         final var br = new BufferedReader(new FileReader(file.toFile()), 10 * 1024 * 1024);
 
@@ -164,7 +162,7 @@ public abstract class BaseAlgorithm {
                     .split(", ")).map(c -> c.replace(" ", ",")).map(s -> Cycle.create(s))
                     .collect(Collectors.toList());
             final var config = new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
-            sortings.computeIfAbsent(config, k -> sorting);
+            sortings.put(config.hashCode(), new Pair<>(config, sorting));
         }
     }
 
@@ -218,11 +216,10 @@ public abstract class BaseAlgorithm {
         }
 
         final var config = new Configuration(new MulticyclePermutation(mu), Cycle.create(_pi));
-        if (sortings.getFirst().containsKey(config)) {
-            // If HashMap provided a way to get the whole Map.Entry by the key, we would not need to group the configurations by the hash code,
-            // and consequently search for the matching configuration by iterating the configurations with the same hash code.
-            return Optional.of(config.translatedSorting(sortings.getSecond().get(config.hashCode()).stream()
-                    .filter(_c -> _c.equals(config)).findFirst().get(), sortings.getFirst().get(config)));
+        if (sortings.containsKey(config.hashCode())) {
+            final var pair = sortings.get(config.hashCode()).stream()
+                    .filter(p -> p.getFirst().equals(config)).findFirst().get();
+            return Optional.of(config.translatedSorting(pair.getFirst(), pair.getSecond()));
         }
 
         return Optional.empty();
