@@ -6,6 +6,7 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.ByteArrayList;
+import com.google.common.collect.Multimap;
 import com.google.common.primitives.Bytes;
 import org.apache.commons.collections.ListUtils;
 
@@ -123,7 +124,7 @@ public class Silvaetal extends BaseAlgorithm {
     }
 
     @Override
-    protected void load11_8Sortings(final Map<Configuration, List<Cycle>> sortings) {
+    protected void load11_8Sortings(final Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings) {
         loadSortings("cases/cases-oriented-7cycle.txt", sortings);
         loadSortings("cases/cases-dfs.txt", sortings);
         loadSortings("cases/cases-comb.txt", sortings);
@@ -212,9 +213,10 @@ public class Silvaetal extends BaseAlgorithm {
                     }
 
                     final var config = new Configuration(new MulticyclePermutation(_7Cycle), Cycle.create(_pi));
-                    if (sortings.getFirst().containsKey(config)) {
-                        final var moves = config.translatedSorting(sortings.getSecond().get(config.hashCode()).stream()
-                                .filter(_c -> _c.equals(config)).findFirst().get(), sortings.getFirst().get(config));
+                    if (sortings.containsKey(config.hashCode())) {
+                        final var pair = sortings.get(config.hashCode()).stream()
+                                .filter(p -> p.getFirst().equals(config)).findFirst().get();
+                        final var moves = config.translatedSorting(pair.getFirst(), pair.getSecond());
                         return new Pair<>(moves, applyMoves(pi, moves));
                     }
                 }

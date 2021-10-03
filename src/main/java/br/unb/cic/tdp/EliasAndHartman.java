@@ -3,6 +3,8 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.util.Pair;
+import com.google.common.collect.Multimap;
 import lombok.SneakyThrows;
 import org.apache.commons.collections.ListUtils;
 
@@ -117,15 +119,16 @@ public class EliasAndHartman extends BaseAlgorithm {
 
     @SneakyThrows
     @Override
-    protected void load11_8Sortings(final Map<Configuration, List<Cycle>> sortings) {
+    protected void load11_8Sortings(final Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings) {
         Files.lines(Paths.get(this.getClass().getClassLoader()
                 .getResource("known-sortings").toURI())).forEach(line -> {
             final var lineSplit = line.trim().split("->");
             if (lineSplit.length > 1) {
                 var permutation = lineSplit[0].split("#")[1];
                 final var spi = new MulticyclePermutation(permutation);
-                sortings.put(new Configuration(spi),
-                        Arrays.stream(lineSplit[1].split(";")).map(s -> Cycle.create(s)).collect(Collectors.toList()));
+                final var config = new Configuration(spi);
+                sortings.put(config.hashCode(),
+                        new Pair<>(config, Arrays.stream(lineSplit[1].split(";")).map(s -> Cycle.create(s)).collect(Collectors.toList())));
             }
         });
     }
