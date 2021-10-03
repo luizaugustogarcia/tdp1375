@@ -4,7 +4,7 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Pair;
-import cern.colt.list.ByteArrayList;
+import cern.colt.list.IntArrayList;
 import cern.colt.list.FloatArrayList;
 import lombok.SneakyThrows;
 import org.paukov.combinatorics.Factory;
@@ -25,11 +25,11 @@ public class CommonOperations implements Serializable {
     public static int numberOfThreads = Runtime.getRuntime().availableProcessors();
 
     static {
-        CANONICAL_PI = new Cycle[50];
-        for (var i = 1; i < 50; i++) {
-            final var pi = new byte[i];
+        CANONICAL_PI = new Cycle[2000];
+        for (var i = 1; i < 2000; i++) {
+            final var pi = new int[i];
             for (var j = 0; j < i; j++) {
-                pi[j] = (byte) j;
+                pi[j] = j;
             }
             CANONICAL_PI[i] = Cycle.create(pi);
         }
@@ -44,30 +44,30 @@ public class CommonOperations implements Serializable {
             _pi.add(pi.getSymbols()[i]);
         }
 
-        ByteArrayList sigma = new ByteArrayList();
+        IntArrayList sigma = new IntArrayList();
         for (int i = 0; i < _pi.size(); i++) {
-            sigma.add((byte) i);
+            sigma.add(i);
         }
 
         MulticyclePermutation sigmaPiInverse = PermutationGroups.computeProduct(Cycle.create(sigma), pi.getInverse());
 
         Cycle bigCycle;
         while ((bigCycle = sigmaPiInverse.stream().filter(c -> c.size() > 3).findFirst().orElse(null)) != null) {
-            byte leftMostSymbol = leftMostSymbol(bigCycle, pi);
+            int leftMostSymbol = leftMostSymbol(bigCycle, pi);
             float newSymbol = _pi.get(_pi.indexOf(leftMostSymbol) - 1) + 0.001F;
             _pi.beforeInsert(_pi.indexOf(bigCycle.pow(leftMostSymbol, -2)), newSymbol);
 
             FloatArrayList piCopy = new FloatArrayList(Arrays.copyOf(_pi.elements(), _pi.size()));
             piCopy.sort();
 
-            ByteArrayList newPi = new ByteArrayList();
+            IntArrayList newPi = new IntArrayList();
             for (int i = 0; i < piCopy.size(); i++) {
-                newPi.add((byte) piCopy.indexOf(_pi.get(i)));
+                newPi.add(piCopy.indexOf(_pi.get(i)));
             }
 
-            sigma = new ByteArrayList();
+            sigma = new IntArrayList();
             for (int i = 0; i < newPi.size(); i++) {
-                sigma.add((byte) i);
+                sigma.add(i);
             }
 
             sigmaPiInverse = PermutationGroups.computeProduct(Cycle.create(sigma), Cycle.create(newPi).getInverse());
@@ -79,10 +79,10 @@ public class CommonOperations implements Serializable {
             pi = Cycle.create(newPi);
         }
 
-        return pi.startingBy((byte) 0);
+        return pi.startingBy(0);
     }
 
-    private static byte leftMostSymbol(Cycle bigCycle, Cycle pi) {
+    private static int leftMostSymbol(Cycle bigCycle, Cycle pi) {
         for (int i = 1; i < pi.getSymbols().length; i++)
             if (bigCycle.contains(pi.get(i)))
                 return pi.get(i);
@@ -106,7 +106,7 @@ public class CommonOperations implements Serializable {
 
         Arrays.sort(indexes);
 
-        final var result = new byte[pi.size()];
+        final var result = new int[pi.size()];
         System.arraycopy(pi.getSymbols(), 0, result, 0, indexes[0]);
         System.arraycopy(pi.getSymbols(), indexes[1], result, indexes[0], indexes[2] - indexes[1]);
         System.arraycopy(pi.getSymbols(), indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
@@ -181,7 +181,7 @@ public class CommonOperations implements Serializable {
         return after > before && (float) moves.size() / ((after - before) / 2) <= ((float) 11 / 8);
     }
 
-    public static boolean areSymbolsInCyclicOrder(final Cycle cycle, byte... symbols) {
+    public static boolean areSymbolsInCyclicOrder(final Cycle cycle, int... symbols) {
         final var symbolIndexes = cycle.getSymbolIndexes();
 
         boolean leap = false;
@@ -278,7 +278,7 @@ public class CommonOperations implements Serializable {
                                 .takeWhile(k -> !Thread.currentThread().isInterrupted())
                                 .filter(k -> ci[pi.get(k)].size() > 1)
                                 .filter(k -> {
-                                    byte a = pi.get(i), b = pi.get(j), c = pi.get(k);
+                                    int a = pi.get(i), b = pi.get(j), c = pi.get(k);
                                     final var is_2Move = ci[a] != ci[b] && ci[b] != ci[c] && ci[a] != ci[c];
                                     // skip (-2)-moves
                                     return !is_2Move;
@@ -289,7 +289,7 @@ public class CommonOperations implements Serializable {
                                         return new Pair<>(move, delta);
                                     }
                                     return null;
-                                }))).filter(p -> p != null);
+                                }))).filter(Objects::nonNull);
     }
 
     public static <T> Generator<T> combinations(final Collection<T> collection, final int k) {

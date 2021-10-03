@@ -95,9 +95,9 @@ public class EHProofTraverser {
                         final var matcher = SORTING_PATTERN.matcher(line);
 
                         if (matcher.matches()) {
-                            final var a = Byte.parseByte(matcher.group(1));
-                            final var b = Byte.parseByte(matcher.group(2));
-                            final var c = Byte.parseByte(matcher.group(3));
+                            final var a = Integer.parseInt(matcher.group(1));
+                            final var b = Integer.parseInt(matcher.group(2));
+                            final var c = Integer.parseInt(matcher.group(3));
 
                             final var rho = Cycle.create(pi.get(a), pi.get(b), pi.get(c));
                             sorting.add(rho);

@@ -1,7 +1,7 @@
 package br.unb.cic.tdp.permutation;
 
 import cc.redberry.core.utils.BitArray;
-import cern.colt.list.ByteArrayList;
+import cern.colt.list.IntArrayList;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -32,11 +32,11 @@ public class PermutationGroups implements Serializable {
     }
 
     public static MulticyclePermutation computeProduct(final boolean include1Cycle, final int n, final Permutation... permutations) {
-        final var functions = new byte[permutations.length][n];
+        final var functions = new int[permutations.length][n];
 
         // initializing
         for (var i = 0; i < permutations.length; i++)
-            Arrays.fill(functions[i], (byte) -1);
+            Arrays.fill(functions[i], (int) -1);
 
         for (var i = 0; i < permutations.length; i++) {
             if (permutations[i] instanceof Cycle) {
@@ -55,11 +55,11 @@ public class PermutationGroups implements Serializable {
 
         final var result = new MulticyclePermutation();
 
-        final var cycle = new ByteArrayList();
+        final var cycle = new IntArrayList();
         final var seen = new BitArray(n);
         var counter = 0;
         while (counter < n) {
-            var start = (byte) seen.nextZeroBit(0);
+            var start = (int) seen.nextZeroBit(0);
 
             var image = start;
             for (var i = functions.length - 1; i >= 0; i--) {

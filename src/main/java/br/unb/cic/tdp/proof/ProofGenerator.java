@@ -7,10 +7,10 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.seq11_8.Combinations;
 import br.unb.cic.tdp.proof.seq11_8.Extensions;
 import br.unb.cic.tdp.proof.seq11_8.OrientedCycleGreaterOrEquals7;
-import cern.colt.list.ByteArrayList;
+import cern.colt.list.IntArrayList;
 import cern.colt.list.FloatArrayList;
-import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Floats;
+import com.google.common.primitives.Ints;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.math3.util.Pair;
 import org.apache.velocity.VelocityContext;
@@ -165,16 +165,16 @@ public class ProofGenerator {
 
                         final var cycleIndex = cycleIndex(mu.getVector(), config.getPi());
 
-                        final var _pi = new ByteArrayList(equivalentConfig.getPi().size());
+                        final var _pi = new IntArrayList(equivalentConfig.getPi().size());
                         for (var j = 0; j < config.getPi().size(); j++) {
                             if (cycleIndex[config.getPi().getSymbols()[j]] != null)
                                 _pi.add(config.getPi().getSymbols()[j]);
                         }
 
                         final var signature = new float[_pi.elements().length];
-                        final Map<Cycle, Byte> labels = new HashMap<>();
+                        final Map<Cycle, Integer> labels = new HashMap<>();
                         for (int k = 0; k < _pi.elements().length; k++) {
-                            labels.computeIfAbsent(cycleIndex[_pi.elements()[k]], c -> (byte) (labels.size() + 1));
+                            labels.computeIfAbsent(cycleIndex[_pi.elements()[k]], c -> (int) (labels.size() + 1));
                             signature[k] = labels.get(cycleIndex[_pi.elements()[k]]);
                         }
 
@@ -207,10 +207,10 @@ public class ProofGenerator {
     private static Configuration toConfiguration(final List<Cycle> spi, final Cycle pi) {
         final var cycleIndex = cycleIndex(spi, pi);
 
-        final var labelMap = new HashMap<Cycle, Byte>();
+        final var labelMap = new HashMap<Cycle, Integer>();
 
         for (final var cycle : spi) {
-            labelMap.computeIfAbsent(cycle, c -> (byte) (labelMap.size() + 1));
+            labelMap.computeIfAbsent(cycle, c -> (int) (labelMap.size() + 1));
         }
 
         final var _pi = new FloatArrayList(spi.stream().mapToInt(Cycle::size).sum());
@@ -224,15 +224,15 @@ public class ProofGenerator {
 
     public static String permutationToJsArray(final MulticyclePermutation permutation) {
         return "[" + permutation
-                .stream().map(c -> "[" + Bytes.asList(c.getSymbols()).stream()
-                        .map(s -> Byte.toString(s))
+                .stream().map(c -> "[" + Ints.asList(c.getSymbols()).stream()
+                        .map(s -> Integer.toString(s))
                         .collect(Collectors.joining(",")) + "]")
                 .collect(Collectors.joining(",")) + "]";
     }
 
     private static String cycleToJsArray(final Cycle cycle) {
-        return "[" + Bytes.asList(cycle.getSymbols()).stream()
-                .map(s -> Byte.toString(s))
+        return "[" + Ints.asList(cycle.getSymbols()).stream()
+                .map(s -> Integer.toString(s))
                 .collect(Collectors.joining(",")) + "]";
     }
 
@@ -265,7 +265,7 @@ public class ProofGenerator {
     }
 
     private static float[] signature(final List<List<Float>> spi) {
-        final var labelMap = new HashMap<List<Float>, Byte>();
+        final var labelMap = new HashMap<List<Float>, Integer>();
 
         final var floatCyclesIndex = new TreeMap<Float, List<Float>>();
         for (final var cycle : spi) {
@@ -281,7 +281,7 @@ public class ProofGenerator {
         for (var i = 0; i < signature.length; i++) {
             final var symbol = pi.get(i);
             final var cycle = floatCyclesIndex.get(symbol);
-            labelMap.computeIfAbsent(cycle, c -> (byte) (labelMap.size() + 1));
+            labelMap.computeIfAbsent(cycle, c -> (int) (labelMap.size() + 1));
             signature[i] = labelMap.get(cycle);
         }
 
@@ -315,12 +315,12 @@ public class ProofGenerator {
             var temp = new ArrayList<>(omegas.get(i - 1));
             temp.removeAll(remove);
             temp.replaceAll(s -> replaceBy.getOrDefault(s, s));
-            final var pi = Cycle.create(Bytes.toArray(temp));
+            final var pi = Cycle.create(Ints.toArray(temp));
 
             temp = new ArrayList<>(omegas.get(i));
             temp.removeAll(remove);
             temp.replaceAll(s -> replaceBy.getOrDefault(s, s));
-            final var _pi = Cycle.create(Bytes.toArray(temp));
+            final var _pi = Cycle.create(Ints.toArray(temp));
 
             final var move = computeProduct(false, _pi, pi.getInverse());
             if (!move.isIdentity()) {
@@ -344,7 +344,7 @@ public class ProofGenerator {
             final var finalSPi = sPi;
             final var finalFPi = fPi;
 
-            result.add(Bytes.asList(move.getSymbols()).stream()
+            result.add(Ints.asList(move.getSymbols()).stream()
                     .map(s -> finalFPi.get(finalSPi.indexOf(s))).collect(Collectors.toList()));
 
             sPi = CommonOperations.applyTransposition(sPi, move);
@@ -365,7 +365,7 @@ public class ProofGenerator {
             final var finalPi = pi;
             final var fSimplificationPi = _simplificationPi;
 
-            simplificationSorting.add(Bytes.asList(move.getSymbols()).stream()
+            simplificationSorting.add(Ints.asList(move.getSymbols()).stream()
                     .map(s -> fSimplificationPi.get(finalPi.indexOf(s))).collect(Collectors.toList()));
 
             pi = CommonOperations.applyTransposition(pi, move);

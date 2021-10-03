@@ -3,7 +3,7 @@ package br.unb.cic.tdp.proof.seq1_1;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Ints;
 import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 
@@ -30,7 +30,7 @@ public class OddCycles {
         final var verifiedConfigurations = new HashSet<Configuration>();
         permutation:
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
-            final var pi = Cycle.create(Bytes.toArray(permutation.getVector())).getInverse();
+            final var pi = Cycle.create(Ints.toArray(permutation.getVector())).getInverse();
             final var iterator = generateAll0And2Moves(spi, pi).iterator();
             while (iterator.hasNext()) {
                 final var pair = iterator.next();

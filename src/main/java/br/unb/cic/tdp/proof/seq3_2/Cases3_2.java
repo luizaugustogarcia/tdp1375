@@ -3,7 +3,7 @@ package br.unb.cic.tdp.proof.seq3_2;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Ints;
 import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 
@@ -33,7 +33,7 @@ public class Cases3_2 {
         final var verifiedConfigurations = new HashSet<Configuration>();
 
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
-            final var pi = Cycle.create(Bytes.toArray(permutation.getVector()));
+            final var pi = Cycle.create(Ints.toArray(permutation.getVector()));
             if (spi.stream().noneMatch(cycle -> isOriented(pi, cycle))) {
                 final var openGates = openGatesPerCycle(spi, pi.getInverse());
                 if (openGates.values().stream().mapToInt(j -> j).sum() <= 2) {

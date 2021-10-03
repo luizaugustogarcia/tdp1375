@@ -3,8 +3,7 @@ package br.unb.cic.tdp.proof.seq11_8;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.permutation.PermutationGroups;
-import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Ints;
 import org.paukov.combinatorics.Factory;
 
 import java.io.File;
@@ -45,7 +44,7 @@ public class OrientedCycleGreaterOrEquals7 {
                 "<body><div style=\"margin-top: 10px; margin-left: 10px;\"> \n");
 
         final var orientedCycle = Cycle.create("0,3,4,1,5,2,6");
-        final var orientedTriple = new byte[]{0, 1, 2};
+        final var orientedTriple = new int[]{0, 1, 2};
 
         out.println(orientedCycle + "<br>");
         out.println("<p>Oriented triple: (0,1,2)<br>");
@@ -57,8 +56,8 @@ public class OrientedCycleGreaterOrEquals7 {
         final var verifiedPis = new HashSet<Cycle>();
 
         for (final var permutation : Factory.createPermutationGenerator(
-                Factory.createVector(Bytes.asList(CANONICAL_PI[7].getSymbols())))) {
-            final var pi = Cycle.create(Bytes.toArray(permutation.getVector()));
+                Factory.createVector(Ints.asList(CANONICAL_PI[7].getSymbols())))) {
+            final var pi = Cycle.create(Ints.toArray(permutation.getVector()));
 
             if (!verifiedPis.contains(pi)) {
                 verifiedPis.add(pi);

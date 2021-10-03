@@ -3,7 +3,7 @@ package br.unb.cic.tdp.proof.seq3_2;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Ints;
 import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 
@@ -22,7 +22,7 @@ public class Oriented5Cycle {
      */
     public static List<Pair<Configuration, List<Cycle>>> generate() {
         final var orientedCycle = Cycle.create("(0,3,1,4,2)");
-        final var triple = new byte[]{0, 1, 2};
+        final var triple = new int[]{0, 1, 2};
 
         final var result = new ArrayList<Pair<Configuration, List<Cycle>>>();
 
@@ -31,7 +31,7 @@ public class Oriented5Cycle {
         final var spi = new MulticyclePermutation(orientedCycle);
 
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
-            final var pi = Cycle.create(Bytes.toArray(permutation.getVector()));
+            final var pi = Cycle.create(Ints.toArray(permutation.getVector()));
             final var config = new Configuration(spi, pi);
 
             if (areSymbolsInCyclicOrder(pi, triple)) {

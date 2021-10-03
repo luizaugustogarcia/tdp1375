@@ -5,9 +5,9 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Pair;
-import cern.colt.list.ByteArrayList;
+import cern.colt.list.IntArrayList;
 import com.google.common.collect.Multimap;
-import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Ints;
 import org.apache.commons.collections.ListUtils;
 
 import java.util.*;
@@ -24,9 +24,9 @@ public class Silvaetal extends BaseAlgorithm {
 
         final var n = pi.size();
 
-        final var _sigma = new byte[n];
+        final var _sigma = new int[n];
         for (int i = 0; i < pi.size(); i++) {
-            _sigma[i] = (byte)i;
+            _sigma[i] = (int)i;
         }
         final var sigma = Cycle.create(_sigma);
 
@@ -203,9 +203,9 @@ public class Silvaetal extends BaseAlgorithm {
                     final var g = orientedCycle.image(c);
 
                     final var _7Cycle = Cycle.create(a, d, e, b, f, c, g);
-                    final var allSymbols = new HashSet<>(Bytes.asList(_7Cycle.getSymbols()));
+                    final var allSymbols = new HashSet<>(Ints.asList(_7Cycle.getSymbols()));
 
-                    final var _pi = new ByteArrayList(7);
+                    final var _pi = new IntArrayList(7);
                     for (final var symbol : pi.getSymbols()) {
                         if (allSymbols.contains(symbol)) {
                             _pi.add(symbol);

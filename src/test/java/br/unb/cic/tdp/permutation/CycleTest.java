@@ -10,7 +10,7 @@ class CycleTest {
 
     @Test
     void getSymbols() {
-        assertArrayEquals(new byte[] {0, 1, 2, 3, 4, 5}, cycle.getSymbols());
+        assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5}, cycle.getSymbols());
     }
 
     @Test
@@ -41,22 +41,22 @@ class CycleTest {
 
     @Test
     void image() {
-        assertEquals(1, cycle.image((byte) 0));
+        assertEquals(1, cycle.image((int) 0));
     }
 
     @Test
     void pow() {
-        assertEquals(2, cycle.pow((byte) 0, 2));
+        assertEquals(2, cycle.pow((int) 0, 2));
     }
 
     @Test
     void getK() {
-        assertEquals(2, cycle.getK((byte) 0, (byte) 2));
+        assertEquals(2, cycle.getK((int) 0, (int) 2));
     }
 
     @Test
     void getStartingBy() {
-        assertArrayEquals(new byte[] {2, 3, 4, 5, 0, 1}, cycle.startingBy((byte) 2).getSymbols());
+        assertArrayEquals(new int[] {2, 3, 4, 5, 0, 1}, cycle.startingBy((int) 2).getSymbols());
     }
 
     @Test
@@ -67,13 +67,13 @@ class CycleTest {
 
     @Test
     void indexOf() {
-        assertEquals(3, cycle.indexOf((byte) 3));
+        assertEquals(3, cycle.indexOf((int) 3));
     }
 
     @Test
     void contains() {
-        assertTrue(cycle.contains((byte) 3));
-        assertFalse(cycle.contains((byte) 6));
+        assertTrue(cycle.contains((int) 3));
+        assertFalse(cycle.contains((int) 6));
     }
 
     @Test

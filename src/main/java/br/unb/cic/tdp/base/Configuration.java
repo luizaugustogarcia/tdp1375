@@ -3,8 +3,8 @@ package br.unb.cic.tdp.base;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.collect.Lists;
-import com.google.common.primitives.Bytes;
 import com.google.common.primitives.Floats;
+import com.google.common.primitives.Ints;
 import lombok.Getter;
 import lombok.ToString;
 
@@ -52,7 +52,7 @@ public class Configuration {
         final var cycleIndex = cycleIndex(spi, pi);
         final var orientedCycles = spi.stream().filter(c -> !areSymbolsInCyclicOrder(pi.getInverse(), c.getSymbols()))
                 .collect(Collectors.toSet());
-        final var symbolIndexByOrientedCycle = new HashMap<Cycle, byte[]>();
+        final var symbolIndexByOrientedCycle = new HashMap<Cycle, int[]>();
 
         final var signature = new float[pi.size()];
 
@@ -61,11 +61,11 @@ public class Configuration {
             final var cycle = cycleIndex[symbol];
             if (orientedCycles.contains(cycle)) {
                 symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
-                    final var symbolIndex = new byte[pi.getMaxSymbol() + 1];
-                    final var symbolMinIndex = Bytes.asList(c.getSymbols()).stream().sorted(comparing(s -> pi.indexOf(s))).findFirst().get();
+                    final var symbolIndex = new int[pi.getMaxSymbol() + 1];
+                    final var symbolMinIndex = Ints.asList(c.getSymbols()).stream().sorted(comparing(s -> pi.indexOf(s))).findFirst().get();
                     c = c.startingBy(symbolMinIndex);
                     for (int j = 0; j < c.size(); j++) {
-                        symbolIndex[c.get(j)] = (byte) (j + 1);
+                        symbolIndex[c.get(j)] = (int) (j + 1);
                     }
                     return symbolIndex;
                 });
@@ -88,14 +88,14 @@ public class Configuration {
     public static Configuration ofSignature(float[] signature) {
         final var pi = CANONICAL_PI[signature.length];
 
-        final var cyclesByLabel = new HashMap<Byte, List<Byte>>();
-        final var piSymbolsByOrientedCycleSymbols = new HashMap<Float, Byte>();
-        final var orientedCyclesByLabel = new HashMap<Byte, List<Byte>>();
+        final var cyclesByLabel = new HashMap<Integer, List<Integer>>();
+        final var piSymbolsByOrientedCycleSymbols = new HashMap<Float, Integer>();
+        final var orientedCyclesByLabel = new HashMap<Integer, List<Integer>>();
 
         for (int i = signature.length - 1; i >= 0; i--) {
-            byte label = (byte) Math.floor(signature[i]);
+            int label = (int) Math.floor(signature[i]);
             cyclesByLabel.computeIfAbsent(label, key -> new ArrayList<>());
-            cyclesByLabel.get(label).add((byte) i);
+            cyclesByLabel.get(label).add((int) i);
             if (signature[i] % 1 > 0) {
                 piSymbolsByOrientedCycleSymbols.put(signature[i], pi.get(i));
                 orientedCyclesByLabel.computeIfAbsent(label, key -> cyclesByLabel.get(label));
@@ -105,7 +105,7 @@ public class Configuration {
         orientedCyclesByLabel.entrySet().stream().forEach(e -> {
             final var sortedSignature = signature.clone();
             Arrays.sort(sortedSignature);
-            final var orientedCycle = new ArrayList<Byte>();
+            final var orientedCycle = new ArrayList<Integer>();
             for (int i = 0; i < signature.length; i++) {
                 if (Math.floor(sortedSignature[i]) == e.getKey()) {
                     orientedCycle.add(piSymbolsByOrientedCycleSymbols.get(sortedSignature[i]));
@@ -115,7 +115,7 @@ public class Configuration {
             e.getValue().addAll(orientedCycle);
         });
 
-        final var spi = cyclesByLabel.values().stream().map(c -> Cycle.create(Bytes.toArray(c)))
+        final var spi = cyclesByLabel.values().stream().map(c -> Cycle.create(Ints.toArray(c)))
                 .collect(Collectors.toCollection(MulticyclePermutation::new));
 
         return new Configuration(spi, pi);
@@ -288,7 +288,7 @@ public class Configuration {
         @Override
         public String toString() {
             return "[" + Floats.asList(content).stream()
-                    .map(f -> f % 1 == 0 ? Byte.toString((byte) Math.floor(f)) : Float.toString(f))
+                    .map(f -> f % 1 == 0 ? Integer.toString((int) Math.floor(f)) : Float.toString(f))
                     .collect(Collectors.joining(",")) + "]";
         }
     }

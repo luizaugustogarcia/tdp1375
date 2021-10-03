@@ -6,10 +6,10 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.proof.ProofGenerator;
 import br.unb.cic.tdp.util.Pair;
-import cern.colt.list.ByteArrayList;
+import cern.colt.list.IntArrayList;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import com.google.common.primitives.Bytes;
+import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
 
 import java.io.BufferedReader;
@@ -46,8 +46,8 @@ public abstract class BaseAlgorithm {
         return false;
     }
 
-    private boolean contains(final Set<Byte> muSymbols, final Cycle cycle) {
-        for (final Byte symbol : cycle.getSymbols())
+    private boolean contains(final Set<Integer> muSymbols, final Cycle cycle) {
+        for (final Integer symbol : cycle.getSymbols())
             if (muSymbols.contains(symbol))
                 return true;
         return false;
@@ -56,7 +56,7 @@ public abstract class BaseAlgorithm {
     protected List<Cycle> extend(final List<Cycle> bigGamma, final MulticyclePermutation spi, final Cycle pi) {
         final var piInverse = pi.getInverse().startingBy(pi.getMinSymbol());
 
-        final var bigGammaSymbols = new HashSet<Byte>();
+        final var bigGammaSymbols = new HashSet<Integer>();
         // O(1), since at this point, ||mu|| never exceeds 16
         for (Cycle cycle : bigGamma)
             for (int i = 0; i < cycle.getSymbols().length; i++) {
@@ -78,7 +78,7 @@ public abstract class BaseAlgorithm {
                     final var intersectingCycle = getIntersectingCycle(aPos, bPos, spiCycleIndex, piInverse);
                     if (intersectingCycle.isPresent()
                             && !contains(bigGammaSymbols, spiCycleIndex[intersectingCycle.get().get(0)])) {
-                        byte a = intersectingCycle.get().get(0), b = intersectingCycle.get().image(a),
+                        int a = intersectingCycle.get().get(0), b = intersectingCycle.get().image(a),
                                 c = intersectingCycle.get().image(b);
                         final var _bigGamma = new ArrayList<>(bigGamma);
                         _bigGamma.add(Cycle.create(a, b, c));
@@ -168,7 +168,7 @@ public abstract class BaseAlgorithm {
 
     protected Pair<Cycle, Cycle> apply2MoveTwoOddCycles(final MulticyclePermutation spi, final Cycle pi) {
         final var oddCycles = spi.stream().filter(c -> !c.isEven()).limit(2).collect(Collectors.toList());
-        byte a = oddCycles.get(0).get(0), b = oddCycles.get(0).get(1), c = oddCycles.get(1).get(0);
+        int a = oddCycles.get(0).get(0), b = oddCycles.get(0).get(1), c = oddCycles.get(1).get(0);
 
         final Cycle _2Move;
         if (areSymbolsInCyclicOrder(pi, a, b, c)) {
@@ -207,8 +207,8 @@ public abstract class BaseAlgorithm {
     }
 
     protected Optional<List<Cycle>> searchForSeq(final List<Cycle> mu, final Cycle pi) {
-        final var allSymbols = mu.stream().flatMap(c -> Bytes.asList(c.getSymbols()).stream()).collect(Collectors.toSet());
-        final var _pi = new ByteArrayList(allSymbols.size());
+        final var allSymbols = mu.stream().flatMap(c -> Ints.asList(c.getSymbols()).stream()).collect(Collectors.toSet());
+        final var _pi = new IntArrayList(allSymbols.size());
         for (final var symbol : pi.getSymbols()) {
             if (allSymbols.contains(symbol)) {
                 _pi.add(symbol);
