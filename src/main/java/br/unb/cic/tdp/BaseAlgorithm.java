@@ -40,10 +40,10 @@ public abstract class BaseAlgorithm {
         return (numberOfSymbols - numberOfEvenCycles) / 2;
     }
 
-    private boolean isOutOfInterval(final int x, final int left, final int right) {
-        if (left < right)
-            return x < left || x > right;
-        return false;
+    private boolean isOutOfInterval(final int pos, final int aPos, final int bPos) {
+        if (aPos < bPos)
+            return pos < aPos || pos > bPos;
+        return pos < aPos && pos > bPos;
     }
 
     private boolean contains(final Set<Integer> muSymbols, final Cycle cycle) {
