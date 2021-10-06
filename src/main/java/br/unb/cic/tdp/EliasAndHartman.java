@@ -121,7 +121,7 @@ public class EliasAndHartman extends BaseAlgorithm {
     @Override
     protected void load11_8Sortings(final Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings) {
         Files.lines(Paths.get(this.getClass().getClassLoader()
-                .getResource("known-sortings").toURI())).forEach(line -> {
+                .getResource("eh-sortings").toURI())).forEach(line -> {
             final var lineSplit = line.trim().split("->");
             if (lineSplit.length > 1) {
                 var permutation = lineSplit[0].split("#")[1];

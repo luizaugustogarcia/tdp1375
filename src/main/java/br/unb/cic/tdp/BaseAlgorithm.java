@@ -70,7 +70,7 @@ public abstract class BaseAlgorithm {
         // These two outer loops are O(1), since at this point, ||mu|| never
         // exceeds 16
         for (Cycle cycle : bigGamma) {
-            for (int i = 0; i < cycle.getSymbols().length; i++) {
+            for (int i = 0; i < cycle.size(); i++) {
                 // O(n)
                 if (isOpenGate(i, cycle, piInverse, bigGammaCycleIndex)) {
                     final var aPos = piInverse.indexOf(cycle.get(i));
@@ -92,7 +92,7 @@ public abstract class BaseAlgorithm {
         // O(n)
         if (!hasOpenGates(bigGamma, piInverse, bigGammaCycleIndex)) {
             for (Cycle cycle : bigGamma) {
-                for (int i = 0; i < cycle.getSymbols().length; i++) {
+                for (int i = 0; i < cycle.size(); i++) {
                     final var aPos = piInverse.indexOf(cycle.get(i));
                     final var bPos = piInverse.indexOf(cycle.image(cycle.get(i)));
                     for (int j = 1; j < (aPos < bPos ? bPos - aPos : piInverse.size() - (aPos - bPos)); j++) {
@@ -121,7 +121,7 @@ public abstract class BaseAlgorithm {
 
     private boolean hasOpenGates(List<Cycle> bigGamma, Cycle piInverse, Cycle[] bigGammaCycleIndex) {
         for (Cycle cycle : bigGamma) {
-            for (int i = 0; i < cycle.getSymbols().length; i++) {
+            for (int i = 0; i < cycle.size(); i++) {
                 final var aPos = piInverse.indexOf(cycle.get(i));
                 final var bPos = piInverse.indexOf(cycle.image(cycle.get(i)));
                 if (isOpenGate(i, cycle, piInverse, bigGammaCycleIndex)) {
@@ -216,9 +216,12 @@ public abstract class BaseAlgorithm {
         }
 
         final var config = new Configuration(new MulticyclePermutation(mu), Cycle.create(_pi));
-        if (sortings.containsKey(config.hashCode())) {
+
+        var sorting= sortings.get(config.hashCode());
+        if (sorting != null) {
             final var pair = sortings.get(config.hashCode()).stream()
                     .filter(p -> p.getFirst().equals(config)).findFirst().get();
+
             return Optional.of(config.translatedSorting(pair.getFirst(), pair.getSecond()));
         }
 

@@ -1,7 +1,6 @@
 package br.unb.cic.tdp.proof.seq11_8;
 
 import br.unb.cic.tdp.base.Configuration;
-import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import cern.colt.list.FloatArrayList;
 import com.google.common.primitives.Floats;
@@ -15,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 
@@ -35,23 +33,19 @@ public class Combinations {
     public static final Configuration[] BAD_SMALL_COMPONENTS = new Configuration[]{oriented5Cycle, interleavingPair,
             necklaceSize4, twistedNecklaceSize4, necklaceSize5, necklaceSize6};
 
-    public static void generate(final Pair<Map<Configuration, List<Cycle>>,
-            Map<Integer, List<Configuration>>> knownSortings, final boolean shouldAlsoUseBruteForce, final String outputDir) throws IOException {
+    public static void generate(final String outputDir) throws IOException {
 
         Files.createDirectories(Paths.get(outputDir + "/comb/"));
 
-        sortOrExtend(new Pair<>(null, oriented5Cycle), knownSortings, shouldAlsoUseBruteForce, outputDir);
-        sortOrExtend(new Pair<>(null, interleavingPair), knownSortings, shouldAlsoUseBruteForce, outputDir);
-        sortOrExtend(new Pair<>(null, necklaceSize4), knownSortings, shouldAlsoUseBruteForce, outputDir);
-        sortOrExtend(new Pair<>(null, twistedNecklaceSize4), knownSortings, shouldAlsoUseBruteForce, outputDir);
-        sortOrExtend(new Pair<>(null, necklaceSize5), knownSortings, shouldAlsoUseBruteForce, outputDir);
-        sortOrExtend(new Pair<>(null, necklaceSize6), knownSortings, shouldAlsoUseBruteForce, outputDir);
+        sortOrExtend(new Pair<>(null, oriented5Cycle), outputDir);
+        sortOrExtend(new Pair<>(null, interleavingPair), outputDir);
+        sortOrExtend(new Pair<>(null, necklaceSize4), outputDir);
+        sortOrExtend(new Pair<>(null, twistedNecklaceSize4), outputDir);
+        sortOrExtend(new Pair<>(null, necklaceSize5), outputDir);
+        sortOrExtend(new Pair<>(null, necklaceSize6), outputDir);
     }
 
     private static void sortOrExtend(final Pair<String, Configuration> config,
-                                     final Pair<Map<Configuration, List<Cycle>>,
-                                             Map<Integer, List<Configuration>>> knownSortings,
-                                     final boolean shouldAlsoUseBruteForce,
                                      final String outputDir) throws IOException {
         final var canonicalConfig = config.getSecond().getCanonical();
         final var file = new File(outputDir + "/comb/" + canonicalConfig.getSpi() + ".html");
@@ -59,7 +53,7 @@ public class Combinations {
             return;
         }
 
-        var sorting = searchForSorting(config.getSecond(), knownSortings, shouldAlsoUseBruteForce);
+        var sorting = searchForSorting(config.getSecond());
         if (sorting.isPresent()) {
             try (final var writer = new FileWriter(new File(outputDir + "/comb/" + canonicalConfig.getSpi() + ".html"))) {
                 renderSorting(canonicalConfig, canonicalConfig.translatedSorting(config.getSecond(), sorting.get()), writer);
@@ -120,7 +114,7 @@ public class Combinations {
             out.println("THE EXTENSIONS ARE:");
 
             for (final var extension : extend(canonicalConfig)) {
-                final var hasSorting = searchForSorting(extension.getSecond(), knownSortings, shouldAlsoUseBruteForce).isPresent();
+                final var hasSorting = searchForSorting(extension.getSecond()).isPresent();
                 out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
                         "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
                 out.println(extension.getFirst() + "<br>");
@@ -140,7 +134,7 @@ public class Combinations {
                         extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
                 out.println("</div>");
 
-                sortOrExtend(extension, knownSortings, shouldAlsoUseBruteForce, outputDir);
+                sortOrExtend(extension, outputDir);
             }
 
             out.println("</div></body></html>");

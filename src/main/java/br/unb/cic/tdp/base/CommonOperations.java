@@ -6,15 +6,8 @@ import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
 import cern.colt.list.FloatArrayList;
-import lombok.SneakyThrows;
-import org.paukov.combinatorics.Factory;
-import org.paukov.combinatorics.Generator;
-
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -83,7 +76,7 @@ public class CommonOperations implements Serializable {
     }
 
     private static int leftMostSymbol(Cycle bigCycle, Cycle pi) {
-        for (int i = 1; i < pi.getSymbols().length; i++)
+        for (int i = 1; i < pi.size(); i++)
             if (bigCycle.contains(pi.get(i)))
                 return pi.get(i);
         return -1;
@@ -152,7 +145,7 @@ public class CommonOperations implements Serializable {
 
         final Map<Cycle, Integer> result = new HashMap<>();
         for (final var cycle : bigGamma) {
-            for (var i = 0; i < cycle.getSymbols().length; i++) {
+            for (var i = 0; i < cycle.size(); i++) {
                 // O(n)
                 if (isOpenGate(i, cycle, piInverse, cycleIndex)) {
                     if (!result.containsKey(cycle))
@@ -292,10 +285,6 @@ public class CommonOperations implements Serializable {
                                 }))).filter(Objects::nonNull);
     }
 
-    public static <T> Generator<T> combinations(final Collection<T> collection, final int k) {
-        return Factory.createSimpleCombinationGenerator(Factory.createVector(collection), k);
-    }
-
     /**
      * Tells if a <code>cycle</code> is oriented or not having <code>pi</code> as reference.
      */
@@ -303,36 +292,65 @@ public class CommonOperations implements Serializable {
         return !areSymbolsInCyclicOrder(pi.getInverse(), cycle.getSymbols());
     }
 
-    @SneakyThrows
-    public static List<Cycle> searchFor11_8SeqParallel(final MulticyclePermutation spi, final Cycle pi) {
-        final var executorService = Executors.newFixedThreadPool(numberOfThreads);
-        final var completionService = new ExecutorCompletionService<List<Cycle>>(executorService);
-
-        final var submittedTasks = new ArrayList<Future<List<Cycle>>>();
-
-        generateAll0And2Moves(spi, pi).forEach(m -> {
-            final var move = m.getKey();
-            final var _partialSorting = new Stack<Cycle>();
-            _partialSorting.push(move);
-            submittedTasks.add(completionService.submit(() ->
-                    searchForSortingSeq(CommonOperations.applyTransposition(pi, move),
-                            PermutationGroups.computeProduct(spi, move.getInverse()), _partialSorting,
-                            spi.getNumberOfEvenCycles(), 1.375F)));
-        });
-
-        executorService.shutdown();
-
-        List<Cycle> sorting = Collections.emptyList();
-        for (int i = 0; i < submittedTasks.size(); i++) {
-            final var s = completionService.take();
-            if (s.get().size() > 0) {
-                sorting = s.get();
-                break;
+    public static List<Cycle> searchForSortingSeq(final MulticyclePermutation spi, final Cycle pi, final int[] sequence, final Stack<Cycle> moves) {
+        if (sequence[moves.size()] == 0) {
+            final var iterator = generateAll0And2Moves(spi, pi).filter(p -> sequence[moves.size()] == p.getSecond()).iterator();
+            while (iterator.hasNext()) {
+                final var pair = iterator.next();
+                final var move = pair.getFirst();
+                moves.push(move);
+                if (moves.size() == sequence.length) {
+                    return moves;
+                }
+                final var sorting = searchForSortingSeq(PermutationGroups.computeProduct(spi, move.getInverse()), applyTransposition(pi, move), sequence, moves);
+                if (!sorting.isEmpty()) {
+                    return moves;
+                }
+                moves.pop();
+            }
+        } else if (sequence[moves.size()] == 2){
+            for (final var move: generateAll2Moves(spi, pi)) {
+                moves.push(move);
+                if (moves.size() == sequence.length) {
+                    return moves;
+                }
+                final var sorting =
+                        searchForSortingSeq(PermutationGroups.computeProduct(spi, move.getInverse()),
+                                applyTransposition(pi, move), sequence, moves);
+                if (!sorting.isEmpty()) {
+                    return moves;
+                }
+                moves.pop();
             }
         }
 
-        executorService.shutdownNow();
+        return Collections.emptyList();
+    }
 
-        return sorting;
+    public static List<Cycle> generateAll2Moves(final List<Cycle> spi, final Cycle pi) {
+        final var _2moves = new ArrayList<Cycle>();
+
+        for (final var cycle : spi.stream().filter(c -> isOriented(pi, c))
+                .collect(Collectors.toList())) {
+            final var before = cycle.isEven() ? 1 : 0;
+            for (var i = 0; i < cycle.size() - 2; i++) {
+                for (var j = i + 1; j < cycle.size() - 1; j++) {
+                    for (var k = j + 1; k < cycle.size(); k++) {
+                        final var a = cycle.get(i);
+                        final var b = cycle.get(j);
+                        final var c = cycle.get(k);
+                        if (areSymbolsInCyclicOrder(pi, a, b, c)) {
+                            var after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
+                            after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
+                            after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
+                            if (after - before == 2)
+                                _2moves.add(Cycle.create(a, b, c));
+                        }
+                    }
+                }
+            }
+        }
+
+        return _2moves;
     }
 }

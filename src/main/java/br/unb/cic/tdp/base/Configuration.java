@@ -6,10 +6,14 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.ToString;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.zip.CRC32;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
@@ -261,6 +265,8 @@ public class Configuration {
         @Getter
         private final boolean mirror;
 
+        private Integer hashCode;
+
         public Signature(final Cycle pi, final float[] content, final boolean mirror) {
             this.pi = pi;
             this.content = content;
@@ -280,8 +286,20 @@ public class Configuration {
             return true;
         }
 
+        @SneakyThrows
         @Override
         public int hashCode() {
+           /* if (hashCode == null) {
+                final var bas = new ByteArrayOutputStream();
+                final var ds = new DataOutputStream(bas);
+                for (float f : content)
+                    ds.writeFloat(f);
+                byte[] bytes = bas.toByteArray();
+                final var crc32 = new CRC32();
+                crc32.update(bytes, 0, bytes.length);
+                hashCode = (int) crc32.getValue();
+            }
+            return hashCode;*/
             return Arrays.hashCode(content);
         }
 

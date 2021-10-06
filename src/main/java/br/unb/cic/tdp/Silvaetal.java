@@ -145,11 +145,11 @@ public class Silvaetal extends BaseAlgorithm {
             if (cycle.size() < cycleIndex[cycle.get(0)].size()) {
                 final var spiCycle = align(cycleIndex[cycle.get(0)], cycle);
                 cycle = cycle.startingBy(spiCycle.get(0));
-                final var newSymbols = Arrays.copyOf(cycle.getSymbols(), cycle.getSymbols().length + 2);
-                newSymbols[cycle.getSymbols().length] = spiCycle
-                        .image(cycle.get(cycle.getSymbols().length - 1));
-                newSymbols[cycle.getSymbols().length + 1] = spiCycle
-                        .image(newSymbols[cycle.getSymbols().length]);
+                final var newSymbols = Arrays.copyOf(cycle.getSymbols(), cycle.size() + 2);
+                newSymbols[cycle.size()] = spiCycle
+                        .image(cycle.get(cycle.size() - 1));
+                newSymbols[cycle.size() + 1] = spiCycle
+                        .image(newSymbols[cycle.size()]);
 
                 final List<Cycle> _bigGamma = new ArrayList<>(bigGamma);
                 _bigGamma.remove(cycle);
