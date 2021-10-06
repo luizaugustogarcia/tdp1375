@@ -57,7 +57,7 @@ public class Extensions {
             }
         }
 
-        var sorting = searchForSorting(config.getSecond());
+        var sorting = searchForSorting(config.getSecond(), false);
         if (sorting.isPresent()) {
             try (final var writer = new FileWriter((file))) {
                 renderSorting(canonicalConfig, canonicalConfig.translatedSorting(config.getSecond(), sorting.get()), writer);
@@ -119,7 +119,7 @@ public class Extensions {
 
             final Consumer<List<Pair<String, Configuration>>> extend = extensions -> {
                 for (final var extension : extensions) {
-                    final var hasSorting = searchForSorting(extension.getSecond()).isPresent();
+                    final var hasSorting = searchForSorting(extension.getSecond(), false).isPresent();
                     out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
                             "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
                     out.println(extension.getFirst() + "<br>");
@@ -177,12 +177,12 @@ public class Extensions {
     private static List<Pair<String, Configuration>> type1Extensions(final Configuration config) {
         final var result = new ArrayList<Pair<String, Configuration>>();
 
-        final var newCycleLabel = (int) (config.getSpi().size() + 1);
+        final var newCycleLabel = config.getSpi().size() + 1;
 
         final var signature = signature(config.getSpi(), config.getPi());
 
         for (int i = 0; i < signature.length; i++) {
-            if (isOpenGate(i, signature)) {
+            if (config.getOpenGates().contains(i)) {
                 final var a = i;
                 for (int b = 0; b < signature.length; b++) {
                     for (int c = b; c < signature.length; c++) {
@@ -260,7 +260,7 @@ public class Extensions {
                         final var extendedSignature = unorientedExtension(signature, (int) label, a, b).elements();
                         var extension = ofSignature(extendedSignature);
                         if (remainsUnoriented(indexesByLabel.get((int) label), a, b)) {
-                            if (extension.getNumberOfOpenGates() <= 2) {
+                            if (extension.getOpenGates().size() <= 2) {
                                 result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
                             }
                         } else if (_cyclesSizes.get((int) label) == 3) {

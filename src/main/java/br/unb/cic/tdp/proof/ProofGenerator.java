@@ -6,6 +6,7 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.seq11_8.Combinations;
 import br.unb.cic.tdp.proof.seq11_8.Extensions;
 import br.unb.cic.tdp.proof.seq11_8.OrientedCycleGreaterOrEquals7;
+import cern.colt.list.IntArrayList;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
@@ -15,7 +16,6 @@ import org.apache.velocity.app.Velocity;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -54,8 +54,8 @@ public class ProofGenerator {
         };
     }
 
-    // mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.proof.ProofGenerator" -Dexec.args=".\\proof\\ 8"
-    public static void main(String[] args) throws IOException, URISyntaxException {
+    // mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.proof.ProofGenerator" -Dexec.args=".\\proof\\"
+    public static void main(String[] args) throws Throwable {
         Velocity.setProperty("resource.loader", "class");
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
         Velocity.init();
@@ -71,18 +71,15 @@ public class ProofGenerator {
 
         OrientedCycleGreaterOrEquals7.generate(args[0]);
 
-        //final Map<String, String> env = new HashMap<>();
-        //final String[] fileUri = ProofGenerator.class.getClassLoader()
+        // final Map<String, String> env = new HashMap<>();
+        // final String[] fileUri = ProofGenerator.class.getClassLoader()
         //        .getResource("eh-sortings").toURI().toString().split("!");
         //final FileSystem fs = FileSystems.newFileSystem(URI.create(fileUri[0]), env);
         //final Path path = fs.getPath(fileUri[1]);
 
-        final Path path = Paths.get(ProofGenerator.class.getClassLoader()
-                .getResource("eh-sortings").toURI());
+        var path = Paths.get(ProofGenerator.class.getClassLoader()
+                .getResource("eh-sortings.txt").toURI());
         loadEhSortings(path);
-
-        if (args.length > 1)
-            numberOfThreads = Integer.parseInt(args[1]);
 
         Extensions.generate(args[0]);
         Combinations.generate(args[0]);
@@ -92,19 +89,26 @@ public class ProofGenerator {
         Files.lines(file).forEach(line -> {
             final var lineSplit = line.trim().split("->");
             if (lineSplit.length > 1) {
-                final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1]);
+                final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1].replace(" ", ","));
                 final var config = new Configuration(spi);
                 ehSortings.put(config.hashCode(),
-                        new Pair<>(config, Arrays.stream(lineSplit[1].split(";")).map(Cycle::create).collect(Collectors.toList())));
+                        new Pair<>(config, Arrays.stream(lineSplit[1].split(";"))
+                                .map(s -> s.replace(" ", ",")).map(Cycle::create).collect(Collectors.toList())));
             }
         });
     }
 
-    public static Optional<List<Cycle>> searchForSorting(final Configuration config) {
-        var pair = ehSortings.get(config.hashCode())
-                .stream().filter(p -> p.getFirst().equals(config)).findFirst();
-        if (pair.isPresent()) {
-            return Optional.of(config.translatedSorting(pair.get().getFirst(), pair.get().getSecond()));
+    public static Optional<List<Cycle>> searchForSorting(final Configuration config, final boolean searchSmallComponents) {
+        if (isSimple(config)) {
+            var pair = ehSortings.get(config.hashCode())
+                    .stream().filter(p -> p.getFirst().equals(config)).findFirst();
+            if (pair.isPresent()) {
+                return Optional.of(config.translatedSorting(pair.get().getFirst(), pair.get().getSecond()));
+            } else if (searchSmallComponents) {
+                return searchForSortingComponents(config);
+            } else {
+                return Optional.empty();
+            }
         }
 
         for (final var seq : _11_8seqs) {
@@ -120,6 +124,37 @@ public class ProofGenerator {
         }
 
         return Optional.empty();
+    }
+
+    private static Optional<List<Cycle>> searchForSortingComponents(final Configuration config) {
+        final var smallComponents = getComponents(config.getSpi(), config.getPi());
+        for (int i = 2; i <= smallComponents.size(); i++) {
+            for (final var components : combinations(smallComponents, i)) {
+                final var spi = new MulticyclePermutation(components.getVector().stream().flatMap(c -> c.stream()).collect(Collectors.toList()));
+                final var subConfig = new Configuration(spi, removeExtraSymbols(spi.getSymbols(), config.getPi()));
+                var pair = ehSortings.get(subConfig.hashCode())
+                        .stream().filter(p -> p.getFirst().equals(subConfig)).findFirst();
+                if (pair.isPresent()) {
+                    final var sorting = subConfig.translatedSorting(pair.get().getFirst(), pair.get().getSecond());
+                    return Optional.of(sorting);
+                }
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    public static Cycle removeExtraSymbols(final Set<Integer> symbols, final Cycle pi) {
+        final var newPi = new IntArrayList(symbols.size());
+        for (final var symbol: pi.getSymbols()) {
+            if (symbols.contains(symbol))
+                newPi.add(symbol);
+        }
+        return Cycle.create(newPi);
+    }
+
+    private static boolean isSimple(final Configuration config) {
+        return config.getSpi().stream().allMatch(c -> c.size() == 3);
     }
 
     public static String permutationToJsArray(final MulticyclePermutation permutation) {

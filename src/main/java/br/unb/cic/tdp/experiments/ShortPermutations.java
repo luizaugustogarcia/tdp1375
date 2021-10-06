@@ -1,34 +1,43 @@
 package br.unb.cic.tdp.experiments;
 
+import br.unb.cic.tdp.BaseAlgorithm;
 import br.unb.cic.tdp.EliasAndHartman;
 import br.unb.cic.tdp.Silvaetal;
 import br.unb.cic.tdp.permutation.Cycle;
+import lombok.SneakyThrows;
 import org.apache.commons.lang.time.StopWatch;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ShortPermutations {
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        final var algorithm = new EliasAndHartman();
+        System.out.println("= EH =");
+        audit(args[0], new EliasAndHartman());
+        System.out.println("= Silva et al. =");
+        audit(args[0],new Silvaetal());
+    }
 
+    @SneakyThrows
+    static void audit(final String exactDistancesRoot, final BaseAlgorithm algorithm) {
         for (int i = 2; i <= 12; i++) {
-            final var pool = new ThreadPoolExecutor(8, 8,
-                    0L, TimeUnit.MILLISECONDS,
-                    new LinkedBlockingQueue<>(100));
+            final var pool = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(),
+                    Runtime.getRuntime().availableProcessors(), 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(100));
             pool.setRejectedExecutionHandler(new BlockPolicy());
 
-
-            try (final var br = new BufferedReader(new FileReader("C:\\Users\\Luiz Silva\\Temp\\distances\\exact" + i + ".txt"))) {
-                final double[] maxRatio = {0};
+            try (final var br = new BufferedReader(new FileReader(exactDistancesRoot + "exact" + i + ".txt"), 1024 * 1024 * 10)) {
+                final float[] maxRatio = {0};
                 final var lock = new Lock();
-                final double[] sumRatios = {0};
-                final int[] wrongAnswers = {0};
+                final BigDecimal[] sumRatios = {BigDecimal.ZERO};
+                final long[] wrongAnswers = {0};
+                final int[] total1_5 = {0};
 
+                final long[] sumDistance = {0};
                 final var stopWatch = new StopWatch();
                 stopWatch.start();
 
@@ -41,17 +50,27 @@ public class ShortPermutations {
                             final var exact = Integer.parseInt(split[1]);
 
                             final var sorting = algorithm.sort(pi);
-                            final var ratio = sorting.size() / (double) exact;
+
+                            final Float ratio = sorting.getSecond().size() / (float) exact;
+                            if (ratio < 1)
+                                throw new RuntimeException();
 
                             try {
                                 lock.lock();
-                                sumRatios[0] += ratio;
+
+                                sumDistance[0] += sorting.getSecond().size();
+
+                                sumRatios[0] = sumRatios[0].add(new BigDecimal(ratio));
 
                                 if (ratio > maxRatio[0]) {
                                     maxRatio[0] = ratio;
                                 }
 
-                                if (sorting.size() != exact) {
+                                if (ratio == 1.5f) {
+                                    total1_5[0]++;
+                                }
+
+                                if (sorting.getSecond().size() != exact) {
                                     wrongAnswers[0]++;
                                 }
                             } finally {
@@ -66,7 +85,13 @@ public class ShortPermutations {
 
                 stopWatch.stop();
 
-                System.out.println(i + "," + maxRatio[0] + "," + sumRatios[0] / (factorial(i) - 1) + "," + ((factorial(i) - wrongAnswers[0]) / (double)factorial(i)) * 100 + "," + stopWatch.getTime());
+                System.out.println(i + ","
+                        + maxRatio[0] + ","
+                        + sumRatios[0].floatValue() / (factorial(i) - 1) + ","
+                        + ((factorial(i) - wrongAnswers[0]) / (float)factorial(i)) * 100 + ","
+                        + total1_5[0] + ","
+                        + sumDistance[0] / (float)(factorial(i) - 1) + ","
+                        + stopWatch.getTime());
             }
         }
     }
@@ -75,16 +100,16 @@ public class ShortPermutations {
         if (n == 0)
             return 1;
         else
-            return(n * factorial(n-1));
+            return(n * factorial(n - 1));
     }
 
     public static class BlockPolicy implements RejectedExecutionHandler {
 
         public BlockPolicy() { }
 
-        public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+        public void rejectedExecution(final Runnable r, final ThreadPoolExecutor executor) {
             try {
-                executor.getQueue().put( r );
+                executor.getQueue().put(r);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

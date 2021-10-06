@@ -3,6 +3,7 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Pair;
 import com.google.common.collect.Multimap;
 import lombok.SneakyThrows;
@@ -19,10 +20,11 @@ import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 public class EliasAndHartman extends BaseAlgorithm {
 
     @SuppressWarnings({"unchecked"})
-    public List<Cycle> sort(Cycle pi) {
+    public Pair<Cycle, List<Cycle>> sort(Cycle pi) {
         final var sorting = new ArrayList<Cycle>();
 
-        pi = simplify(pi);
+        final var simplification = simplify(pi);
+        pi = simplification;
 
         final var n = pi.size();
 
@@ -48,33 +50,33 @@ public class EliasAndHartman extends BaseAlgorithm {
             spi = computeProduct(true, sigma, pi.getInverse());
         }
 
-        final List<Cycle> bigLambda = new ArrayList<>(); // bad small components
+        final List<List<Cycle>> badSmallComponents = new ArrayList<>();
 
-        List<Cycle> bigTheta; // unmarked cycles
-        while (!(bigTheta = ListUtils.subtract(spi.stream().filter(c -> c.size() > 1).collect(Collectors.toList()), bigLambda)).isEmpty()) {
-            final var _2move = searchFor2MoveFromOrientedCycle(bigTheta, pi);
+        final var nonBadSmallComponents = new HashSet<>(spi.getNonTrivialCycles());
+        while (!nonBadSmallComponents.isEmpty()) {
+            final var _2move = searchFor2MoveFromOrientedCycle(nonBadSmallComponents, pi);
             if (_2move.isPresent()) {
                 pi = computeProduct(_2move.get(), pi).asNCycle();
                 spi = computeProduct(true, sigma, pi.getInverse());
                 sorting.add(_2move.get());
             } else {
-                List<Cycle> bigGamma = new ArrayList<>();
-                final var gamma = bigTheta.stream().filter(c -> c.size() > 1).findFirst().get();
-                bigGamma.add(Cycle.create(gamma.get(0), gamma.get(1), gamma.get(2)));
+                List<Cycle> component = new ArrayList<>();
+                final var gamma = nonBadSmallComponents.stream().filter(c -> c.size() > 1).findFirst().get();
+                component.add(Cycle.create(gamma.get(0), gamma.get(1), gamma.get(2)));
 
                 var badSmallComponent = false;
 
                 for (var i = 0; i < 8; i++) {
-                    final var norm = get3Norm(bigGamma);
+                    final var norm = get3Norm(component);
 
-                    bigGamma = extend(bigGamma, spi, pi);
+                    component = ehExtend(component, spi, pi);
 
-                    if (norm == get3Norm(bigGamma)) {
+                    if (norm == get3Norm(component)) {
                         badSmallComponent = true;
                         break;
                     }
 
-                    final var seq = searchForSeq(bigGamma, pi);
+                    final var seq = searchFor11_8_Seq(component, pi);
                     if (seq.isPresent()) {
                         for (final var move : seq.get())
                             pi = computeProduct(move, pi).asNCycle();
@@ -85,19 +87,25 @@ public class EliasAndHartman extends BaseAlgorithm {
                 }
 
                 if (badSmallComponent) {
-                    bigLambda.addAll(bigGamma);
+                    badSmallComponents.add(component);
                 }
             }
 
-            if (get3Norm(bigLambda) >= 8) {
-                final var _11_8Seq = searchForSeq(bigLambda, pi);
+            final var badSmallComponentsCycles = badSmallComponents.stream().flatMap(c -> c.stream()).collect(Collectors.toList());
+
+            if (get3Norm(badSmallComponentsCycles) >= 8) {
+                final var _11_8Seq = searchForSeqBadSmallComponents(badSmallComponentsCycles, pi);
                 for (final var move : _11_8Seq.get()) {
                     pi = computeProduct(move, pi).asNCycle();
                 }
                 spi = computeProduct(true, sigma, pi.getInverse());
                 sorting.addAll(_11_8Seq.get());
-                bigLambda.clear();
+                badSmallComponents.clear();
             }
+
+            nonBadSmallComponents.clear();
+            nonBadSmallComponents.addAll(spi.getNonTrivialCycles());
+            nonBadSmallComponents.removeAll(badSmallComponentsCycles);
         }
 
         // At this point 3-norm of spi is less than 8
@@ -114,14 +122,14 @@ public class EliasAndHartman extends BaseAlgorithm {
             spi = computeProduct(true, sigma, pi.getInverse());
         }
 
-        return sorting;
+        return new Pair<>(simplification, sorting);
     }
 
     @SneakyThrows
     @Override
     protected void load11_8Sortings(final Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings) {
         Files.lines(Paths.get(this.getClass().getClassLoader()
-                .getResource("eh-sortings").toURI())).forEach(line -> {
+                .getResource("eh-sortings.txt").toURI())).forEach(line -> {
             final var lineSplit = line.trim().split("->");
             if (lineSplit.length > 1) {
                 var permutation = lineSplit[0].split("#")[1];
@@ -131,5 +139,40 @@ public class EliasAndHartman extends BaseAlgorithm {
                         new Pair<>(config, Arrays.stream(lineSplit[1].split(";")).map(s -> Cycle.create(s)).collect(Collectors.toList())));
             }
         });
+    }
+
+    public static void main(String[] args) {
+        System.out.println("Loading cases into memory...");
+        final var eh = new EliasAndHartman();
+        System.out.println("Finished loading...");
+        var pi = Cycle.create(args[0]);
+        final var sorting = eh.sort(pi);
+        System.out.println(pi);
+        for (Cycle move : sorting.getSecond()) {
+            final var i = pi.indexOf(move.get(0));
+            final var j = pi.indexOf(move.get(1));
+            final var k = pi.indexOf(move.get(2));
+
+            final var a = new int[]{(i == 0 ? pi.size() : i),
+                                    (j == 0 ? pi.size() : j),
+                                    (k == 0 ? pi.size() : k)};
+            Arrays.sort(a);
+
+            final var pi_ = Arrays.stream(pi.getSymbols())
+                    .filter(c -> c > 0)
+                    .mapToObj(Integer::toString)
+                    .collect(Collectors.joining("\\;"));
+
+            System.out.print("$\\rho(" + a[0] + "," + a[1] + "," + a[2] + ")\\cdot[" + pi_ + "]=[");
+
+            pi = PermutationGroups.computeProduct(move, pi).asNCycle();
+
+            final var pi__ = Arrays.stream(pi.getSymbols())
+                    .filter(c -> c > 0)
+                    .mapToObj(Integer::toString)
+                    .collect(Collectors.joining("\\;"));
+
+            System.out.println(pi__ + "]$\\\\");
+        }
     }
 }

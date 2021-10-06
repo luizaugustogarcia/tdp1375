@@ -7,14 +7,15 @@ import com.google.common.primitives.Ints;
 import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 
 public class Oriented5Cycle {
+
+    public static void main(String[] args) {
+        generate().forEach(p -> System.out.println(p.getFirst().toString() + "," + p.getSecond().toString()));
+    }
 
     /**
      * Generate (3,2)-sequences to apply when there is a cycle in \spi with length
@@ -43,6 +44,8 @@ public class Oriented5Cycle {
                         final var moves = searchForSortingSeq(pi, spi, new Stack<>(), 1, 1.5F);
                         assert !moves.isEmpty() : "ERROR";
                         result.add(new Pair<>(config, moves));
+                    } else {
+                        result.add(new Pair<>(config, Arrays.asList(_2Move.get())));
                     }
                 }
             }
