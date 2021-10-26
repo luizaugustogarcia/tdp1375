@@ -4,9 +4,7 @@ import cern.colt.list.IntArrayList;
 import com.google.common.primitives.Ints;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class MulticyclePermutation extends ArrayList<Cycle> implements Permutation {
@@ -51,10 +49,6 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
         return StringUtils.join(this, "");
     }
 
-    public int getNorm() {
-        return this.stream().mapToInt(Cycle::getNorm).sum();
-    }
-
     @Override
     public MulticyclePermutation getInverse() {
         final var permutation = new MulticyclePermutation();
@@ -84,11 +78,15 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
         return this.stream().mapToInt(Cycle::size).sum();
     }
 
-    public List<Integer> getSymbols() {
-        return this.stream().flatMap(cycle -> Ints.asList(cycle.getSymbols()).stream()).collect(Collectors.toList());
+    public Set<Integer> getSymbols() {
+        return this.stream().flatMap(cycle -> Ints.asList(cycle.getSymbols()).stream()).collect(Collectors.toSet());
     }
 
     public int get3Norm() {
         return (this.getNumberOfSymbols() - getNumberOfEvenCycles()) / 2;
+    }
+
+    public List<Cycle> getNonTrivialCycles() {
+        return this.stream().filter(c -> c.size() > 1).collect(Collectors.toList());
     }
 }

@@ -35,8 +35,8 @@ public class Cases3_2 {
         for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
             final var pi = Cycle.create(Ints.toArray(permutation.getVector()));
             if (spi.stream().noneMatch(cycle -> isOriented(pi, cycle))) {
-                final var openGates = openGatesPerCycle(spi, pi.getInverse());
-                if (openGates.values().stream().mapToInt(j -> j).sum() <= 2) {
+                final var openGates = getOpenGates(spi, pi);
+                if (openGates.size() <= 2) {
                     final var moves = searchForSortingSeq(pi, spi, new Stack<>(), 3, 1.5F);
 
                     final var configuration = new Configuration(spi, pi);

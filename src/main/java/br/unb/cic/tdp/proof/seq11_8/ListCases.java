@@ -10,10 +10,10 @@ import java.util.ArrayList;
 
 public class ListCases {
 
-//    public static void main(String[] args) throws IOException {
-//        list("/home/luiz/Temp/tdp1375/dfs/", "/home/luiz/Projects/tdp1375/src/main/resources/cases/cases-dfs.txt");
-//        list("/home/luiz/Temp/tdp1375/comb/", "/home/luiz/Projects/tdp1375/src/main/resources/cases/cases-comb.txt");
-//    }
+    public static void main(String[] args) throws IOException {
+        list("C:\\Users\\Luiz Silva\\Temp\\proof\\dfs\\", "C:\\Users\\Luiz Silva\\Projects\\tdp1375\\src\\main\\resources\\cases\\cases-dfs.txt");
+        list("C:\\Users\\Luiz Silva\\Temp\\proof\\comb\\", "C:\\Users\\Luiz Silva\\Projects\\tdp1375\\src\\main\\resources\\cases\\cases-comb.txt");
+    }
 
     public static void list(final String inputDir, final String outputFile) throws IOException {
         try (final var writer = new PrintWriter(outputFile)) {

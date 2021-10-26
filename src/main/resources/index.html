@@ -15,8 +15,8 @@
 \(
 \newcommand\norm[1]{\lvert\lvert#1\rvert\rvert}
 \newcommand\epi{\bar{\pi}}
-\newcommand\esigma{\bar{\sigma}}
-\newcommand\spi{{\esigma}{\epi}^{-1}}
+\newcommand\eiota{\bar{\iota}}
+\newcommand\spi{{\eiota}{\epi}^{-1}}
 \)
 <table border=0 cellspacing=0 cellpadding=5 width="60%">
     <tr>
@@ -37,28 +37,28 @@
 
             <h2>Main results</h2>
 
-            <h3>Lemma 1: If it is possible to build a sufficient configuration $\Gamma$ of $\spi$ such that $\Gamma$ is big, then $\Gamma$ allows an $\frac{11}{8}$-sequence.</h3>
+            <h3>Lemma 31: If it is possible to build a sufficient configuration $\Gamma$ of $\spi$ such that $\Gamma$ is big, then $\Gamma$ allows an $\frac{11}{8}$-sequence.</h3>
 
-            <h3>Lemma 2: The bad small components are:</h3>
+            <h3>Lemma 32: The bad small components are:</h3>
             <ol>
                 <li><a href="dfs/(0 3 1 4 2).html">the bad oriented $5$-cycle</a></li>
                 <li><a href="dfs/(0 4 2)(1 5 3).html">the unoriented interleaving pair</a></li>
-                <li><a href="dfs/(0 10 2)(1 5 3)(4 8 6)(7 11 9).html">the unoriented necklace of size $4$</a></li>
-                <li><a href="dfs/(0 10 5)(1 11 3)(2 9 7)(4 8 6).html">the twisted necklace of size $4$</a></li>
-                <li><a href="dfs/(0 13 2)(1 5 3)(4 8 6)(7 11 9)(10 14 12).html">the unoriented necklace of size $5$</a></li>
-                <li><a href="dfs/(0 16 14)(1 17 3)(2 6 4)(5 9 7)(8 12 10)(11 15 13).html">the unoriented necklace of size $6$</a></li>
+                <li><a href="dfs/(0 4 2)(1 11 9)(3 7 5)(6 10 8).html">the unoriented necklace of size $4$</a></li>
+                <li><a href="dfs/(0 7 5)(1 11 9)(2 6 4)(3 10 8).html">the twisted necklace of size $4$</a></li>
+                <li><a href="dfs/(0 13 11)(1 14 3)(2 6 4)(5 9 7)(8 12 10).html">the unoriented necklace of size $5$</a></li>
+                <li><a href="dfs/(0 4 2)(1 17 15)(3 7 5)(6 10 8)(9 13 11)(12 16 14).html">the unoriented necklace of size $6$</a></li>
             </ol>
 
             The demonstration of the previous results employs a case analysis performed using  a Depth First Search (DFS), in which, the configurations, starting from the ones listed below, are systematically extended until $\frac{11}{8}$-sequences are found:
             <ol>
                 <li><a href="dfs/(0 3 1 4 2).html">the bad oriented $5$-cycle</a></li>
                 <li><a href="dfs/(0 4 2)(1 5 3).html">the unoriented interleaving pair</a></li>
-                <li><a href="dfs/(0 5 2)(1 4 3).html">the unoriented intersecting pair</a></li>
+                <li><a href="dfs/(0 4 1)(2 5 3).html">the unoriented intersecting pair</a></li>
             </ol>
             No configuration with $3$-norm equals to $10$ was reached during the search.
-            The search found the full configuration <a href="dfs/(0 5 2)(1 10 3)(4 9 7)(6 11 8).html">(0 5 2)(1 10 3)(4 9 7)(6 11 8)</a> which does not allow a $\frac{11}{8}$-sequence. However, note that this configuration is invalid, since in this case, $\spi\epi=\esigma=(0\;5\;2)(1\;10\;3)(4\;9\;7)(6\;11\;8)(0\;1\;2\;3\;4\;5\;6\;7\;8\;9\;10\;11)=(0\;10\;8\;7\;6\;4\;2\;1)(3\;9)(5\;11)$, and thus $\esigma$ is not a $(n+1)$-cycle (see Proposition 4). 
-            
-            <h3>Lemma 3: If $\spi$ consists only of bad small components and $\norm{\spi}_3 \geq 8$, then a $\frac{11}{8}$-sequence of transpositions exists.</h3>
+            The search found the full configuration <a href="dfs/(0 9 2)(1 11 4)(3 8 6)(5 10 7).html">(0 9 2)(1 11 4)(3 8 6)(5 10 7)</a> which does not allow a $\frac{11}{8}$-sequence. However, note that this configuration is invalid, since in this case, $\spi\epi=\eiota=(0\;5\;2)(1\;10\;3)(4\;9\;7)(6\;11\;8)(0\;1\;2\;3\;4\;5\;6\;7\;8\;9\;10\;11)=(0\;10\;8\;7\;6\;4\;2\;1)(3\;9)(5\;11)$, and thus $\eiota$ is not a $(n+1)$-cycle (see Proposition 38 in this page).
+
+            <h3>Lemma 33: If there is a configuration $\Lambda$ of $\spi$ consisting only of bad small components such that $\norm{\Lambda}_3 \geq 8$, then $\Lambda$ allows a $\frac{11}{8}$-sequence.</h3>
 
             In order to demonstrate this result, we also employ an approach similar to a DFS search, in which, starting from the bad small component listed above, we extend the configurations by adding another bad small component in a different position of $\epi$, until $\frac{11}{8}$-sequences are found. We note that by this approach no combination of bad small components with $3$-norm greater than 7 was extended. Below, the result of the search:
 
@@ -66,44 +66,47 @@
                 <li><a href="comb/(0 3 1 4 2).html">the bad oriented $5$-cycle</a></li>
                 <li><a href="comb/(0 4 2)(1 5 3).html">the unoriented interleaving pair</a></li>
                 <li><a href="comb/(0 10 2)(1 5 3)(4 8 6)(7 11 9).html">the unoriented necklace of size $4$</a></li>
-                <li><a href="comb/(0 10 5)(1 11 3)(2 9 7)(4 8 6).html">the twisted necklace of size $4$</a></li>
-                <li><a href="comb/(0 13 2)(1 5 3)(4 8 6)(7 11 9)(10 14 12).html">the unoriented necklace of size $5$</a></li>
-                <li><a href="comb/(0 16 14)(1 17 3)(2 6 4)(5 9 7)(8 12 10)(11 15 13).html">the unoriented necklace of size $6$</a></li>
+                <li><a href="comb/(0 7 5)(1 11 9)(2 6 4)(3 10 8).html">the twisted necklace of size $4$</a></li>
+                <li><a href="comb/(0 4 2)(1 14 12)(3 7 5)(6 10 8)(9 13 11).html">the unoriented necklace of size $5$</a></li>
+                <li><a href="comb/(0 16 2)(1 5 3)(4 8 6)(7 11 9)(10 14 12)(13 17 15).html">the unoriented necklace of size $6$</a></li>
             </ol>
             <hr>
 
             <h2>Auxiliary results</h2>
-            
-            <h3>Proposition 4: If $\Gamma$ is a component of $\spi$, then the product $\Gamma\epi$ is a $(n+1)$-cycle.</h3>
-            Proof. Suppose that $\spi=\Sigma\Gamma$. We have two cases:
+
+            <h3>Proposition 16: The permutation $\spi$ is an even permutation.</h3>
+
+            <h3>Proposition 25: If there is an oriented $3$-cycle $\gamma=(a\;b\;c)$ in $\spi$, then a $2$-move exists.</h3>
+            Proof. In this case, $(a\;b\;c)$ is a $2$-move.
+
+            <h3>Proposition 26: If there is an odd (even-length) cycle in $\spi$, then a $2$-move exists.</h3>
+            Proof. Since $\spi$ is an even permutation (Proposition 14), then there is an even number of odd cycles in $\spi$. Let $\gamma=(a\;b\dots)$ and $\delta=(c\;d\dots)$ be two odd cycles of $\spi$. We have two cases:
             <br>
-	        (1) $\Sigma=\iota$. Then $\Gamma=\spi$ and $\spi\epi=\sigma$. As $\sigma$ is a $(n+1)$-cycle, the proposition holds.<br>
-	        (2) $\Sigma\neq\iota$ and $Supp(\Gamma)\cap Supp(\Sigma)=\emptyset$. As the cycles of $\Gamma$ do not intersect or interleave any cycle of $\Sigma$, then w.l.o.g assume $\epi=(\gamma_1\;\gamma_2\dots\gamma_r\;a\dots)$ and $Supp(\Gamma)=\{\gamma_1,\gamma_2,\dots,\gamma_r\}$, where $a \in Supp(\Sigma)$. Suppose, by contradiction, that $\Gamma\epi$ is not a $(n+1)$-cycle. In this case, $\Gamma\epi$ is a product of disjoint cycles containing a cycle $(\gamma_r\;a\dots)$ and this is the only cycle of $\Gamma\epi$ containing symbols of $Supp(\Sigma)$. However, this implies that $\Sigma\Gamma\epi=\spi\epi=\sigma$ is not a $(n+1)$-cycle, which is impossible.
-            
-            <h3>Lemma 5: If there is a $5$-cycle $\gamma=(a\;d\;b\;e\;c)$ in $\spi$ such that $(a,b,c)$ is an oriented triplet, then there is a $2$-move or a $(3,2)$-sequence.</h3>
+            (1) $\gamma$ and $\delta$ intersect. In this case, we have that $\epi^{-1}=(a\dots d\dots b\dots c\dots)$. Then $(a\;b\;c)$ is a $2$-move.<br>
+            (2) $\gamma$ and $\delta$ do not intersect. W.l.o.g, suppose $\epi^{-1}=(a\dots b\dots c\dots d\dots)$. In this case, $(a\;c\;b)$ is a $2$-move. Note that $\epi^{-1}=(a\dots c\dots d\dots b\dots)$ is not a distinct case, being equivalent to a cyclic rotation of $(a\dots b\dots c\dots d\dots)$ with the symbols $a$ and $b$ chosen differently.
+
+            <h3>Lemma 27: If there is a $5$-cycle $\gamma=(a\;d\;b\;e\;c)$ in $\spi$ such that $(a,b,c)$ is an oriented triplet, then there is a $2$-move or a $(3,2)$-sequence.</h3>
             Proof. The possible forms of $\epi$ relatively to the positions of the symbols of $Supp(\gamma)$ are listed below. For each one, there is either a $2$-move or a $(3,2)$-sequence.
             <br>
-            (1) $\epi=(a\dots b\dots c\dots d\dots e\dots)$. $\tau_1=(a\;b\;e)$, $\tau_2=(a\;b\;c)$, $\tau_3=(b\;c\;d)$.<br>
-            (2) $\epi=(a\dots b\dots d\dots c\dots e\dots)$. $\tau_1=(a\;d\;c)$.<br>
-            (3) $\epi=(a\dots d\dots b\dots c\dots e\dots)$. $\tau_1=(a\;d\;b)$.<br>
-            (4) $\epi=(a\dots d\dots b\dots e\dots c\dots)$. $\tau_1=(a\;d\;b)$.<br>
-            (5) $\epi=(a\dots e\dots d\dots b\dots c\dots)$. $\tau_1=(a\;d\;b)$.<br>
-            (6) $\epi=(a\dots e\dots b\dots d\dots c\dots)$. $\tau_1=(a\;d\;c)$.
+            (1) $\epi=(a\dots b\dots c\dots d\dots e\dots)$. $\tau_1=(a\;b\;c)$, $\tau_2=(b\;c\;d)$, $\tau_3=(c\;d\;e)$.<br>
+            (2) $\epi=(a\dots b\dots c\dots e\dots d\dots)$. $\tau_1=(b\;e\;d)$.<br>
+            (3) $\epi=(a\dots b\dots e\dots c\dots d\dots)$. $\tau_1=(a\;e\;c)$.<br>
+            (4) $\epi=(a\dots e\dots b\dots d\dots c\dots)$. $\tau_1=(a\;d\;c)$.<br>
+            (5) $\epi=(a\dots b\dots e\dots d\dots c\dots)$. $\tau_1=(a\;d\;c)$.<br>
+            (6) $\epi=(a\dots d\dots b\dots e\dots c\dots)$. $\tau_1=(a\;d\;b)$.
 
-            <h3>Lemma 6: If there is an even (odd-length) $k$-cycle $\gamma=(a\dots b\dots c\dots)$ in $\spi$ such that $k\geq 7$ and $(a,b,c)$ is an oriented triple, then there is a $\frac{4}{3}$-sequence.</h3>
+            <h3>Lemma 28: If there is an even (odd-length) $\kappa$-cycle $\gamma=(a\dots b\dots c\dots)$ in $\spi$ such that $\kappa\geq 7$ and $(a,b,c)$ is an oriented triplet, then there is either a $2$-move or $(4,3)$-sequence.</h3>
 
-            Proof. If $(a\;b\;c)$ is a $2$-move, then the lemma holds since a $2$-move is a $(1,1)$-sequence, which in turn is $\frac{4}{3}$-sequence. Thus, w.l.o.g, suppose
+            Proof. If $(a\;b\;c)$ is a $2$-move, then the lemma holds. There is only one case where $(a\;b\;c)$ would not be a $2$-move. W.l.o.g, suppose that this case is
             \[\gamma=(\underbrace{d\;e\dots b}_{odd}\;|\;\underbrace{f\dots c}_{even}\;|\;\underbrace{g\dots a}_{even}\;|).\]
             Vertical bars are used to indicate the positions in $\gamma$ that would be affected by the application of $(a\;b\;c)$ (breaking $\gamma$ into $3$ smaller cycles), and subscripts to indicate the length parity of the resulting cycles. Note that the cycle $\gamma$ can be rewritten as the product
             \[\gamma=(\underbrace{a\dots}_{odd})(\underbrace{b\dots}_{odd})(\underbrace{c\dots}_{odd})(a\;d\;e\;b\;f\;c\;g).\]
             For each of the $71$ distinct possible forms of $\epi$, related to the symbols of the support of $(a\;d\;e\;b\;f\;c\;g)$, there is a $\frac{4}{3}$-sequence of transpositions. The case analysis can be visualised <a href="oriented-7-cycle/index.html">here</a>. For this consider $a=0$, $b=1$, $c=2$, $d=3$, $e=4$, $f=5$ and $g=6$.
 
-            <h3>Lemma 7: If $\spi\neq\iota$, then there is a $\frac{3}{2}$-sequence.</h3>
+            <h3>Lemma 29: If $\spi\neq\iota$, then a $2$-move or $(3,2)$-sequence exists.</h3>
+            Proof. If there is an odd (even-length) cycle in $\spi$, then by Proposition 24, a $2$-move (i.e., a $(1,1)$-sequence) exists. Thus, we assume $\spi$ containing only even (odd-length) cycles.
 
-            Proof. If there is an odd (even-length) cycle in $\spi$, then a $2$-move (i.e. a $(1,1)$-sequence) exists. Thus, consider $\spi$ containing only even (odd-length) cycles.
-
-            <p>(1) There is an oriented $\kappa$-cycle $\gamma$ in $\spi$. If $\kappa=3$, then there is a $2$-move and the lemma holds. If $\kappa = 5$, then Lemma 4 gives a $2$-move or a $(3,2)$-sequence. On the other hand, if $\kappa \geq 7$, then a $2$-move or a $(4,3)$-sequence, which contains a $(3,2)$-sequence, is given by Lemma 5.
-                <br>
+            <p>(1) There is an oriented $\kappa$-cycle $\gamma$ in $\spi$. If $\kappa=3$, then Proposition 23 gives a $2$-move and the lemma holds. If $\kappa=5$, then Lemma 25 gives a $2$-move or $\gamma$ is the bad oriented $5$-cycle. In this case, there is a $(3,2)$-sequence. On the other hand, if $\kappa \geq 7$, then a $2$-move or a $(4,3)$-sequence, which contains a $(3,2)$-sequence, is given by Lemma 26.<br>
                 (2) All the cycles of $\spi$ are unoriented. Let $\gamma=(a\;b\;c)$ be a segment of a cycle of $\spi$. We have two subcases:<br>
                 &nbsp;&nbsp;(2.a) $\gamma$ interleaves with another segment $\delta=(d\;e\;f)$. In this case, $\epi=(a\dots f\dots c\dots e\dots b\dots d\dots )$. Then, $\tau_1=(a\;c\;b)$, $\tau_2=(d\;e\;f)$ and $\tau_3=(a\;c\;b)$ is a $(3,2)$-sequence.<br>
                 &nbsp;&nbsp;(2.b) $\gamma$ intersects with two segments $\delta=(d\;e\;f)$ and $\epsilon=(g\;h\;i)$. For each of the $15$ distinct forms of $\epi$ below, relatively to the possible positions of the symbols of $\gamma$, $\delta$ and $\epsilon$, there is a $(3,2)$-sequence.<br>
@@ -122,6 +125,13 @@
                 &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xiii) $\epi=(a\dots c\dots i\dots h\dots f\dots b\dots e\dots g\dots d\dots )$. $\tau_1=(a\;i\;g)$, $\tau_2=(b\;c\;i)$, $\tau_3=(d\;e\;f)$<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xiv) $\epi=(a\dots h\dots c\dots f\dots b\dots e\dots g\dots d\dots i\dots )$. $\tau_1=(d\;i\;f)$, $\tau_2=(f\;g\;h)$, $\tau_3=(a\;b\;c)$<br>
                 &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xv) $\epi=(a\dots i\dots f\dots c\dots h\dots e\dots b\dots g\dots d\dots )$. $\tau_1=(d\;f\;e)$, $\tau_2=(a\;b\;c)$, $\tau_3=(d\;f\;e)$
+
+
+            <h3>Proposition 40: If $\Gamma$ is a component of $\spi$, then the product $\Gamma\epi$ is a $(n+1)$-cycle.</h3>
+            Proof. Suppose that $\spi=\Sigma\Gamma$. We have two cases:
+            <br>
+            (1) $\Sigma=\iota$. Then $\Gamma=\spi$ and $\spi\epi=\sigma$. As $\sigma$ is a $(n+1)$-cycle, the proposition holds.<br>
+            (2) $\Sigma\neq\iota$ and $Supp(\Gamma)\cap Supp(\Sigma)=\emptyset$. As the cycles of $\Gamma$ do not intersect or interleave any cycle of $\Sigma$, then w.l.o.g assume $\epi=(\gamma_1\;\gamma_2\dots\gamma_r\;a\dots)$ and $Supp(\Gamma)=\{\gamma_1,\gamma_2,\dots,\gamma_r\}$, where $a \in Supp(\Sigma)$. Suppose, by contradiction, that $\Gamma\epi$ is not a $(n+1)$-cycle. In this case, $\Gamma\epi$ is a product of disjoint cycles containing a cycle $(\gamma_r\;a\dots)$ and this is the only cycle of $\Gamma\epi$ containing symbols of $Supp(\Sigma)$. However, this implies that $\Sigma\Gamma\epi=\spi\epi=\sigma$ is not a $(n+1)$-cycle, which is impossible.
         </td>
     </tr>
 </table>

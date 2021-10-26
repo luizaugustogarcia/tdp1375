@@ -22,8 +22,8 @@
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
-            <version>14.0.1</version>
             <artifactId>guava</artifactId>
+            <version>31.0.1-jre</version>
         </dependency>
         <dependency>
             <groupId>com.googlecode.combinatoricslib</groupId>

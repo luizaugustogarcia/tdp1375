@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 public class EHCases {
 
     public static void main(String[] args) throws FileNotFoundException {
-        generate(args[0], new PrintStream(new File(args[1])));
+        generate(args[0], new PrintStream(args[1]));
     }
 
     public static void generate(final String ehProofFolder, final PrintStream printer) {

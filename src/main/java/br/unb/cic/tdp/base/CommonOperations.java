@@ -6,23 +6,24 @@ import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
 import cern.colt.list.FloatArrayList;
-import lombok.SneakyThrows;
+import org.apache.commons.collections.ListUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.paukov.combinatorics.Factory;
 import org.paukov.combinatorics.Generator;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static br.unb.cic.tdp.BaseAlgorithm.get3Norm;
+import static br.unb.cic.tdp.BaseAlgorithm.isOutOfInterval;
+import static br.unb.cic.tdp.Silvaetal.extend;
+
 public class CommonOperations implements Serializable {
 
     public static final Cycle[] CANONICAL_PI;
-    public static int numberOfThreads = Runtime.getRuntime().availableProcessors();
 
     static {
         CANONICAL_PI = new Cycle[2000];
@@ -83,7 +84,7 @@ public class CommonOperations implements Serializable {
     }
 
     private static int leftMostSymbol(Cycle bigCycle, Cycle pi) {
-        for (int i = 1; i < pi.getSymbols().length; i++)
+        for (int i = 1; i < pi.size(); i++)
             if (bigCycle.contains(pi.get(i)))
                 return pi.get(i);
         return -1;
@@ -126,42 +127,22 @@ public class CommonOperations implements Serializable {
      * Creates an array where the cycles in <code>bigGamma</code> can be accessed by the symbols of <code>pi</code>
      * (being the indexes of the resulting array).
      */
-    public static Cycle[] cycleIndex(final List<Cycle> bigGamma, final Cycle pi) {
+    public static Cycle[] cycleIndex(final List<Cycle> cycle, final Cycle pi) {
+        return cyclesIndex(Arrays.asList(cycle), pi);
+    }
+
+    public static Cycle[] cyclesIndex(final List<List<Cycle>> components, final Cycle pi) {
         final var index = new Cycle[pi.getMaxSymbol() + 1];
-        for (final var cycle : bigGamma) {
-            for (final int symbol : cycle.getSymbols()) {
-                index[symbol] = cycle;
-            }
-        }
-        return index;
-    }
 
-    public static boolean isOpenGate(int pos, final Cycle cycle, final Cycle piInverse, final Cycle[] cycleIndex) {
-        final var aPos = piInverse.indexOf(cycle.get(pos));
-        final var bPos = piInverse.indexOf(cycle.image(cycle.get(pos)));
-        for (var i = 1; i < (aPos < bPos ? bPos - aPos : piInverse.size() - (aPos - bPos)); i++) {
-            final var index = (i + aPos) % piInverse.size();
-            if (cycleIndex[piInverse.get(index)] != null)
-                return false;
-        }
-        return true;
-    }
-
-    public static Map<Cycle, Integer> openGatesPerCycle(final List<Cycle> bigGamma, final Cycle piInverse) {
-        final var cycleIndex = cycleIndex(bigGamma, piInverse);
-
-        final Map<Cycle, Integer> result = new HashMap<>();
-        for (final var cycle : bigGamma) {
-            for (var i = 0; i < cycle.getSymbols().length; i++) {
-                // O(n)
-                if (isOpenGate(i, cycle, piInverse, cycleIndex)) {
-                    if (!result.containsKey(cycle))
-                        result.put(cycle, 0);
-                    result.put(cycle, result.get(cycle) + 1);
+        components.forEach(component -> {
+            for (final var cycle : component) {
+                for (final int symbol : cycle.getSymbols()) {
+                    index[symbol] = cycle;
                 }
             }
-        }
-        return result;
+        });
+
+        return index;
     }
 
     /**
@@ -240,7 +221,7 @@ public class CommonOperations implements Serializable {
     /**
      * Search for a 2-move given by an oriented cycle.
      */
-    public static Optional<Cycle> searchFor2MoveFromOrientedCycle(final List<Cycle> spi, final Cycle pi) {
+    public static Optional<Cycle> searchFor2MoveFromOrientedCycle(final Collection<Cycle> spi, final Cycle pi) {
         for (final var cycle : spi.stream().filter(c -> isOriented(pi, c))
                 .collect(Collectors.toList())) {
             final var before = cycle.isEven() ? 1 : 0;
@@ -303,36 +284,153 @@ public class CommonOperations implements Serializable {
         return !areSymbolsInCyclicOrder(pi.getInverse(), cycle.getSymbols());
     }
 
-    @SneakyThrows
-    public static List<Cycle> searchFor11_8SeqParallel(final MulticyclePermutation spi, final Cycle pi) {
-        final var executorService = Executors.newFixedThreadPool(numberOfThreads);
-        final var completionService = new ExecutorCompletionService<List<Cycle>>(executorService);
-
-        final var submittedTasks = new ArrayList<Future<List<Cycle>>>();
-
-        generateAll0And2Moves(spi, pi).forEach(m -> {
-            final var move = m.getKey();
-            final var _partialSorting = new Stack<Cycle>();
-            _partialSorting.push(move);
-            submittedTasks.add(completionService.submit(() ->
-                    searchForSortingSeq(CommonOperations.applyTransposition(pi, move),
-                            PermutationGroups.computeProduct(spi, move.getInverse()), _partialSorting,
-                            spi.getNumberOfEvenCycles(), 1.375F)));
-        });
-
-        executorService.shutdown();
-
-        List<Cycle> sorting = Collections.emptyList();
-        for (int i = 0; i < submittedTasks.size(); i++) {
-            final var s = completionService.take();
-            if (s.get().size() > 0) {
-                sorting = s.get();
-                break;
+    public static List<Cycle> searchForSortingSeq(final MulticyclePermutation spi, final Cycle pi, final int[] sequence, final Stack<Cycle> moves) {
+        if (sequence[moves.size()] == 0) {
+            final var iterator = generateAll0And2Moves(spi, pi).filter(p -> sequence[moves.size()] == p.getSecond()).iterator();
+            while (iterator.hasNext()) {
+                final var pair = iterator.next();
+                final var move = pair.getFirst();
+                moves.push(move);
+                if (moves.size() == sequence.length) {
+                    return moves;
+                }
+                final var sorting = searchForSortingSeq(PermutationGroups.computeProduct(spi, move.getInverse()), applyTransposition(pi, move), sequence, moves);
+                if (!sorting.isEmpty()) {
+                    return moves;
+                }
+                moves.pop();
+            }
+        } else if (sequence[moves.size()] == 2){
+            for (final var move: generateAll2Moves(spi, pi)) {
+                moves.push(move);
+                if (moves.size() == sequence.length) {
+                    return moves;
+                }
+                final var sorting =
+                        searchForSortingSeq(PermutationGroups.computeProduct(spi, move.getInverse()),
+                                applyTransposition(pi, move), sequence, moves);
+                if (!sorting.isEmpty()) {
+                    return moves;
+                }
+                moves.pop();
             }
         }
 
-        executorService.shutdownNow();
+        return Collections.emptyList();
+    }
 
-        return sorting;
+    public static List<Cycle> generateAll2Moves(final List<Cycle> spi, final Cycle pi) {
+        final var _2moves = new ArrayList<Cycle>();
+
+        for (final var cycle : spi.stream().filter(c -> isOriented(pi, c))
+                .collect(Collectors.toList())) {
+            final var before = cycle.isEven() ? 1 : 0;
+            for (var i = 0; i < cycle.size() - 2; i++) {
+                for (var j = i + 1; j < cycle.size() - 1; j++) {
+                    for (var k = j + 1; k < cycle.size(); k++) {
+                        final var a = cycle.get(i);
+                        final var b = cycle.get(j);
+                        final var c = cycle.get(k);
+                        if (areSymbolsInCyclicOrder(pi, a, b, c)) {
+                            var after = cycle.getK(a, b) % 2 == 1 ? 1 : 0;
+                            after += cycle.getK(b, c) % 2 == 1 ? 1 : 0;
+                            after += cycle.getK(c, a) % 2 == 1 ? 1 : 0;
+                            if (after - before == 2)
+                                _2moves.add(Cycle.create(a, b, c));
+                        }
+                    }
+                }
+            }
+        }
+
+        return _2moves;
+    }
+
+    // optimize
+    public static List<Collection<Cycle>> getComponents(final List<Cycle> spi, final Cycle pi) {
+        final var cycleIndex = cycleIndex(spi, pi);
+        final var piInverse = pi.getInverse();
+
+        final List<Collection<Cycle>> components = new ArrayList<>(); // small components
+
+        Set<Cycle> nonVisitedCycles = new HashSet<>(spi.stream().filter(c -> c.size() > 1).collect(Collectors.toList()));
+
+        while (!nonVisitedCycles.isEmpty()) {
+            final var queue = new LinkedList<Cycle>();
+            queue.add(nonVisitedCycles.stream().findAny().get());
+
+            final Set<Cycle> component = new HashSet<>();
+            while (!queue.isEmpty()) {
+                final var cycle = queue.remove();
+                if (cycle.size() == 1)
+                    continue;
+
+                component.add(cycle);
+
+                outer: for (int i = 0; i < cycle.size(); i++) {
+                    final var symbol = cycle.get(i);
+                    final var aPos = piInverse.indexOf(symbol);
+                    final var bPos = piInverse.indexOf(cycle.image(symbol));
+
+                    var nextPos = (aPos + 1) % piInverse.size();
+
+                    while (nextPos != bPos) {
+                        final var _cycle = cycleIndex[piInverse.get(nextPos)];
+                        if (_cycle != null) {
+                            for (int j = 0; j < _cycle.size(); j++) {
+                                final var pos = piInverse.indexOf(_cycle.get(j));
+                                if (isOutOfInterval(pos, aPos, bPos) && (!component.contains(cycleIndex[(_cycle.get(j))]))) {
+                                    component.add(cycleIndex[(_cycle.get(j))]);
+                                    queue.add(cycleIndex[(_cycle.get(j))]);
+                                    break;
+                                }
+                            }
+                        }
+
+                        nextPos = (nextPos + 1) % piInverse.size();
+                    }
+                }
+            }
+
+            nonVisitedCycles.removeAll(component);
+            components.add(new ArrayList<>(component));
+            component.clear();
+        }
+
+        return components;
+    }
+
+    public static Set<Integer> getOpenGates(final List<Cycle> config, final Cycle pi) {
+        return getOpenGates(config, pi, Configuration.signature(config, pi));
+    }
+
+    public static Set<Integer> getOpenGates(final List<Cycle> config, final Cycle pi, float[] signature) {
+       final Set<Integer> openGates = new HashSet<>();
+
+        final var piInverse = pi.getInverse();
+        signature = signature.clone();
+        ArrayUtils.reverse(signature);
+
+        for (final var cycle: config) {
+            outer: for (int i = 0; i < cycle.size(); i++) {
+                final var symbol = cycle.get(i);
+                final var label = signature[piInverse.indexOf(symbol)];
+                final var aPos = piInverse.indexOf(symbol);
+                final var bPos = piInverse.indexOf(cycle.image(symbol));
+
+                var nextPos = (aPos + 1) % piInverse.size();
+
+                while (nextPos != bPos) {
+                    if (signature[nextPos] != 0.0f && ((int) signature[nextPos] != label || (signature[nextPos] % 0 > 0 && label < signature[nextPos] && signature[nextPos] < label + 1))) {
+                        continue outer;
+                    }
+                    nextPos = (nextPos + 1) % piInverse.size();
+                }
+
+                openGates.add(pi.indexOf(cycle.get(i)));
+            }
+        }
+
+        return openGates;
     }
 }

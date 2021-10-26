@@ -1,10 +1,10 @@
 package br.unb.cic.tdp.proof.seq11_8;
 
 import br.unb.cic.tdp.base.Configuration;
-import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import cern.colt.list.FloatArrayList;
 import com.google.common.primitives.Floats;
+import lombok.SneakyThrows;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.File;
@@ -15,7 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 
@@ -35,42 +34,38 @@ public class Combinations {
     public static final Configuration[] BAD_SMALL_COMPONENTS = new Configuration[]{oriented5Cycle, interleavingPair,
             necklaceSize4, twistedNecklaceSize4, necklaceSize5, necklaceSize6};
 
-    public static void generate(final Pair<Map<Configuration, List<Cycle>>,
-            Map<Integer, List<Configuration>>> knownSortings, final boolean shouldAlsoUseBruteForce, final String outputDir) throws IOException {
+    public static void generate(final String outputDir) throws IOException {
 
         Files.createDirectories(Paths.get(outputDir + "/comb/"));
 
-        sortOrExtend(new Pair<>(null, oriented5Cycle), knownSortings, shouldAlsoUseBruteForce, outputDir);
-        sortOrExtend(new Pair<>(null, interleavingPair), knownSortings, shouldAlsoUseBruteForce, outputDir);
-        sortOrExtend(new Pair<>(null, necklaceSize4), knownSortings, shouldAlsoUseBruteForce, outputDir);
-        sortOrExtend(new Pair<>(null, twistedNecklaceSize4), knownSortings, shouldAlsoUseBruteForce, outputDir);
-        sortOrExtend(new Pair<>(null, necklaceSize5), knownSortings, shouldAlsoUseBruteForce, outputDir);
-        sortOrExtend(new Pair<>(null, necklaceSize6), knownSortings, shouldAlsoUseBruteForce, outputDir);
+        sortOrExtend(new Pair<>(null, oriented5Cycle), outputDir);
+        sortOrExtend(new Pair<>(null, interleavingPair), outputDir);
+        sortOrExtend(new Pair<>(null, necklaceSize4), outputDir);
+        sortOrExtend(new Pair<>(null, twistedNecklaceSize4), outputDir);
+        sortOrExtend(new Pair<>(null, necklaceSize5), outputDir);
+        sortOrExtend(new Pair<>(null, necklaceSize6), outputDir);
     }
 
-    private static void sortOrExtend(final Pair<String, Configuration> config,
-                                     final Pair<Map<Configuration, List<Cycle>>,
-                                             Map<Integer, List<Configuration>>> knownSortings,
-                                     final boolean shouldAlsoUseBruteForce,
-                                     final String outputDir) throws IOException {
+    @SneakyThrows
+    private static void sortOrExtend(final Pair<String, Configuration> config, final String outputDir) {
         final var canonicalConfig = config.getSecond().getCanonical();
-        final var file = new File(outputDir + "/comb/" + canonicalConfig.getSpi() + ".html");
+        final var file = new File(outputDir + "/comb/" + config.getSecond().getSpi() + ".html");
         if (file.exists()) {
             return;
         }
 
-        var sorting = searchForSorting(config.getSecond(), knownSortings, shouldAlsoUseBruteForce);
-        if (sorting.isPresent()) {
-            try (final var writer = new FileWriter(new File(outputDir + "/comb/" + canonicalConfig.getSpi() + ".html"))) {
+        var sorting = searchForSorting(config.getSecond(), true);
+        if (sorting.isPresent() && !sorting.get().isEmpty()) {
+            try (final var writer = new FileWriter(outputDir + "/comb/" + canonicalConfig.getSpi() + ".html")) {
                 renderSorting(canonicalConfig, canonicalConfig.translatedSorting(config.getSecond(), sorting.get()), writer);
             }
             return;
         } else {
             // before performing any extension, the 3-norm must be less than 8
-            assert canonicalConfig.get3Norm() < 8 : "ERROR";
+            assert config.getSecond().get3Norm() < 8 : "ERROR";
         }
 
-        try (final var out = new PrintStream(new File(outputDir + "/comb/" + canonicalConfig.getSpi() + ".html"))) {
+        try (final var out = new PrintStream(outputDir + "/comb/" + config.getSecond().getSpi() + ".html")) {
             out.println("<html>\n" +
                     "\t<head>\n" +
                     "\t\t<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css\" integrity=\"sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh\" crossorigin=\"anonymous\">\n" +
@@ -108,19 +103,20 @@ public class Combinations {
 
             out.println("<canvas id=\"canvas\"></canvas>");
             out.println(String.format("<script>updateCanvas('canvas', %s);</script>",
-                    permutationToJsArray(canonicalConfig.getSpi())));
+                    permutationToJsArray(config.getSecond().getSpi())));
 
-            out.println("<h6>" + canonicalConfig.getSpi() + "</h6>");
+            out.println("<h6>" + config.getSecond().getSpi() + "</h6>");
 
-            out.println("Hash code: " + canonicalConfig.hashCode() + "<br>");
-            out.println("Signature: " + canonicalConfig.getSignature() + "<br>");
-            out.println("3-norm: " + canonicalConfig.getSpi().get3Norm());
+            out.println("Hash code: " + config.getSecond().hashCode() + "<br>");
+            out.println("Signature: " + config.getSecond().getSignature() + "<br>");
+            out.println("3-norm: " + config.getSecond().getSpi().get3Norm());
 
             out.println("<p style=\"margin-top: 10px;\"></p>");
             out.println("THE EXTENSIONS ARE:");
 
-            for (final var extension : extend(canonicalConfig)) {
-                final var hasSorting = searchForSorting(extension.getSecond(), knownSortings, shouldAlsoUseBruteForce).isPresent();
+            for (final var extension : extend(config.getSecond())) {
+                final var s = searchForSorting(extension.getSecond(), true);
+                final var hasSorting = s.isPresent() && !s.get().isEmpty();
                 out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
                         "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
                 out.println(extension.getFirst() + "<br>");
@@ -136,11 +132,18 @@ public class Combinations {
                                 "$('#modal').modal('show'); " +
                                 "return false;\">%s</a><br>",
                         jsSpi, extension.getSecond().getSpi(), extension.getSecond().getSpi()));
-                out.println(String.format("View canonical extension: <a href=\"%s.html\">%s</a>",
-                        extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
+
+                if (!hasSorting) {
+                    out.println(String.format("View extension: <a href=\"%s.html\">%s</a>",
+                            extension.getSecond().getSpi(), extension.getSecond().getSpi()));
+                } else {
+                    out.println(String.format("View sorting: <a href=\"%s.html\">%s</a>",
+                            extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
+                }
+
                 out.println("</div>");
 
-                sortOrExtend(extension, knownSortings, shouldAlsoUseBruteForce, outputDir);
+                sortOrExtend(extension, outputDir);
             }
 
             out.println("</div></body></html>");
@@ -150,7 +153,7 @@ public class Combinations {
     private static List<Pair<String, Configuration>> extend(final Configuration config) {
         final var result = new ArrayList<Pair<String, Configuration>>();
         for (final var badSmallComponent : BAD_SMALL_COMPONENTS) {
-            for (int i = 0; i < config.getPi().size(); i++) {
+            for (int i = 0; i <= config.getPi().size(); i++) {
                 final var badSmallComponentSignature = badSmallComponent.getSignature().getContent().clone();
                 for (int j = 0; j < badSmallComponentSignature.length; j++) {
                     badSmallComponentSignature[j] += config.getSpi().size();
