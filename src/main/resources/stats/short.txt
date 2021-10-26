@@ -1,0 +1,26 @@
+"C:\Users\Luiz Silva\Programs\graalvm-ce-java16-21.1.0\bin\java.exe" -Xmx25G "-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2021.1.3\lib\idea_rt.jar=53944:C:\Program Files\JetBrains\IntelliJ IDEA Community Edition 2021.1.3\bin" -Dfile.encoding=UTF-8 -classpath "C:\Users\Luiz Silva\Projects\tdp1375\target\classes;C:\Users\Luiz Silva\.m2\repository\colt\colt\1.2.0\colt-1.2.0.jar;C:\Users\Luiz Silva\.m2\repository\concurrent\concurrent\1.3.4\concurrent-1.3.4.jar;C:\Users\Luiz Silva\.m2\repository\com\google\guava\guava\31.0.1-jre\guava-31.0.1-jre.jar;C:\Users\Luiz Silva\.m2\repository\com\google\guava\failureaccess\1.0.1\failureaccess-1.0.1.jar;C:\Users\Luiz Silva\.m2\repository\com\google\guava\listenablefuture\9999.0-empty-to-avoid-conflict-with-guava\listenablefuture-9999.0-empty-to-avoid-conflict-with-guava.jar;C:\Users\Luiz Silva\.m2\repository\com\google\code\findbugs\jsr305\3.0.2\jsr305-3.0.2.jar;C:\Users\Luiz Silva\.m2\repository\org\checkerframework\checker-qual\3.12.0\checker-qual-3.12.0.jar;C:\Users\Luiz Silva\.m2\repository\com\google\errorprone\error_prone_annotations\2.7.1\error_prone_annotations-2.7.1.jar;C:\Users\Luiz Silva\.m2\repository\com\google\j2objc\j2objc-annotations\1.3\j2objc-annotations-1.3.jar;C:\Users\Luiz Silva\.m2\repository\com\googlecode\combinatoricslib\combinatoricslib\2.1\combinatoricslib-2.1.jar;C:\Users\Luiz Silva\.m2\repository\cc\redberry\core\1.1.10\core-1.1.10.jar;C:\Users\Luiz Silva\.m2\repository\org\apache\commons\commons-math3\3.2\commons-math3-3.2.jar;C:\Users\Luiz Silva\.m2\repository\net\sf\trove4j\trove4j\3.0.3\trove4j-3.0.3.jar;C:\Users\Luiz Silva\.m2\repository\commons-lang\commons-lang\2.6\commons-lang-2.6.jar;C:\Users\Luiz Silva\.m2\repository\commons-collections\commons-collections\3.2.2\commons-collections-3.2.2.jar;C:\Users\Luiz Silva\.m2\repository\org\apache\velocity\velocity\1.7\velocity-1.7.jar;C:\Users\Luiz Silva\.m2\repository\org\junit\jupiter\junit-jupiter-api\5.7.0\junit-jupiter-api-5.7.0.jar;C:\Users\Luiz Silva\.m2\repository\org\apiguardian\apiguardian-api\1.1.0\apiguardian-api-1.1.0.jar;C:\Users\Luiz Silva\.m2\repository\org\opentest4j\opentest4j\1.2.0\opentest4j-1.2.0.jar;C:\Users\Luiz Silva\.m2\repository\org\junit\platform\junit-platform-commons\1.7.0\junit-platform-commons-1.7.0.jar" br.unb.cic.tdp.experiments.ShortPermutations
+= EH =
+2,1.0,1.0,100.0,0,1.0,31
+3,1.0,1.0,100.0,0,1.2,0
+4,1.0,1.0,100.0,0,1.6086956,16
+5,1.0,1.0,100.0,0,2.092437,31
+6,1.3333334,1.0004636,99.86111,0,2.6063979,140
+7,1.3333334,1.012949,94.900795,0,3.1762254,370
+8,1.5,1.0210472,91.64435,2,3.7178502,2285
+9,1.5,1.0301262,86.62037,20,4.279628,16037
+10,1.5,1.0341595,83.80437,110,4.8051214,194672
+11,1.5,1.0392724,79.4222,440,5.3526816,2569115
+12,1.5,1.0415912,76.69962,1448,5.8694973,34748487
+
+= Silva et al. =
+2,1.0,1.0,100.0,0,1.0,0
+3,1.0,1.0,100.0,0,1.2,0
+4,1.0,1.0,100.0,0,1.6086956,0
+5,1.0,1.0,100.0,0,2.092437,23
+6,1.0,1.0,100.0,0,2.605007,25
+7,1.25,1.0113118,95.47619,0,3.1704702,172
+8,1.25,1.0183598,92.65625,0,3.7076812,1641
+9,1.25,1.0256798,88.54195,0,4.2603235,14893
+10,1.25,1.0282352,86.53966,0,4.7772355,160273
+11,1.3333334,1.0321367,82.99148,0,5.315793,2080652
+12,1.3333334,1.0336102,80.93357,0,5.8248444,28598161

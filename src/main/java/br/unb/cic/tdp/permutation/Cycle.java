@@ -13,6 +13,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     private int minSymbol = -1;
     private int maxSymbol = -1;
     private Cycle inverse;
+    private Integer hashCode;
 
     private Cycle(final int... symbols) {
         this.symbols = symbols;
@@ -108,7 +109,10 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(startingBy(getMinSymbol()).getSymbols());
+        if (hashCode == null) {
+            hashCode = Arrays.hashCode(startingBy(getMinSymbol()).getSymbols());
+        }
+        return hashCode;
     }
 
     @Override
