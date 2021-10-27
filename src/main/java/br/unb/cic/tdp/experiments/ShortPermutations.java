@@ -20,7 +20,7 @@ public class ShortPermutations {
         System.out.println("= EH =");
         audit(args[0], new EliasAndHartman());
         System.out.println("= Silva et al. =");
-        audit(args[0],new Silvaetal());
+        audit(args[0], new Silvaetal());
     }
 
     @SneakyThrows

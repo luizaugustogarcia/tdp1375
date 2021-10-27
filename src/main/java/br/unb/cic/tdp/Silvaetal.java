@@ -4,12 +4,18 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
+import br.unb.cic.tdp.proof.ProofGenerator;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
+import lombok.SneakyThrows;
 import org.apache.commons.collections.ListUtils;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -100,11 +106,11 @@ public class Silvaetal extends BaseAlgorithm {
                 sorting.addAll(_11_8Seq.get());
                 spi = computeProduct(true, sigma, pi.getInverse());
                 badSmallComponents.clear();
+                nonBadSmallComponents.removeAll(badSmallComponentsCycles);
             }
 
             nonBadSmallComponents.clear();
             nonBadSmallComponents.addAll(spi.getNonTrivialCycles());
-            nonBadSmallComponents.removeAll(badSmallComponentsCycles);
         }
 
         // At this point 3-norm of spi is less than 8
@@ -139,9 +145,27 @@ public class Silvaetal extends BaseAlgorithm {
 
     @Override
     protected void load11_8Sortings(final Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings) {
-        loadSortings("cases/cases-oriented-7cycle.txt", sortings);
+        loadSortingsOriented7Cycles("cases/cases-oriented-7cycle.txt", sortings);
         loadSortings("cases/cases-dfs.txt", sortings);
         loadSortings("cases/cases-comb.txt", sortings);
+    }
+
+    @SneakyThrows
+    private void loadSortingsOriented7Cycles(final String resource, final Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings) {
+        final Path file = Paths.get(ProofGenerator.class.getClassLoader().getResource(resource).toURI());
+        final var br = new BufferedReader(new FileReader(file.toFile()), 10 * 1024 * 1024);
+
+        String line;
+        while ((line = br.readLine()) != null) {
+            final var lineSplit = line.trim().split("->");
+
+            final var spi = new MulticyclePermutation(new MulticyclePermutation("(0,3,4,1,5,2,6)"));
+            final var sorting = Arrays.stream(lineSplit[1].substring(1, lineSplit[1].length() - 1)
+                    .split(", ")).map(c -> c.replace(" ", ",")).map(s -> Cycle.create(s))
+                    .collect(Collectors.toList());
+            final var config = new Configuration(spi, Cycle.create(lineSplit[0].replace(" ", ",")));
+            sortings.put(config.hashCode(), new Pair<>(config, sorting));
+        }
     }
 
     public static List<Cycle> extend(final List<Cycle> config, final MulticyclePermutation spi, final Cycle pi) {

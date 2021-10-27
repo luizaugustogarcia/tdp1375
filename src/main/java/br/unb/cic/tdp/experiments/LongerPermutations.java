@@ -32,7 +32,7 @@ public class LongerPermutations {
     @SneakyThrows
     private static void run(final String root, final int i) {
         System.out.println("stats" + i * 10 + ".txt");
-        final var out = new FileOutputStream( root + "stats" + i * 10 + ".txt");
+        final var out = new FileOutputStream( root + "/stats/stats" + i * 10 + ".txt");
         final var ps = new PrintStream(out);
 
         final var resource = LongerPermutations.class.getResource("/datasets/large" + i * 10 + ".txt");
