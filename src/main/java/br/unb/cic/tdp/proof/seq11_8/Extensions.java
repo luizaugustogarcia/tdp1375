@@ -33,13 +33,12 @@ public class Extensions {
     }
 
     private static void sortOrExtend(final Pair<String, Configuration> config, final String outputDir) throws IOException {
-
-        final var canonicalConfig = config.getSecond().getCanonical();
-        final var file = new File(outputDir + "/dfs/" + canonicalConfig.getSpi() + ".html");
+        final var canonical = config.getSecond().getCanonical();
+        final var file = new File(outputDir + "/dfs/" + canonical.getSpi() + ".html");
 
         if (file.exists()) {
             try (final var fr = new FileReader(file)) {
-                try (final var input = new BufferedReader(fr, 50 * 1024)) {
+                try (final var input = new BufferedReader(fr,1024)) {
                     String last = null, line;
                     // checks whether the file generation was finished
                     while ((line = input.readLine()) != null) {
@@ -60,12 +59,12 @@ public class Extensions {
         var sorting = searchForSorting(config.getSecond(), false);
         if (sorting.isPresent()) {
             try (final var writer = new FileWriter((file))) {
-                renderSorting(canonicalConfig, canonicalConfig.translatedSorting(config.getSecond(), sorting.get()), writer);
+                renderSorting(canonical, canonical.translatedSorting(config.getSecond(), sorting.get()), writer);
             }
             return;
-        } else {
-            assert canonicalConfig.get3Norm() <= 8 : "ERROR";
         }
+
+        assert config.getSecond().get3Norm() <= 8 : "ERROR";
 
         try (final var out = new PrintStream(file)) {
             out.println("<html>\n" +
@@ -105,14 +104,14 @@ public class Extensions {
 
             out.println("<canvas id=\"canvas\"></canvas>");
             out.println(String.format("<script>updateCanvas('canvas', %s);</script>",
-                    permutationToJsArray(canonicalConfig.getSpi())));
+                    permutationToJsArray(canonical.getSpi())));
 
-            out.println("<h6>" + canonicalConfig.getSpi() + "</h6>");
+            out.println("<h6>" + canonical.getSpi() + "</h6>");
 
-            out.println("Hash code: " + canonicalConfig.hashCode() + "<br>");
-            out.println("Open gates: " + canonicalConfig.getOpenGates() + "<br>");
-            out.println("Signature: " + canonicalConfig.getSignature() + "<br>");
-            out.println("3-norm: " + canonicalConfig.getSpi().get3Norm());
+            out.println("Hash code: " + canonical.hashCode() + "<br>");
+            out.println("Open gates: " + canonical.getOpenGates() + "<br>");
+            out.println("Signature: " + canonical.getSignature() + "<br>");
+            out.println("3-norm: " + canonical.getSpi().get3Norm());
 
             out.println("<p style=\"margin-top: 10px;\"></p>");
             out.println("THE EXTENSIONS ARE:");
@@ -155,13 +154,13 @@ public class Extensions {
             out.println("  </tr>");
             out.println("  <tr>");
             out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-            extend.accept(type1Extensions(canonicalConfig));
+            extend.accept(type1Extensions(canonical));
             out.println("    </td>");
             out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-            extend.accept(type2Extensions(canonicalConfig));
+            extend.accept(type2Extensions(canonical));
             out.println("    </td>");
             out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-            extend.accept(type3Extensions(canonicalConfig));
+            extend.accept(type3Extensions(canonical));
             out.println("    </td>");
             out.println("  </tr>");
             out.println("</table>");
