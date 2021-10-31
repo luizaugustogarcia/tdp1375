@@ -101,11 +101,11 @@ public class EliasAndHartman extends BaseAlgorithm {
                 spi = computeProduct(true, sigma, pi.getInverse());
                 sorting.addAll(_11_8Seq.get());
                 badSmallComponents.clear();
-                nonBadSmallComponents.removeAll(badSmallComponentsCycles);
             }
 
             nonBadSmallComponents.clear();
             nonBadSmallComponents.addAll(spi.getNonTrivialCycles());
+            nonBadSmallComponents.removeAll(badSmallComponentsCycles);
         }
 
         // At this point 3-norm of spi is less than 8

@@ -5,12 +5,14 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import cern.colt.list.FloatArrayList;
 import com.google.common.base.Preconditions;
+import lombok.SneakyThrows;
 import org.apache.commons.math3.util.Pair;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
@@ -32,7 +34,8 @@ public class Extensions {
         sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)"))), outputDir);
     }
 
-    private static void sortOrExtend(final Pair<String, Configuration> config, final String outputDir) throws IOException {
+    @SneakyThrows
+    private static void sortOrExtend(final Pair<String, Configuration> config, final String outputDir) {
         final var canonical = config.getSecond().getCanonical();
         final var file = new File(outputDir + "/dfs/" + canonical.getSpi() + ".html");
 
@@ -117,6 +120,7 @@ public class Extensions {
             out.println("THE EXTENSIONS ARE:");
 
             final Consumer<List<Pair<String, Configuration>>> extend = extensions -> {
+                final var tasks = new ArrayList<CompletableFuture<Void>>();
                 for (final var extension : extensions) {
                     final var hasSorting = searchForSorting(extension.getSecond(), false).isPresent();
                     out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
@@ -138,12 +142,10 @@ public class Extensions {
                             extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
                     out.println("</div>");
 
-                    try {
-                        sortOrExtend(extension, outputDir);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
+                    tasks.add(CompletableFuture.runAsync(() -> sortOrExtend(extension, outputDir)));
                 }
+
+                tasks.forEach(CompletableFuture::join);
             };
 
             out.println("<table style=\"width:100%; border: 1px solid lightgray; border-collapse: collapse;\">");
