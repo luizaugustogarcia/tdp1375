@@ -106,11 +106,11 @@ public class Silvaetal extends BaseAlgorithm {
                 sorting.addAll(_11_8Seq.get());
                 spi = computeProduct(true, sigma, pi.getInverse());
                 badSmallComponents.clear();
-                nonBadSmallComponents.removeAll(badSmallComponentsCycles);
             }
 
             nonBadSmallComponents.clear();
             nonBadSmallComponents.addAll(spi.getNonTrivialCycles());
+            nonBadSmallComponents.removeAll(badSmallComponentsCycles);
         }
 
         // At this point 3-norm of spi is less than 8
