@@ -22,35 +22,51 @@ import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
+import static br.unb.cic.tdp.proof.seq11_8.Combinations.*;
+import static br.unb.cic.tdp.proof.seq11_8.Combinations.NECKLACE_SIZE_6;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class ProofGenerator {
 
     static Multimap<Integer, Pair<Configuration, List<Cycle>>> ehSortings = HashMultimap.create();
 
-    static final int[][] _11_8seqs;
+    private static final Configuration[] BAD_SMALL_COMPONENTS = new Configuration[]{
+            ORIENTED_5_CYCLE, INTERLEAVING_PAIR,
+            NECKLACE_SIZE_4, TWISTED_NECKLACE_SIZE_4,
+            NECKLACE_SIZE_5, NECKLACE_SIZE_6,
+            // invalid config
+            new Configuration(new MulticyclePermutation("(0,9,2)(1,11,4)(3,8,6)(5,10,7)"))};
 
     static {
-        _11_8seqs = new int[][]{
+        // just to prevent concurrency issues
+        for (final var badSmallComponent: BAD_SMALL_COMPONENTS) {
+            badSmallComponent.hashCode();
+        }
+    }
+
+    static final int[][] _11_8_SEQS;
+
+    static {
+        _11_8_SEQS = new int[][]{
                 {0, 2, 2, 2},
                 {0, 2, 2, 0, 2, 2, 2, 2},
                 {0, 2, 0, 2, 2, 2, 2, 2},
                 {0, 0, 2, 2, 2, 2, 2, 2},
-                {0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2},
-                {0, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2},
-                {0, 0, 2, 2, 0, 2, 2, 2, 2, 2, 2},
-                {0, 0, 2, 2, 2, 0, 2, 2, 2, 2, 2},
-                {0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 2},
-                {0, 0, 2, 2, 2, 2, 2, 0, 2, 2, 2},
-                {0, 2, 0, 0, 2, 2, 2, 2, 2, 2, 2},
-                {0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 2},
-                {0, 2, 0, 2, 2, 0, 2, 2, 2, 2, 2},
-                {0, 2, 0, 2, 2, 2, 0, 2, 2, 2, 2},
-                {0, 2, 0, 2, 2, 2, 2, 0, 2, 2, 2},
-                {0, 2, 2, 0, 0, 2, 2, 2, 2, 2, 2},
-                {0, 2, 2, 0, 2, 0, 2, 2, 2, 2, 2},
+                {0, 2, 2, 0, 2, 2, 2, 0, 2, 2, 2},
                 {0, 2, 2, 0, 2, 2, 0, 2, 2, 2, 2},
-                {0, 2, 2, 0, 2, 2, 2, 0, 2, 2, 2}
+                {0, 2, 2, 0, 2, 0, 2, 2, 2, 2, 2},
+                {0, 2, 2, 0, 0, 2, 2, 2, 2, 2, 2},
+                {0, 2, 0, 2, 2, 2, 2, 0, 2, 2, 2},
+                {0, 2, 0, 2, 2, 2, 0, 2, 2, 2, 2},
+                {0, 2, 0, 2, 2, 0, 2, 2, 2, 2, 2},
+                {0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 2},
+                {0, 2, 0, 0, 2, 2, 2, 2, 2, 2, 2},
+                {0, 0, 2, 2, 2, 2, 2, 0, 2, 2, 2},
+                {0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 2},
+                {0, 0, 2, 2, 2, 0, 2, 2, 2, 2, 2},
+                {0, 0, 2, 2, 0, 2, 2, 2, 2, 2, 2},
+                {0, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2},
+                {0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2}
         };
     }
 
@@ -68,14 +84,6 @@ public class ProofGenerator {
                 Paths.get(args[0] + "/explain.html"), REPLACE_EXISTING);
         Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("draw-config.js"),
                 Paths.get(args[0] + "/draw-config.js"), REPLACE_EXISTING);
-
-        OrientedCycleGreaterOrEquals7.generate(args[0]);
-
-        // final Map<String, String> env = new HashMap<>();
-        // final String[] fileUri = ProofGenerator.class.getClassLoader()
-        //        .getResource("eh-sortings").toURI().toString().split("!");
-        //final FileSystem fs = FileSystems.newFileSystem(URI.create(fileUri[0]), env);
-        //final Path path = fs.getPath(fileUri[1]);
 
         var path = Paths.get(ProofGenerator.class.getClassLoader()
                 .getResource("eh-sortings.txt").toURI());
@@ -98,23 +106,22 @@ public class ProofGenerator {
         });
     }
 
-    public static Optional<List<Cycle>> searchForSorting(final Configuration config, final boolean searchSmallComponents) {
+    public static Optional<List<Cycle>> searchForSorting(final Configuration config) {
         if (isSimple(config)) {
             var pair = ehSortings.get(config.hashCode())
                     .stream().filter(p -> p.getFirst().equals(config)).findFirst();
             if (pair.isPresent()) {
                 return Optional.of(config.translatedSorting(pair.get().getFirst(), pair.get().getSecond()));
-            } else if (searchSmallComponents) {
-                return searchForSortingComponents(config);
             } else {
                 return Optional.empty();
             }
         }
 
-        for (final var seq : _11_8seqs) {
+        for (final var seq : _11_8_SEQS) {
             if ((seq.length == 4 && config.getSpi().get3Norm() >= 3) ||
                     (seq.length == 8 && config.getSpi().get3Norm() >= 6) ||
                     (seq.length == 11 && config.getSpi().get3Norm() >= 8)) {
+                Thread.currentThread().setName(config.getSpi().toString() + "-" + Arrays.toString(seq));
                 final var sorting = new Stack<Cycle>();
                 searchForSortingSeq(config.getSpi(), config.getPi(), seq, sorting);
                 if (!sorting.isEmpty()) {
@@ -126,18 +133,15 @@ public class ProofGenerator {
         return Optional.empty();
     }
 
-    private static Optional<List<Cycle>> searchForSortingComponents(final Configuration config) {
+    public static Optional<List<Cycle>> searchForSortingSmallComponents(final Configuration config) {
         final var smallComponents = getComponents(config.getSpi(), config.getPi());
         for (int i = 2; i <= smallComponents.size(); i++) {
             for (final var components : combinations(smallComponents, i)) {
-                final var spi = new MulticyclePermutation(components.getVector().stream().flatMap(c -> c.stream()).collect(Collectors.toList()));
+                final var spi = new MulticyclePermutation(components.getVector().stream().flatMap(Collection::stream).collect(Collectors.toList()));
                 final var subConfig = new Configuration(spi, removeExtraSymbols(spi.getSymbols(), config.getPi()));
-                var pair = ehSortings.get(subConfig.hashCode())
-                        .stream().filter(p -> p.getFirst().equals(subConfig)).findFirst();
-                if (pair.isPresent()) {
-                    final var sorting = subConfig.translatedSorting(pair.get().getFirst(), pair.get().getSecond());
-                    return Optional.of(sorting);
-                }
+                var sorting = searchForSorting(subConfig);
+                if (sorting.isPresent())
+                    return sorting;
             }
         }
 

@@ -11,8 +11,8 @@ import java.util.ArrayList;
 public class ListCases {
 
     public static void main(String[] args) throws IOException {
-        list("C:\\Users\\Luiz Silva\\Temp\\proof\\dfs\\", "C:\\Users\\Luiz Silva\\Projects\\tdp1375\\src\\main\\resources\\cases\\cases-dfs.txt");
-        list("C:\\Users\\Luiz Silva\\Temp\\proof\\comb\\", "C:\\Users\\Luiz Silva\\Projects\\tdp1375\\src\\main\\resources\\cases\\cases-comb.txt");
+        list("C:\\Users\\Luiz Silva\\Temp\\proof1.375\\dfs\\", "C:\\Users\\Luiz Silva\\Projects\\tdp1375\\src\\main\\resources\\cases\\cases-dfs.txt");
+        list("C:\\Users\\Luiz Silva\\Temp\\proof1.375\\comb\\", "C:\\Users\\Luiz Silva\\Projects\\tdp1375\\src\\main\\resources\\cases\\cases-comb.txt");
     }
 
     public static void list(final String inputDir, final String outputFile) throws IOException {
