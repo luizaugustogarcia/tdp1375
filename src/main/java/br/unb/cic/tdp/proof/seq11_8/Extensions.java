@@ -3,71 +3,58 @@ package br.unb.cic.tdp.proof.seq11_8;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.FloatArrayList;
 import com.google.common.base.Preconditions;
 import lombok.SneakyThrows;
-import org.apache.commons.math3.util.Pair;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.function.Consumer;
+
+import static br.unb.cic.tdp.proof.ProofGenerator.*;
+import java.util.concurrent.*;
 
 import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
 import static br.unb.cic.tdp.base.Configuration.*;
-import static br.unb.cic.tdp.proof.ProofGenerator.*;
 
 public class Extensions {
 
-    public static void generate(final String outputDir) throws IOException {
+    private static ExecutorService EXECUTOR = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+    @SneakyThrows
+    public static void generate(final String outputDir) {
         Files.createDirectories(Paths.get(outputDir + "/dfs/"));
 
         // oriented 5-cycle (extensions not leading to new oriented cycles)
-        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,3,1,4,2)"))), outputDir);
+        sortOrExtend(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir);
 
         // interleaving pair
-        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)"))), outputDir);
+        sortOrExtend(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir);
 
         // intersecting pair
-        sortOrExtend(new Pair<>(null, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)"))), outputDir);
+        sortOrExtend(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir);
+
+        EXECUTOR.shutdown();
     }
 
     @SneakyThrows
-    private static void sortOrExtend(final Pair<String, Configuration> config, final String outputDir) {
-        final var canonical = config.getSecond().getCanonical();
+    private static void sortOrExtend(final Configuration config, final String outputDir) {
+        final var canonical = config.getCanonical();
+
         final var file = new File(outputDir + "/dfs/" + canonical.getSpi() + ".html");
 
         if (file.exists()) {
-            try (final var fr = new FileReader(file)) {
-                try (final var input = new BufferedReader(fr,1024)) {
-                    String last = null, line;
-                    // checks whether the file generation was finished
-                    while ((line = input.readLine()) != null) {
-                        last = line;
-                    }
-                    // if so, return
-                    if (last != null && last.equals("</html>")) {
-                        return;
-                    }
-                    // if not, regenerate the file
-                    try (final var write = new PrintWriter(file)) {
-                        // empty
-                    }
+            if (isFileComplete(file)) {
+                return;
+            } else {
+                try (final var write = new PrintWriter(file)) {
+                    System.out.println("Regenerating file: " + file);
                 }
             }
         }
-
-        var sorting = searchForSorting(config.getSecond(), false);
-        if (sorting.isPresent()) {
-            try (final var writer = new FileWriter((file))) {
-                renderSorting(canonical, canonical.translatedSorting(config.getSecond(), sorting.get()), writer);
-            }
-            return;
-        }
-
-        assert config.getSecond().get3Norm() <= 8 : "ERROR";
 
         try (final var out = new PrintStream(file)) {
             out.println("<html>\n" +
@@ -119,35 +106,6 @@ public class Extensions {
             out.println("<p style=\"margin-top: 10px;\"></p>");
             out.println("THE EXTENSIONS ARE:");
 
-            final Consumer<List<Pair<String, Configuration>>> extend = extensions -> {
-                final var tasks = new ArrayList<CompletableFuture<Void>>();
-                for (final var extension : extensions) {
-                    final var hasSorting = searchForSorting(extension.getSecond(), false).isPresent();
-                    out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
-                            "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
-                    out.println(extension.getFirst() + "<br>");
-                    out.println(((hasSorting ? "GOOD" : "BAD") + " EXTENSION") + "<br>");
-                    out.println("Hash code: " + extension.getSecond().hashCode() + "<br>");
-                    out.println("3-norm: " + extension.getSecond().getSpi().get3Norm() + "<br>");
-                    out.println("Signature: " + extension.getSecond().getSignature() + "<br>");
-                    final var jsSpi = permutationToJsArray(extension.getSecond().getSpi());
-                    out.println(String.format("Extension: <a href=\"\" " +
-                                    "onclick=\"" +
-                                    "updateCanvas('modalCanvas', %s); " +
-                                    "$('h6.modal-title').text('%s');" +
-                                    "$('#modal').modal('show'); " +
-                                    "return false;\">%s</a><br>",
-                            jsSpi, extension.getSecond().getSpi(), extension.getSecond().getSpi()));
-                    out.println(String.format("View canonical extension: <a href=\"%s.html\">%s</a>",
-                            extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
-                    out.println("</div>");
-
-                    tasks.add(CompletableFuture.runAsync(() -> sortOrExtend(extension, outputDir)));
-                }
-
-                tasks.forEach(CompletableFuture::join);
-            };
-
             out.println("<table style=\"width:100%; border: 1px solid lightgray; border-collapse: collapse;\">");
             out.println("  <tr>");
             out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 1</th>");
@@ -156,13 +114,13 @@ public class Extensions {
             out.println("  </tr>");
             out.println("  <tr>");
             out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-            extend.accept(type1Extensions(canonical));
+            renderExtensions(canonical, type1Extensions(canonical), out, outputDir);
             out.println("    </td>");
             out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-            extend.accept(type2Extensions(canonical));
+            renderExtensions(canonical, type2Extensions(canonical), out, outputDir);
             out.println("    </td>");
             out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-            extend.accept(type3Extensions(canonical));
+            renderExtensions(canonical, type3Extensions(canonical), out, outputDir);
             out.println("    </td>");
             out.println("  </tr>");
             out.println("</table>");
@@ -170,6 +128,95 @@ public class Extensions {
             out.println("</body>");
             out.println("</html>");
         }
+    }
+
+    @SneakyThrows
+    private static void renderExtensions(final Configuration extended,
+                                         final List<Pair<String, Configuration>> extensions,
+                                         final PrintStream out, final String outputDir) {
+        Thread.currentThread().setName("main-" + extended.getSpi().toString());
+
+        final var futureExtensions = new ArrayList<Future<Pair<Pair<String, Configuration>, Boolean>>>();
+
+        for (final var extension : extensions) {
+            futureExtensions.add(EXECUTOR.submit(() -> {
+                final var canonical = extension.getSecond().getCanonical();
+
+                final var file = new File(outputDir + "/dfs/" + canonical.getSpi() + ".html");
+
+                boolean badExtension = false;
+                if (file.exists() && isFileComplete(file)) {
+                    final var sorting = getSorting(file.toPath());
+                    if (sorting != null && sorting.getSecond() != null) {
+                        return new Pair<>(extension, !sorting.getSecond().isEmpty());
+                    } else {
+                        // null sorting means a bad extension, or some weird file
+                        badExtension = true;
+                    }
+                }
+
+                if (!badExtension) {
+                    final var pair = searchForSorting(canonical);
+
+                    if (pair.isPresent()) {
+                        try (final var writer = new FileWriter(file)) {
+                            renderSorting(canonical, pair.get(), writer);
+                        }
+                    }
+
+                    return new Pair<>(extension, pair.isPresent());
+                }
+
+                return new Pair<>(extension, Boolean.FALSE);
+            }));
+        }
+
+        for (final var future : futureExtensions) {
+            final var extension = future.get().getFirst();
+            final var hasSorting = future.get().getSecond();
+            out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
+                    "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
+            out.println(extension.getFirst() + "<br>");
+            out.println(((hasSorting ? "GOOD" : "BAD") + " EXTENSION") + "<br>");
+            out.println("Hash code: " + extension.getSecond().hashCode() + "<br>");
+            out.println("3-norm: " + extension.getSecond().getSpi().get3Norm() + "<br>");
+            out.println("Signature: " + extension.getSecond().getSignature() + "<br>");
+            final var jsSpi = permutationToJsArray(extension.getSecond().getSpi());
+            out.println(String.format("Extension: <a href=\"\" " +
+                            "onclick=\"" +
+                            "updateCanvas('modalCanvas', %s); " +
+                            "$('h6.modal-title').text('%s');" +
+                            "$('#modal').modal('show'); " +
+                            "return false;\">%s</a><br>",
+                    jsSpi, extension.getSecond().getSpi(), extension.getSecond().getSpi()));
+            out.println(String.format("View canonical extension: <a href=\"%s.html\">%s</a>",
+                    extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
+            out.println("</div>");
+
+            if (!hasSorting) {
+                sortOrExtend(extension.getSecond(), outputDir);
+            }
+        }
+    }
+
+    @SneakyThrows
+    private static boolean isFileComplete(final File file) {
+        boolean complete = false;
+
+        try (final var fr = new FileReader(file)) {
+            try (final var input = new BufferedReader(fr,1024)) {
+                String last = null, line;
+                // checks whether the file generation was finished
+                while ((line = input.readLine()) != null) {
+                    last = line;
+                }
+                if (last != null && last.equals("</html>")) {
+                    complete = true;
+                }
+            }
+        }
+
+        return complete;
     }
 
     /*
@@ -316,7 +363,6 @@ public class Extensions {
         return false;
     }
 
-
     private static FloatArrayList unorientedExtension(final float[] signature, final int label, final int... positions) {
         Preconditions.checkArgument(1 < positions.length && positions.length <= 3);
         Arrays.sort(positions);
@@ -326,5 +372,45 @@ public class Extensions {
         }
         extension.trimToSize();
         return extension;
+    }
+
+    @SneakyThrows
+    public static Pair<MulticyclePermutation, List<Cycle>> getSorting(final Path path) {
+        final var reader = new BufferedReader(new FileReader(path.toFile()));
+        var line = reader.readLine();
+        MulticyclePermutation spi = null;
+
+        while ((line = reader.readLine()) != null) {
+            line = line.trim();
+
+            if (line.startsWith("<h6>")) {
+                spi = new MulticyclePermutation(line.trim().replace("<h6>", "")
+                        .replace("</h6>", "").replace(" ", ","));
+            }
+
+            if (line.equals("THE EXTENSIONS ARE:")) {
+                return new Pair<>(spi, null);
+            }
+
+            final var sorting = new ArrayList<Cycle>();
+            if (line.trim().equals("ALLOWS (11/8)-SEQUENCE")) {
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+
+                    if (!line.equals("<div style=\"margin-top: 10px; \">")) {
+                        continue;
+                    }
+
+                    line = reader.readLine();
+
+                    final var move = line.split(": ")[1].replace(" ", ",")
+                            .replace("<br>", "");
+                    sorting.add(Cycle.create(move));
+                }
+                return new Pair<>(spi, sorting);
+            }
+        }
+
+        return null;
     }
 }

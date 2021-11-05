@@ -1,68 +1,72 @@
 package br.unb.cic.tdp.proof.seq11_8;
 
 import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.FloatArrayList;
 import com.google.common.primitives.Floats;
 import lombok.SneakyThrows;
-import org.apache.commons.math3.util.Pair;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 
 public class Combinations {
-    private static final Configuration oriented5Cycle = new Configuration(
+    public static final Configuration ORIENTED_5_CYCLE = new Configuration(
             new MulticyclePermutation("(0,3,1,4,2)"));
-    private static final Configuration interleavingPair = new Configuration(
+    public static final Configuration INTERLEAVING_PAIR = new Configuration(
             new MulticyclePermutation("(0,4,2)(1,5,3)"));
-    private static final Configuration necklaceSize4 = new Configuration(
+    public static final Configuration NECKLACE_SIZE_4 = new Configuration(
             new MulticyclePermutation("(0,10,2)(1,5,3)(4,8,6)(7,11,9)"));
-    private static final Configuration twistedNecklaceSize4 = new Configuration(
+    public static final Configuration TWISTED_NECKLACE_SIZE_4 = new Configuration(
             new MulticyclePermutation("(0,7,5)(1,11,9)(2,6,4)(3,10,8)"));
-    private static final Configuration necklaceSize5 = new Configuration(
+    public static final Configuration NECKLACE_SIZE_5 = new Configuration(
             new MulticyclePermutation("(0,4,2)(1,14,12)(3,7,5)(6,10,8)(9,13,11)"));
-    private static final Configuration necklaceSize6 = new Configuration(
+    public static final Configuration NECKLACE_SIZE_6 = new Configuration(
             new MulticyclePermutation("(0,16,2)(1,5,3)(4,8,6)(7,11,9)(10,14,12)(13,17,15)"));
-    public static final Configuration[] BAD_SMALL_COMPONENTS = new Configuration[]{oriented5Cycle, interleavingPair,
-            necklaceSize4, twistedNecklaceSize4, necklaceSize5, necklaceSize6};
+    private static final Configuration[] BAD_SMALL_COMPONENTS = new Configuration[]{ORIENTED_5_CYCLE, INTERLEAVING_PAIR,
+            NECKLACE_SIZE_4, TWISTED_NECKLACE_SIZE_4, NECKLACE_SIZE_5, NECKLACE_SIZE_6};
 
-    public static void generate(final String outputDir) throws IOException {
+    private static ExecutorService EXECUTOR = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+
+    @SneakyThrows
+    public static void generate(final String outputDir) {
 
         Files.createDirectories(Paths.get(outputDir + "/comb/"));
 
-        sortOrExtend(new Pair<>(null, oriented5Cycle), outputDir);
-        sortOrExtend(new Pair<>(null, interleavingPair), outputDir);
-        sortOrExtend(new Pair<>(null, necklaceSize4), outputDir);
-        sortOrExtend(new Pair<>(null, twistedNecklaceSize4), outputDir);
-        sortOrExtend(new Pair<>(null, necklaceSize5), outputDir);
-        sortOrExtend(new Pair<>(null, necklaceSize6), outputDir);
+        sortOrExtend(new Pair<>(null, ORIENTED_5_CYCLE), Optional.empty(), outputDir);
+        sortOrExtend(new Pair<>(null, INTERLEAVING_PAIR), Optional.empty(), outputDir);
+        sortOrExtend(new Pair<>(null, NECKLACE_SIZE_4), Optional.empty(), outputDir);
+        sortOrExtend(new Pair<>(null, TWISTED_NECKLACE_SIZE_4), Optional.empty(), outputDir);
+        sortOrExtend(new Pair<>(null, NECKLACE_SIZE_5), Optional.empty(), outputDir);
+        sortOrExtend(new Pair<>(null, NECKLACE_SIZE_6), Optional.empty(), outputDir);
+
+        EXECUTOR.shutdown();
     }
 
     @SneakyThrows
-    private static void sortOrExtend(final Pair<String, Configuration> config, final String outputDir) {
-        final var canonicalConfig = config.getSecond().getCanonical();
-        final var file = new File(outputDir + "/comb/" + config.getSecond().getSpi() + ".html");
-        if (file.exists()) {
-            return;
-        }
+    private static void sortOrExtend(final Pair<String, Configuration> config, Optional<List<Cycle>> sorting, final String outputDir) {
+        assert config.getSecond().get3Norm() <= 9 : "ERROR";
 
-        var sorting = searchForSorting(config.getSecond(), true);
-        if (sorting.isPresent() && !sorting.get().isEmpty()) {
-            try (final var writer = new FileWriter(outputDir + "/comb/" + canonicalConfig.getSpi() + ".html")) {
-                renderSorting(canonicalConfig, canonicalConfig.translatedSorting(config.getSecond(), sorting.get()), writer);
+        final var canonical = config.getSecond().getCanonical();
+
+        if (sorting.isPresent()) {
+            final var file = new File(outputDir + "/comb/" + canonical.getSpi() + ".html");
+            try (final var writer = new FileWriter((file))) {
+                renderSorting(canonical, sorting.get(), writer);
             }
             return;
-        } else {
-            // before performing any extension, the 3-norm must be less than 8
-            assert config.getSecond().get3Norm() < 8 : "ERROR";
         }
 
         try (final var out = new PrintStream(outputDir + "/comb/" + config.getSecond().getSpi() + ".html")) {
@@ -114,36 +118,51 @@ public class Combinations {
             out.println("<p style=\"margin-top: 10px;\"></p>");
             out.println("THE EXTENSIONS ARE:");
 
+            final var futureExtensions = new ArrayList<Future<Pair<Pair<String, Configuration>, Optional<List<Cycle>>>>>();
             for (final var extension : extend(config.getSecond())) {
-                final var s = searchForSorting(extension.getSecond(), true);
-                final var hasSorting = s.isPresent() && !s.get().isEmpty();
-                out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
-                        "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
-                out.println(extension.getFirst() + "<br>");
-                out.println(((hasSorting ? "GOOD" : "BAD") + " EXTENSION") + "<br>");
-                out.println("Hash code: " + extension.getSecond().hashCode() + "<br>");
-                out.println("3-norm: " + extension.getSecond().getSpi().get3Norm() + "<br>");
-                out.println("Signature: " + extension.getSecond().getSignature() + "<br>");
-                final var jsSpi = permutationToJsArray(extension.getSecond().getSpi());
-                out.println(String.format("Extension: <a href=\"\" " +
-                                "onclick=\"" +
-                                "updateCanvas('modalCanvas', %s); " +
-                                "$('h6.modal-title').text('%s');" +
-                                "$('#modal').modal('show'); " +
-                                "return false;\">%s</a><br>",
-                        jsSpi, extension.getSecond().getSpi(), extension.getSecond().getSpi()));
+                futureExtensions.add(EXECUTOR.submit(() -> new Pair<>(extension, searchForSortingSmallComponents(extension.getSecond()))));
+            }
 
-                if (!hasSorting) {
-                    out.println(String.format("View extension: <a href=\"%s.html\">%s</a>",
-                            extension.getSecond().getSpi(), extension.getSecond().getSpi()));
-                } else {
-                    out.println(String.format("View sorting: <a href=\"%s.html\">%s</a>",
-                            extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
+            try {
+                for (final var future : futureExtensions) {
+                    final var extension = future.get().getFirst();
+                    final var sorting_ = future.get().getSecond();
+
+                    final var hasSorting = sorting_.isPresent() && !sorting_.get().isEmpty();
+                    out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
+                            "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
+                    out.println(extension.getFirst() + "<br>");
+                    out.println(((hasSorting ? "GOOD" : "BAD") + " EXTENSION") + "<br>");
+                    out.println("Hash code: " + extension.getSecond().hashCode() + "<br>");
+                    out.println("3-norm: " + extension.getSecond().getSpi().get3Norm() + "<br>");
+                    out.println("Signature: " + extension.getSecond().getSignature() + "<br>");
+                    final var jsSpi = permutationToJsArray(extension.getSecond().getSpi());
+                    out.println(String.format("Extension: <a href=\"\" " +
+                                    "onclick=\"" +
+                                    "updateCanvas('modalCanvas', %s); " +
+                                    "$('h6.modal-title').text('%s');" +
+                                    "$('#modal').modal('show'); " +
+                                    "return false;\">%s</a><br>",
+                            jsSpi, extension.getSecond().getSpi(), extension.getSecond().getSpi()));
+
+                    if (!hasSorting) {
+                        out.println(String.format("View extension: <a href=\"%s.html\">%s</a>",
+                                extension.getSecond().getSpi(), extension.getSecond().getSpi()));
+                    } else {
+                        out.println(String.format("View sorting: <a href=\"%s.html\">%s</a>",
+                                extension.getSecond().getCanonical().getSpi(), extension.getSecond().getCanonical().getSpi()));
+                    }
+
+                    out.println("</div>");
+
+                    if (hasSorting) {
+                        sortOrExtend(extension, Optional.of(extension.getSecond().translatedSorting(extension.getSecond().getCanonical(), sorting_.get())), outputDir);
+                    } else {
+                        sortOrExtend(extension, Optional.empty(), outputDir);
+                    }
                 }
-
-                out.println("</div>");
-
-                sortOrExtend(extension, outputDir);
+            } catch (Throwable e) {
+                e.printStackTrace();
             }
 
             out.println("</div></body></html>");
@@ -163,15 +182,15 @@ public class Combinations {
                 signature.trimToSize();
 
                 final String info;
-                if (badSmallComponent == oriented5Cycle)
+                if (badSmallComponent == ORIENTED_5_CYCLE)
                     info = "bad oriented 5-cycle";
-                else if (badSmallComponent == interleavingPair)
+                else if (badSmallComponent == INTERLEAVING_PAIR)
                     info = "unoriented interleaving pair";
-                else if (badSmallComponent == necklaceSize4)
+                else if (badSmallComponent == NECKLACE_SIZE_4)
                     info = "unoriented necklace of size 4";
-                else if (badSmallComponent == twistedNecklaceSize4)
+                else if (badSmallComponent == TWISTED_NECKLACE_SIZE_4)
                     info = "unoriented twisted necklace of size 4";
-                else if (badSmallComponent == necklaceSize5)
+                else if (badSmallComponent == NECKLACE_SIZE_5)
                     info = "unoriented necklace of size 5";
                 else
                     info = "unoriented necklace of size 6";
