@@ -225,11 +225,8 @@ public class CommonOperations implements Serializable {
                                     // skip (-2)-moves
                                     return !is_2Move;
                                 }).map(k -> {
+                                    // can be from same cycle or from two different ones
                                     final var move = Cycle.create(pi.get(i), pi.get(j), pi.get(k));
-                                    // same unoriented cycle, skip
-                                    if (ci[pi.get(i)] == ci[pi.get(j)] && ci[pi.get(j)] == ci[pi.get(k)] && !isOriented(pi, ci[pi.get(i)]))
-                                        return null;
-
                                     final var spi_ = PermutationGroups.computeProduct(spi, move.getInverse());
                                     final var delta = spi_.getNumberOfEvenCycles() - numberOfEvenCycles;
                                     if (delta == 0 && spi_.stream().allMatch(c -> c.isEven())) {
@@ -244,7 +241,7 @@ public class CommonOperations implements Serializable {
     }
 
     public static List<Pair<Cycle, Integer>> generateAll2Moves(final MulticyclePermutation spi, final Cycle pi) {
-        final var _2moves = new ArrayList<Pair<Cycle, Integer>>();
+        final var _2moves = new LinkedList<Pair<Cycle, Integer>>();
 
         for (final var cycle : spi.stream().filter(c -> isOriented(pi, c))
                 .collect(Collectors.toList())) {
