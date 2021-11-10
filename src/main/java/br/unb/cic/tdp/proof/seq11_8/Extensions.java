@@ -93,48 +93,28 @@ public class Extensions {
             final var configuration = extension.getSecond();
             final var canonical = extension.getSecond().getCanonical();
 
-            final var workingFile = new File(outputDir + "/dfs/working/" + canonical.getSpi());
+            final var badCaseFile = new File(outputDir + "/dfs/bad-cases/" + canonical.getSpi());
+            final var hasSorting = !badCaseFile.exists();
+            out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
+                    "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
+            out.println(extension.getFirst() + "<br>");
+            out.println(((hasSorting ? "GOOD" : "BAD") + " EXTENSION") + "<br>");
+            out.println("Hash code: " + configuration.hashCode() + "<br>");
+            out.println("3-norm: " + configuration.getSpi().get3Norm() + "<br>");
+            out.println("Signature: " + configuration.getSignature() + "<br>");
+            final var jsSpi = permutationToJsArray(configuration.getSpi());
+            out.println(String.format("Extension: <a href=\"\" " +
+                            "onclick=\"" +
+                            "updateCanvas('modalCanvas', %s); " +
+                            "$('h6.modal-title').text('%s');" +
+                            "$('#modal').modal('show'); " +
+                            "return false;\">%s</a><br>",
+                    jsSpi, configuration.getSpi(), configuration.getSpi()));
+            out.println(String.format("View canonical extension: <a href=\"%s.html\">%s</a>", canonical.getSpi(), canonical.getSpi()));
+            out.println("</div>");
 
-            if (workingFile.exists()) {
-                out.println("<div style=\"margin-top: 10px; background-color: rgba(232, 236, 241, 1);\">");
-                out.println(extension.getFirst() + "<br>");
-                out.println("WORKING<br>");
-                out.println("Hash code: " + configuration.hashCode() + "<br>");
-                out.println("3-norm: " + configuration.getSpi().get3Norm() + "<br>");
-                out.println("Signature: " + configuration.getSignature() + "<br>");
-                final var jsSpi = permutationToJsArray(configuration.getSpi());
-                out.println(String.format("Extension: <a href=\"\" " +
-                                "onclick=\"" +
-                                "updateCanvas('modalCanvas', %s); " +
-                                "$('h6.modal-title').text('%s');" +
-                                "$('#modal').modal('show'); " +
-                                "return false;\">%s</a><br>",
-                        jsSpi, configuration.getSpi(), configuration.getSpi()));
-                out.println("</div>");
-            } else {
-                final var badCaseFile = new File(outputDir + "/dfs/bad-cases/" + canonical.getSpi());
-                final var hasSorting = !badCaseFile.exists();
-                out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
-                        "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
-                out.println(extension.getFirst() + "<br>");
-                out.println(((hasSorting ? "GOOD" : "BAD") + " EXTENSION") + "<br>");
-                out.println("Hash code: " + configuration.hashCode() + "<br>");
-                out.println("3-norm: " + configuration.getSpi().get3Norm() + "<br>");
-                out.println("Signature: " + configuration.getSignature() + "<br>");
-                final var jsSpi = permutationToJsArray(configuration.getSpi());
-                out.println(String.format("Extension: <a href=\"\" " +
-                                "onclick=\"" +
-                                "updateCanvas('modalCanvas', %s); " +
-                                "$('h6.modal-title').text('%s');" +
-                                "$('#modal').modal('show'); " +
-                                "return false;\">%s</a><br>",
-                        jsSpi, configuration.getSpi(), configuration.getSpi()));
-                out.println(String.format("View canonical extension: <a href=\"%s.html\">%s</a>", canonical.getSpi(), canonical.getSpi()));
-                out.println("</div>");
-
-                if (!hasSorting) {
-                    new MakeHtmlNavigation(configuration, outputDir).fork();
-                }
+            if (!hasSorting) {
+                new MakeHtmlNavigation(configuration, outputDir).fork();
             }
         }
     }
