@@ -105,19 +105,13 @@ public class ShortPermutations {
 
     public static class BlockPolicy implements RejectedExecutionHandler {
 
-        public BlockPolicy() { }
-
+        @SneakyThrows
         public void rejectedExecution(final Runnable r, final ThreadPoolExecutor executor) {
-            try {
-                executor.getQueue().put(r);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            executor.getQueue().put(r);
         }
     }
 
     public static class Lock {
-
         private AtomicBoolean locked = new AtomicBoolean(false);
 
         public void lock() {

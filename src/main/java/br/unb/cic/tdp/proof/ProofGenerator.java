@@ -5,12 +5,13 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.seq11_8.Combinations;
 import br.unb.cic.tdp.proof.seq11_8.Extensions;
-import br.unb.cic.tdp.proof.seq11_8.OrientedCycleGreaterOrEquals7;
+import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
-import org.apache.commons.math3.util.Pair;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 
@@ -19,35 +20,24 @@ import java.io.Writer;
 import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
-import static br.unb.cic.tdp.proof.seq11_8.Combinations.*;
-import static br.unb.cic.tdp.proof.seq11_8.Combinations.NECKLACE_SIZE_6;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class ProofGenerator {
 
     static Multimap<Integer, Pair<Configuration, List<Cycle>>> ehSortings = HashMultimap.create();
 
-    private static final Configuration[] BAD_SMALL_COMPONENTS = new Configuration[]{
-            ORIENTED_5_CYCLE, INTERLEAVING_PAIR,
-            NECKLACE_SIZE_4, TWISTED_NECKLACE_SIZE_4,
-            NECKLACE_SIZE_5, NECKLACE_SIZE_6,
-            // invalid config
-            new Configuration(new MulticyclePermutation("(0,9,2)(1,11,4)(3,8,6)(5,10,7)"))};
+    static final int[][] _4_3 = new int[][]{{0,2,2,2}};
 
-    static {
-        // just to prevent concurrency issues
-        for (final var badSmallComponent: BAD_SMALL_COMPONENTS) {
-            badSmallComponent.hashCode();
-        }
-    }
+    static final int[][] _8_6 = new int[][]{
+            {0,2,2,0,2,2,2,2},
+            {0,2,0,2,2,2,2,2},
+            {0,0,2,2,2,2,2,2}};
 
-    static final int[][] _11_8_SEQS;
-
-    static {
-        _11_8_SEQS = new int[][]{
+    static final int[][] _11_8 = new int[][]{
                 {0, 2, 2, 2},
                 {0, 2, 2, 0, 2, 2, 2, 2},
                 {0, 2, 0, 2, 2, 2, 2, 2},
@@ -68,6 +58,30 @@ public class ProofGenerator {
                 {0, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2},
                 {0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2}
         };
+
+    static final Move _4_3_SEQS = new Move(0, new LinkedList<>());
+    static final Move _8_6_SEQS = new Move(0, new LinkedList<>());
+    static final Move _11_8_SEQS = new Move(0, new LinkedList<>());
+
+    static {
+        toTrie(_4_3, _4_3_SEQS);
+        toTrie(_8_6, _8_6_SEQS);
+        toTrie(_11_8, _11_8_SEQS);
+    }
+
+    private static void toTrie(final int[][] seqs, Move root) {
+        final var root_ = root;
+        for (int i = 0; i < seqs.length; i++) {
+            int[] seq = seqs[i];
+            root = root_;
+            for (int j = 1; j < seq.length; j++) {
+                final var move = seq[j];
+                if (!root.getChildren().stream().anyMatch(m -> m.mu == move)) {
+                    root.getChildren().add(new Move(move, new LinkedList<>()));
+                }
+                root = root.getChildren().stream().filter(m -> m.getMu() == move).findFirst().get();
+            }
+        }
     }
 
     // mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.proof.ProofGenerator" -Dexec.args=".\\proof\\"
@@ -108,29 +122,72 @@ public class ProofGenerator {
 
     public static Optional<List<Cycle>> searchForSorting(final Configuration config) {
         if (isSimple(config)) {
-            var pair = ehSortings.get(config.hashCode())
-                    .stream().filter(p -> p.getFirst().equals(config)).findFirst();
-            if (pair.isPresent()) {
-                return Optional.of(config.translatedSorting(pair.get().getFirst(), pair.get().getSecond()));
+            var candidates = ehSortings.get(config.hashCode());
+
+            Optional<Pair<Configuration, List<Cycle>>> pair;
+            if (candidates.size() == 1) {
+                pair = candidates.stream().findFirst();
             } else {
-                return Optional.empty();
+                pair = candidates.stream().filter(p -> p.getFirst().equals(config)).findFirst();
             }
+
+            return pair.map(p -> config.translatedSorting(p.getFirst(), p.getSecond()));
         }
 
-        for (final var seq : _11_8_SEQS) {
-            if ((seq.length == 4 && config.getSpi().get3Norm() >= 3) ||
-                    (seq.length == 8 && config.getSpi().get3Norm() >= 6) ||
-                    (seq.length == 11 && config.getSpi().get3Norm() >= 8)) {
-                Thread.currentThread().setName(config.getSpi().toString() + "-" + Arrays.toString(seq));
-                final var sorting = new Stack<Cycle>();
-                searchForSortingSeq(config.getSpi(), config.getPi(), seq, sorting);
-                if (!sorting.isEmpty()) {
-                    return Optional.of(sorting);
-                }
-            }
+        final var _3norm = config.getSpi().get3Norm();
+
+        final var sorting = new Stack<Cycle>();
+
+        if (_3norm >= 3) {
+            Thread.currentThread().setName(config.hashCode() + "-" + config.getSpi() + "-4,3");
+            searchForSortingSeq(config.getSpi(), config.getPi(), sorting, _4_3_SEQS);
+        }
+
+        if (_3norm >= 6 && sorting.isEmpty()) {
+            Thread.currentThread().setName(config.hashCode() + "-" + config.getSpi() + "-8,6");
+            searchForSortingSeq(config.getSpi(), config.getPi(), sorting, _8_6_SEQS);
+        }
+
+        if (_3norm >= 8 && sorting.isEmpty()) {
+            Thread.currentThread().setName(config.hashCode() + "-" + config.getSpi() + "-11,8");
+            searchForSortingSeq(config.getSpi(), config.getPi(), sorting, _11_8_SEQS);
+        }
+
+        if (!sorting.isEmpty()) {
+            return Optional.of(sorting);
         }
 
         return Optional.empty();
+    }
+
+    public static List<Cycle> searchForSortingSeq(final MulticyclePermutation spi, final Cycle pi, final Stack<Cycle> moves, final Move root) {
+        final Stream<Pair<Cycle, Integer>> nextMoves = generateAll0And2Moves(spi, pi).filter(m -> m.getSecond() == root.getMu());
+
+        try {
+            final var iterator = nextMoves.iterator();
+            while (iterator.hasNext()) {
+                final var move = iterator.next().getFirst();
+                moves.push(move);
+
+                if (root.getChildren().isEmpty()) {
+                    return moves;
+                } else {
+                    for (final var m : root.getChildren()) {
+                        final var sorting =
+                                searchForSortingSeq(computeProduct(spi, move.getInverse()), applyTransposition(pi, move), moves, m);
+                        if (!sorting.isEmpty()) {
+                            return moves;
+                        }
+                    }
+                }
+                moves.pop();
+            }
+        } catch(IllegalStateException e) {
+            // means empty stream
+            return Collections.emptyList();
+        }
+
+        return Collections.emptyList();
     }
 
     public static Optional<List<Cycle>> searchForSortingSmallComponents(final Configuration config) {
@@ -201,5 +258,26 @@ public class ProofGenerator {
 
         final var template = Velocity.getTemplate("templates/sorting.html");
         template.merge(context, writer);
+    }
+
+
+    @AllArgsConstructor
+    @Getter
+    public static class Move {
+        private int mu;
+        private List<Move> children;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Move m = (Move) o;
+            return mu == m.mu;
+        }
+
+        @Override
+        public String toString() {
+            return Integer.toString(mu);
+        }
     }
 }

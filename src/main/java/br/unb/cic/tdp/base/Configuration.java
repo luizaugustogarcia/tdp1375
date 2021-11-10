@@ -70,7 +70,7 @@ public class Configuration {
                 if (orientedCycles.contains(cycle)) {
                     symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
                         final var symbolIndex = new int[pi.getMaxSymbol() + 1];
-                        final var symbolMinIndex = Ints.asList(c.getSymbols()).stream().sorted(comparing(s -> pi.indexOf(s))).findFirst().get();
+                        final var symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
                         c = c.startingBy(symbolMinIndex);
                         for (int j = 0; j < c.size(); j++) {
                             symbolIndex[c.get(j)] = j + 1;
@@ -104,17 +104,17 @@ public class Configuration {
             }
         }
 
-        orientedCyclesByLabel.entrySet().stream().forEach(e -> {
+        orientedCyclesByLabel.forEach((key, value) -> {
             final var sortedSignature = signature.clone();
             Arrays.sort(sortedSignature);
             final var orientedCycle = new ArrayList<Integer>();
             for (int i = 0; i < signature.length; i++) {
-                if (Math.floor(sortedSignature[i]) == e.getKey()) {
+                if (Math.floor(sortedSignature[i]) == key) {
                     orientedCycle.add(piSymbolsByOrientedCycleSymbols.get(sortedSignature[i]));
                 }
             }
-            e.getValue().clear();
-            e.getValue().addAll(orientedCycle);
+            value.clear();
+            value.addAll(orientedCycle);
         });
 
         final var spi = cyclesByLabel.values().stream().map(c -> Cycle.create(Ints.toArray(c)))
@@ -125,8 +125,7 @@ public class Configuration {
 
     public Configuration getCanonical() {
         if (canonical == null) {
-            canonical = ofSignature(getEquivalentSignatures().stream()
-                    .sorted(comparing(Signature::hashCode)).findFirst().get().getContent());
+            canonical = ofSignature(getEquivalentSignatures().stream().min(comparing(Signature::hashCode)).get().getContent());
         }
         return canonical;
     }
@@ -226,6 +225,10 @@ public class Configuration {
             return false;
         }
 
+        if (this.hashCode() != obj.hashCode()) {
+            return false;
+        }
+
         final var other = (Configuration) obj;
 
         if (this.signature.content.length != other.signature.content.length ||
@@ -243,7 +246,7 @@ public class Configuration {
         return openGates = CommonOperations.getOpenGates(spi, pi, signature.content);
     }
 
-    public class Signature {
+    public static class Signature {
 
         @Getter
         private final Cycle pi;
@@ -278,7 +281,7 @@ public class Configuration {
         @SneakyThrows
         @Override
         public int hashCode() {
-           if (hashCode == null) {
+            if (hashCode == null) {
                 final var bas = new ByteArrayOutputStream();
                 final var ds = new DataOutputStream(bas);
                 for (float f : content)
