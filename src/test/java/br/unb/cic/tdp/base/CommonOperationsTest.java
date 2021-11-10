@@ -9,7 +9,6 @@ import java.util.Arrays;
 import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
 import static br.unb.cic.tdp.base.CommonOperations.applyTransposition;
 import static br.unb.cic.tdp.base.CommonOperations.areSymbolsInCyclicOrder;
-import static br.unb.cic.tdp.base.CommonOperations.is11_8;
 import static br.unb.cic.tdp.base.CommonOperations.isOriented;
 import static br.unb.cic.tdp.base.CommonOperations.simplify;
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,13 +35,6 @@ class CommonOperationsTest {
 
         final var index = CommonOperations.cycleIndex(Arrays.asList(c0, c1), pi);
         assertArrayEquals(new Cycle[]{c0, c1, c0, c1, c0, c1}, index);
-    }
-
-    @Test
-    void testIs11_8() {
-        final var pi = Cycle.create("0 4 8 3 7 2 6 1 5 9 14 13 12 11");
-        final var spi = PermutationGroups.computeProduct(CANONICAL_PI[15], pi.getInverse());
-        assertTrue(is11_8(spi, pi, Arrays.asList(Cycle.create("1 4 7"), Cycle.create("2 8 5"), Cycle.create("1 4 7"), Cycle.create("3 9 6"))));
     }
 
     @Test

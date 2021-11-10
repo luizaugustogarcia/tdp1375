@@ -160,12 +160,13 @@ public class ProofGenerator {
         return Optional.empty();
     }
 
+    // assumes that spi contains only even cycles
     public static List<Cycle> searchForSortingSeq(final MulticyclePermutation spi, final Cycle pi, final Stack<Cycle> moves, final Move root) {
         final Stream<Cycle> nextMoves;
         if (root.getMu() == 0) {
-            nextMoves = generateAll0And2Moves(spi, pi).filter(m -> m.getSecond() == 0).map(Pair::getFirst);
+            nextMoves = generateAll0Moves(spi, pi).map(Pair::getFirst);
         } else {
-            nextMoves = generateAll2Moves(spi, pi).stream();
+            nextMoves = generateAll2MovesFromOrientedCycles(spi, pi).stream();
         }
 
         try {
