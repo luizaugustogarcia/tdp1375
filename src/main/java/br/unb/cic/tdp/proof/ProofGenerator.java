@@ -161,12 +161,17 @@ public class ProofGenerator {
     }
 
     public static List<Cycle> searchForSortingSeq(final MulticyclePermutation spi, final Cycle pi, final Stack<Cycle> moves, final Move root) {
-        final Stream<Pair<Cycle, Integer>> nextMoves = generateAll0And2Moves(spi, pi).filter(m -> m.getSecond() == root.getMu());
+        final Stream<Cycle> nextMoves;
+        if (root.getMu() == 0) {
+            nextMoves = generateAll0And2Moves(spi, pi).filter(m -> m.getSecond() == 0).map(Pair::getFirst);
+        } else {
+            nextMoves = generateAll2Moves(spi, pi).stream();
+        }
 
         try {
             final var iterator = nextMoves.iterator();
             while (iterator.hasNext()) {
-                final var move = iterator.next().getFirst();
+                final var move = iterator.next();
                 moves.push(move);
 
                 if (root.getChildren().isEmpty()) {
