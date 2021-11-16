@@ -23,7 +23,7 @@ public class MulticyclePermutation extends ArrayList<Cycle> implements Permutati
                     symbol = 0;
                     this.add(Cycle.create(cycle));
                     cycle = new IntArrayList();
-                } else if (current == ',') {
+                } else if (current == ',' || current == ' ') {
                     cycle.add(symbol);
                     symbol = 0;
                 } else {

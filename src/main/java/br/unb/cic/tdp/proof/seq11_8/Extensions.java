@@ -103,14 +103,14 @@ public class Extensions {
             out.println("3-norm: " + configuration.getSpi().get3Norm() + "<br>");
             out.println("Signature: " + configuration.getSignature() + "<br>");
             final var jsSpi = permutationToJsArray(configuration.getSpi());
-            out.println(String.format("Extension: <a href=\"\" " +
+            out.printf("Extension: <a href=\"\" " +
                             "onclick=\"" +
                             "updateCanvas('modalCanvas', %s); " +
                             "$('h6.modal-title').text('%s');" +
                             "$('#modal').modal('show'); " +
-                            "return false;\">%s</a><br>",
-                    jsSpi, configuration.getSpi(), configuration.getSpi()));
-            out.println(String.format("View canonical extension: <a href=\"%s.html\">%s</a>", canonical.getSpi(), canonical.getSpi()));
+                            "return false;\">%s</a><br>%n",
+                    jsSpi, configuration.getSpi(), configuration.getSpi());
+            out.printf("View canonical extension: <a href=\"%s.html\">%s</a>%n", canonical.getSpi(), canonical.getSpi());
             out.println("</div>");
 
             if (!hasSorting) {
@@ -154,7 +154,7 @@ public class Extensions {
             }
         }
 
-        return true;
+        return false;
     }
     
     /*
@@ -169,12 +169,11 @@ public class Extensions {
 
         for (int i = 0; i < signature.length; i++) {
             if (config.getOpenGates().contains(i)) {
-                final var a = i;
                 for (int b = 0; b < signature.length; b++) {
                     for (int c = b; c < signature.length; c++) {
-                        if (!(a == b && b == c)) {
-                            result.add(new Pair<>(String.format("a=%d b=%d c=%d", a, b, c),
-                                    ofSignature(unorientedExtension(signature, newCycleLabel, a, b, c).elements())));
+                        if (!(i == b && b == c)) {
+                            result.add(new Pair<>(String.format("a=%d b=%d c=%d", i, b, c),
+                                    ofSignature(unorientedExtension(signature, newCycleLabel, i, b, c).elements())));
                         }
                     }
                 }
@@ -194,7 +193,7 @@ public class Extensions {
 
         final var result = new ArrayList<Pair<String, Configuration>>();
 
-        final var newCycleLabel = (int) (config.getSpi().size() + 1);
+        final var newCycleLabel = config.getSpi().size() + 1;
 
         final var signature = signature(config.getSpi(), config.getPi());
 
@@ -280,8 +279,8 @@ public class Extensions {
         final var positions = new int[]{a, b};
         final var extension = new FloatArrayList(copiedsignature);
         int inserted = 0;
-        for (int i = 0; i < positions.length ; i++) {
-            extension.beforeInsert(positions[i] + inserted, label + next);
+        for (int position : positions) {
+            extension.beforeInsert(position + inserted, label + next);
             next -= 0.1f;
             inserted++;
         }
@@ -307,20 +306,6 @@ public class Extensions {
         return intervals.size() == 1;
     }
 
-    private static float[] makeOriented5Cycle(final float[] extension, final int label) {
-        final var fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
-        int count = 0;
-        for (int i = 0; i < extension.length; i++) {
-            if (count > fractions.length) {
-                break;
-            }
-            if (Math.floor(extension[i]) == label) {
-                extension[i] += fractions[count++];
-            }
-        }
-        return extension;
-    }
-
     private static boolean isOriented(float[] signature, int label) {
         for (float s : signature) {
             if (s % 1 > 0 && Math.floor(s) == label) {
@@ -339,46 +324,6 @@ public class Extensions {
         }
         extension.trimToSize();
         return extension;
-    }
-
-    @SneakyThrows
-    public static Pair<MulticyclePermutation, List<Cycle>> getSorting(final Path path) {
-        final var reader = new BufferedReader(new FileReader(path.toFile()));
-        var line = reader.readLine();
-        MulticyclePermutation spi = null;
-
-        while ((line = reader.readLine()) != null) {
-            line = line.trim();
-
-            if (line.startsWith("<h6>")) {
-                spi = new MulticyclePermutation(line.trim().replace("<h6>", "")
-                        .replace("</h6>", "").replace(" ", ","));
-            }
-
-            if (line.equals("THE EXTENSIONS ARE:")) {
-                return new Pair<>(spi, null);
-            }
-
-            final var sorting = new ArrayList<Cycle>();
-            if (line.trim().equals("ALLOWS (11/8)-SEQUENCE")) {
-                while ((line = reader.readLine()) != null) {
-                    line = line.trim();
-
-                    if (!line.equals("<div style=\"margin-top: 10px; \">")) {
-                        continue;
-                    }
-
-                    line = reader.readLine();
-
-                    final var move = line.split(": ")[1].replace(" ", ",")
-                            .replace("<br>", "");
-                    sorting.add(Cycle.create(move));
-                }
-                return new Pair<>(spi, sorting);
-            }
-        }
-
-        return null;
     }
 
     @AllArgsConstructor
@@ -447,8 +392,8 @@ public class Extensions {
 
     @AllArgsConstructor
     static class MakeHtmlNavigation extends RecursiveAction {
-        private Configuration configuration;
-        private String outputDir;
+        private final Configuration configuration;
+        private final String outputDir;
 
         @SneakyThrows
         @Override
@@ -503,8 +448,8 @@ public class Extensions {
                         "<div style=\"margin-top: 10px; margin-left: 10px\">");
 
                 out.println("<canvas id=\"canvas\"></canvas>");
-                out.println(String.format("<script>updateCanvas('canvas', %s);</script>",
-                        permutationToJsArray(canonical.getSpi())));
+                out.printf("<script>updateCanvas('canvas', %s);</script>%n",
+                        permutationToJsArray(canonical.getSpi()));
 
                 out.println("<h6>" + canonical.getSpi() + "</h6>");
 
