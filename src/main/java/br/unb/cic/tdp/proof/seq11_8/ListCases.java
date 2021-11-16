@@ -1,13 +1,15 @@
 package br.unb.cic.tdp.proof.seq11_8;
 
+import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.base.Throwables;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import static br.unb.cic.tdp.base.CommonOperations.is11_8;
 
 public class ListCases {
 
@@ -53,7 +55,8 @@ public class ListCases {
                                                     .replace("<br>", "");
                                             sorting.add(Cycle.create(move));
                                         }
-                                        writer.println(spi + "->" + sorting.toString());
+                                        writer.println(spi + "->" + sorting);
+                                        is11_8(spi, CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()], sorting);
                                     }
                                 }
                             } catch (IOException e) {

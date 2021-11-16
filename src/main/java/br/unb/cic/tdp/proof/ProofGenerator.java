@@ -71,12 +71,11 @@ public class ProofGenerator {
 
     private static void toTrie(final int[][] seqs, Move root) {
         final var root_ = root;
-        for (int i = 0; i < seqs.length; i++) {
-            int[] seq = seqs[i];
+        for (int[] seq : seqs) {
             root = root_;
             for (int j = 1; j < seq.length; j++) {
                 final var move = seq[j];
-                if (!root.getChildren().stream().anyMatch(m -> m.mu == move)) {
+                if (root.getChildren().stream().noneMatch(m -> m.mu == move)) {
                     root.getChildren().add(new Move(move, new LinkedList<>()));
                 }
                 root = root.getChildren().stream().filter(m -> m.getMu() == move).findFirst().get();
@@ -157,6 +156,10 @@ public class ProofGenerator {
             return Optional.of(sorting);
         }
 
+        if (config.isFull() && getComponents(config.getSpi(), config.getPi()).size() == 1) {
+            System.out.println("Full configuration without (11/8): " + config.getCanonical().getSpi());
+        }
+
         return Optional.empty();
     }
 
@@ -164,9 +167,9 @@ public class ProofGenerator {
     public static List<Cycle> searchForSortingSeq(final MulticyclePermutation spi, final Cycle pi, final Stack<Cycle> moves, final Move root) {
         final Stream<Cycle> nextMoves;
         if (root.getMu() == 0) {
-            nextMoves = generateAll0Moves(spi, pi).map(Pair::getFirst);
+            nextMoves = generateAll0And2Moves(spi, pi).filter(p -> p.getSecond() == root.getMu()).map(Pair::getFirst);
         } else {
-            nextMoves = generateAll2MovesFromOrientedCycles(spi, pi).stream();
+            nextMoves = generateAll2Moves(spi, pi).map(Pair::getFirst);
         }
 
         try {
@@ -180,7 +183,7 @@ public class ProofGenerator {
                 } else {
                     for (final var m : root.getChildren()) {
                         final var sorting =
-                                searchForSortingSeq(computeProduct(spi, move.getInverse()), applyTransposition(pi, move), moves, m);
+                                searchForSortingSeq(computeProduct(true, pi.size(), spi, move.getInverse()), applyTransposition(pi, move), moves, m);
                         if (!sorting.isEmpty()) {
                             return moves;
                         }
@@ -252,8 +255,7 @@ public class ProofGenerator {
         final var jsPis = new ArrayList<String>();
         var spi = canonicalConfig.getSpi();
         var pi = canonicalConfig.getPi();
-        for (int i = 0; i < sorting.size(); i++) {
-            final var move = sorting.get(i);
+        for (final Cycle move : sorting) {
             spis.add(spi = computeProduct(spi, move.getInverse()));
             jsSpis.add(permutationToJsArray(spi));
             jsPis.add(cycleToJsArray(pi = computeProduct(move, pi).asNCycle()));
@@ -270,8 +272,8 @@ public class ProofGenerator {
     @AllArgsConstructor
     @Getter
     public static class Move {
-        private int mu;
-        private List<Move> children;
+        private final int mu;
+        private final List<Move> children;
 
         @Override
         public boolean equals(Object o) {
