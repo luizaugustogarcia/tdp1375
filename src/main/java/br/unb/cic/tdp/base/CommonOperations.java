@@ -234,8 +234,8 @@ public class CommonOperations implements Serializable {
 
     public static Stream<Pair<Cycle, Integer>> generateAll2Moves(final MulticyclePermutation spi, final Cycle pi) {
         return Stream.concat(
-                generateAll2MovesFromOrientedCycles(spi, pi).stream().map(m -> new Pair<>(m, 2)),
-                generateAll2MovesFromOddCycles(spi, pi));
+                generateAll2MovesFromOddCycles(spi, pi),
+                generateAll2MovesFromOrientedCycles(spi, pi).stream().map(m -> new Pair<>(m, 2)));
     }
 
     public static Stream<Pair<Cycle, Integer>> generateAll2MovesFromOddCycles(final MulticyclePermutation spi, final Cycle pi) {

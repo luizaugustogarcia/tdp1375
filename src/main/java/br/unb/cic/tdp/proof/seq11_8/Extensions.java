@@ -8,6 +8,7 @@ import cern.colt.list.FloatArrayList;
 import com.google.common.base.Preconditions;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -15,11 +16,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
-import static br.unb.cic.tdp.base.CommonOperations.searchFor2MoveFromOrientedCycle;
+import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import java.util.concurrent.*;
 
-import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
 import static br.unb.cic.tdp.base.Configuration.*;
 
 public class Extensions {
@@ -32,7 +32,7 @@ public class Extensions {
 
         cleanUpIncompleteCases(outputDir + "/dfs/");
 
-        cleanUpBadExtensionFiles(outputDir + "/dfs/");
+        cleanUpBadExtensionAndInvalidFiles(outputDir + "/dfs/");
 
         // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the dfs directory.
         // Otherwise, it will skip cases.
@@ -60,8 +60,9 @@ public class Extensions {
         executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
     }
 
+
     @SneakyThrows
-    public static void cleanUpBadExtensionFiles(final String outputDir) {
+    public static void cleanUpBadExtensionAndInvalidFiles(final String outputDir) {
         final var files = new ArrayList<File>();
         Files.list(Paths.get(outputDir))
                 .parallel()
@@ -69,22 +70,32 @@ public class Extensions {
                 .filter(File::isFile)
                 .forEach(f -> {
                     final var file = new File(outputDir + f.getName());
-                    if (isBadExtension(file)) {
+                    try {
+                        if (isBadExtension(file)) {
+                            files.add(file);
+                        } else {
+                            final var canonical = new Configuration(new MulticyclePermutation(f.getName().replace(" ", ",")));
+                            final var sorting = ListCases.getSorting(new File(outputDir + "/" + canonical.getSpi() + ".html").toPath());
+                            if (!is11_8(canonical.getSpi(), canonical.getPi(), sorting.getSecond())) {
+                                files.add(file);
+                            }
+                        }
+                    } catch (IllegalStateException e) {
                         files.add(file);
                     }
                 });
 
         boolean canContinue = true;
         for (final var file : files) {
-            boolean deleted = file.delete();
-            canContinue &= file.delete();
+            boolean deleted = FileUtils.deleteQuietly(file);
+            canContinue &= deleted;
             if (!deleted) {
                 System.out.println("rm \"" + file + "\"");
             }
         }
 
         if (!canContinue)
-            throw new RuntimeException("ERROR: bad extension files not deleted, cannot continue.");
+            throw new RuntimeException("ERROR: files not deleted, cannot continue.");
     }
 
     @SneakyThrows
