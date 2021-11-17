@@ -222,7 +222,7 @@ public class CommonOperations implements Serializable {
 
                                     // TODO improve this performance
                                     final var move = Cycle.create(a, b, c);
-                                    final var spi_ = computeProduct(true, pi.size(), spi, move.getInverse());
+                                    final var spi_ = computeProduct(true, pi.getMaxSymbol() + 1, spi, move.getInverse());
                                     final var delta = spi_.getNumberOfEvenCycles() - numberOfEvenCycles;
 
                                     if (delta >= 0)
@@ -234,8 +234,8 @@ public class CommonOperations implements Serializable {
 
     public static Stream<Pair<Cycle, Integer>> generateAll2Moves(final MulticyclePermutation spi, final Cycle pi) {
         return Stream.concat(
-                generateAll2MovesFromOddCycles(spi, pi),
-                generateAll2MovesFromOrientedCycles(spi, pi).stream().map(m -> new Pair<>(m, 2)));
+                generateAll2MovesFromOrientedCycles(spi, pi).stream().map(m -> new Pair<>(m, 2)),
+                generateAll2MovesFromOddCycles(spi, pi));
     }
 
     public static Stream<Pair<Cycle, Integer>> generateAll2MovesFromOddCycles(final MulticyclePermutation spi, final Cycle pi) {

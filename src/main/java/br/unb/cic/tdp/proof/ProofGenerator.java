@@ -183,7 +183,7 @@ public class ProofGenerator {
                 } else {
                     for (final var m : root.getChildren()) {
                         final var sorting =
-                                searchForSortingSeq(computeProduct(true, pi.size(), spi, move.getInverse()), applyTransposition(pi, move), moves, m);
+                                searchForSortingSeq(computeProduct(true, pi.getMaxSymbol() + 1, spi, move.getInverse()), applyTransposition(pi, move), moves, m);
                         if (!sorting.isEmpty()) {
                             return moves;
                         }

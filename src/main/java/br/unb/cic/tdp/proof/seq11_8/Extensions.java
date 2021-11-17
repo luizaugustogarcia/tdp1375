@@ -48,16 +48,16 @@ public class Extensions {
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 
-        pool = new ForkJoinPool();
-        // oriented 5-cycle
-        pool.execute(new MakeHtmlNavigation(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir));
-        // interleaving pair
-        pool.execute(new MakeHtmlNavigation(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir));
-        // intersecting pair
-        pool.execute(new MakeHtmlNavigation(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir));
-        pool.shutdown();
+        final var executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
+                .map(Path::toFile)
+                .forEach(file -> {
+                    executor.submit(() -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir));
+                });
+
+        executor.shutdown();
         // boundless
-        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
     }
 
     @SneakyThrows
@@ -112,10 +112,6 @@ public class Extensions {
                     jsSpi, configuration.getSpi(), configuration.getSpi());
             out.printf("View canonical extension: <a href=\"%s.html\">%s</a>%n", canonical.getSpi(), canonical.getSpi());
             out.println("</div>");
-
-            if (!hasSorting) {
-                new MakeHtmlNavigation(configuration, outputDir).fork();
-            }
         }
     }
 
@@ -390,99 +386,79 @@ public class Extensions {
         }
     }
 
-    @AllArgsConstructor
-    static class MakeHtmlNavigation extends RecursiveAction {
-        private final Configuration configuration;
-        private final String outputDir;
+    @SneakyThrows
+    private static void makeHtmlNavigation (final Configuration configuration, final String outputDir) {
+        try (final var out = new PrintStream(outputDir + "/dfs/" + configuration.getSpi() + ".html")) {
+            out.println("<html>\n" +
+                    "\t<head>\n" +
+                    "\t\t<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css\" integrity=\"sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh\" crossorigin=\"anonymous\">\n" +
+                    "\t\t<script src=\"https://code.jquery.com/jquery-3.4.1.slim.min.js\" integrity=\"sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n\" crossorigin=\"anonymous\"></script>\n" +
+                    "\t\t<script src=\"https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js\" integrity=\"sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo\" crossorigin=\"anonymous\"></script>\n" +
+                    "\t\t<script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js\" integrity=\"sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6\" crossorigin=\"anonymous\"></script>\n" +
+                    "\t\t<script src=\"../draw-config.js\"></script>\n" +
+                    "\t\t<style>* { font-size: small; }</style>\n" +
+                    "\t</head>\n" +
+                    "<body>\n" +
+                    "<div class=\"modal fade\" id=\"modal\" role=\"dialog\">\n" +
+                    "    <div class=\"modal-dialog\" style=\"left: 25px; max-width: unset;\">\n" +
+                    "      <!-- Modal content-->\n" +
+                    "      <div class=\"modal-content\" style=\"width: fit-content;\">\n" +
+                    "        <div class=\"modal-header\">\n" +
+                    "          <h6 class=\"modal-title\">--------</h6>\n" +
+                    "          <button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>\n" +
+                    "        </div>\n" +
+                    "        <div class=\"modal-body\">\n" +
+                    "          <canvas id=\"modalCanvas\"></canvas>\n" +
+                    "        </div>\n" +
+                    "      </div>\n" +
+                    "    </div>\n" +
+                    "</div>\n" +
+                    "<script>\n" +
+                    "\tfunction updateCanvas(canvasId, spi) {\n" +
+                    "\t   var pi = []; for (var i = 0; i < spi.flatMap(c => c).length; i++) { pi.push(i); }" +
+                    "\t   var canvas = document.getElementById(canvasId);\n" +
+                    "\t   canvas.height = calcHeight(canvas, spi, pi);\n" +
+                    "\t   canvas.width = pi.length * padding;\n" +
+                    "\t   draw(canvas, spi, pi);\n" +
+                    "\t}\n" +
+                    "</script>\n" +
+                    "<div style=\"margin-top: 10px; margin-left: 10px\">");
 
-        @SneakyThrows
-        @Override
-        protected void compute() {
-            final var canonical = configuration.getCanonical();
+            out.println("<canvas id=\"canvas\"></canvas>");
+            out.printf("<script>updateCanvas('canvas', %s);</script>%n",
+                    permutationToJsArray(configuration.getSpi()));
 
-            final var badCaseFile = new File(outputDir + "/dfs/bad-cases/" + canonical.getSpi());
-            final var sortingFile = new File(outputDir + "/dfs/" + canonical.getSpi());
+            out.println("<h6>" + configuration.getSpi() + "</h6>");
 
-            if (!badCaseFile.exists() && !sortingFile.exists())
-                throw new RuntimeException("ERROR: " + canonical.getSpi() + " is not a bad extension, nor a sorting.");
+            out.println("Hash code: " + configuration.hashCode() + "<br>");
+            out.println("Open gates: " + configuration.getOpenGates() + "<br>");
+            out.println("Signature: " + configuration.getSignature() + "<br>");
+            out.println("3-norm: " + configuration.getSpi().get3Norm());
 
-            // it's a sorting
-            if (!badCaseFile.exists()) {
-                return;
-            }
+            out.println("<p style=\"margin-top: 10px;\"></p>");
+            out.println("THE EXTENSIONS ARE:");
 
-            try (final var out = new PrintStream(outputDir + "/dfs/" + canonical.getSpi() + ".html")) {
-                out.println("<html>\n" +
-                        "\t<head>\n" +
-                        "\t\t<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css\" integrity=\"sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh\" crossorigin=\"anonymous\">\n" +
-                        "\t\t<script src=\"https://code.jquery.com/jquery-3.4.1.slim.min.js\" integrity=\"sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n\" crossorigin=\"anonymous\"></script>\n" +
-                        "\t\t<script src=\"https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js\" integrity=\"sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo\" crossorigin=\"anonymous\"></script>\n" +
-                        "\t\t<script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js\" integrity=\"sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6\" crossorigin=\"anonymous\"></script>\n" +
-                        "\t\t<script src=\"../draw-config.js\"></script>\n" +
-                        "\t\t<style>* { font-size: small; }</style>\n" +
-                        "\t</head>\n" +
-                        "<body>\n" +
-                        "<div class=\"modal fade\" id=\"modal\" role=\"dialog\">\n" +
-                        "    <div class=\"modal-dialog\" style=\"left: 25px; max-width: unset;\">\n" +
-                        "      <!-- Modal content-->\n" +
-                        "      <div class=\"modal-content\" style=\"width: fit-content;\">\n" +
-                        "        <div class=\"modal-header\">\n" +
-                        "          <h6 class=\"modal-title\">--------</h6>\n" +
-                        "          <button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>\n" +
-                        "        </div>\n" +
-                        "        <div class=\"modal-body\">\n" +
-                        "          <canvas id=\"modalCanvas\"></canvas>\n" +
-                        "        </div>\n" +
-                        "      </div>\n" +
-                        "    </div>\n" +
-                        "</div>\n" +
-                        "<script>\n" +
-                        "\tfunction updateCanvas(canvasId, spi) {\n" +
-                        "\t   var pi = []; for (var i = 0; i < spi.flatMap(c => c).length; i++) { pi.push(i); }" +
-                        "\t   var canvas = document.getElementById(canvasId);\n" +
-                        "\t   canvas.height = calcHeight(canvas, spi, pi);\n" +
-                        "\t   canvas.width = pi.length * padding;\n" +
-                        "\t   draw(canvas, spi, pi);\n" +
-                        "\t}\n" +
-                        "</script>\n" +
-                        "<div style=\"margin-top: 10px; margin-left: 10px\">");
+            out.println("<table style=\"width:100%; border: 1px solid lightgray; border-collapse: collapse;\">");
+            out.println("  <tr>");
+            out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 1</th>");
+            out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 2</th>");
+            out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 3</th>");
+            out.println("  </tr>");
+            out.println("  <tr>");
+            out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
+            renderExtensions(type1Extensions(configuration), out, outputDir);
+            out.println("    </td>");
+            out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
+            renderExtensions(type2Extensions(configuration), out, outputDir);
+            out.println("    </td>");
+            out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
+            renderExtensions(type3Extensions(configuration), out, outputDir);
+            out.println("    </td>");
+            out.println("  </tr>");
+            out.println("</table>");
 
-                out.println("<canvas id=\"canvas\"></canvas>");
-                out.printf("<script>updateCanvas('canvas', %s);</script>%n",
-                        permutationToJsArray(canonical.getSpi()));
-
-                out.println("<h6>" + canonical.getSpi() + "</h6>");
-
-                out.println("Hash code: " + canonical.hashCode() + "<br>");
-                out.println("Open gates: " + canonical.getOpenGates() + "<br>");
-                out.println("Signature: " + canonical.getSignature() + "<br>");
-                out.println("3-norm: " + canonical.getSpi().get3Norm());
-
-                out.println("<p style=\"margin-top: 10px;\"></p>");
-                out.println("THE EXTENSIONS ARE:");
-
-                out.println("<table style=\"width:100%; border: 1px solid lightgray; border-collapse: collapse;\">");
-                out.println("  <tr>");
-                out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 1</th>");
-                out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 2</th>");
-                out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 3</th>");
-                out.println("  </tr>");
-                out.println("  <tr>");
-                out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-                renderExtensions(type1Extensions(canonical), out, outputDir);
-                out.println("    </td>");
-                out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-                renderExtensions(type2Extensions(canonical), out, outputDir);
-                out.println("    </td>");
-                out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-                renderExtensions(type3Extensions(canonical), out, outputDir);
-                out.println("    </td>");
-                out.println("  </tr>");
-                out.println("</table>");
-
-                out.println("</body>");
-                out.println("</html>");
-            }
+            out.println("</body>");
+            out.println("</html>");
         }
     }
 }
