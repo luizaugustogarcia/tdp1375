@@ -98,10 +98,14 @@
             <h3>Lemma 28: If there is an even (odd-length) $\kappa$-cycle $\gamma=(a\dots b\dots c\dots)$ in $\spi$ such that $\kappa\geq 7$ and $(a,b,c)$ is an oriented triplet, then there is either a $2$-move or $(4,3)$-sequence.</h3>
 
             Proof. If $(a\;b\;c)$ is a $2$-move, then the lemma holds. There is only one case where $(a\;b\;c)$ would not be a $2$-move. W.l.o.g, suppose that this case is
-            \[\gamma=(\underbrace{d\;e\dots b}_{odd}\;|\;\underbrace{f\dots c}_{even}\;|\;\underbrace{g\dots a}_{even}\;|).\]
+            \[
+            \gamma=(\underbrace{d\;e\dots b}_{odd}\;|\;\underbrace{f\dots c}_{even}\;|\;\underbrace{g\dots a}_{even}\;|).
+            \]
             Vertical bars are used to indicate the locations where $\gamma$ would be broken if $(a\;b\;c)$ were applied on $\epi$, and subscripts to indicate the parity of the length of the resulting cycles. Note that the cycle $\gamma$ can be rewritten as the product
-            \[\gamma=(\underbrace{a\dots}_{odd})(\underbrace{b\dots}_{odd})(\underbrace{c\dots}_{odd})(a\;d\;e\;b\;f\;c\;g).\]
-            For each of the $19$ distinct possible forms of $\epi$, related to the symbols of $(a\;d\;e\;b\;f\;c\;g)$, there is a $\frac{4}{3}$-sequence of transpositions. The case analysis can be visualised <a href="oriented-7-cycle/index.html">here</a>. For this consider $a=0$, $b=1$, $c=2$, $d=3$, $e=4$, $f=5$ and $g=6$.
+            \[
+            \gamma=(\underbrace{a\dots}_{odd})(\underbrace{b\dots}_{odd})(\underbrace{c\dots}_{odd})(a\;d\;e\;b\;f\;c\;g).
+            \]
+            There is only one form of $\epi$ relatively to the symbols of the support of $(a\;d\;e\;b\;f\;c\;g)$ not allowing the application of a $2$-move. It is $\epi=(a\dots e\dots f\dots g\dots d\dots b\dots$ $ c\dots)$. For this $\epi$, $\tau_1=(a\;e\;f)$, $\tau_2=(d\;e\;f)$, $\tau_3=(b\;f\;d)$, $\tau_4=(a\;c\;g)$ is $(4,3)$-sequence of transpositions.
 
             <h3>Lemma 29: If $\spi\neq\iota$, then a $2$-move or $(3,2)$-sequence exists.</h3>
             Proof. If there is an odd (even-length) cycle in $\spi$, then by Proposition 24, a $2$-move (i.e., a $(1,1)$-sequence) exists. Thus, we assume $\spi$ containing only even (odd-length) cycles.
