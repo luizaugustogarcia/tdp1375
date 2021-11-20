@@ -217,6 +217,7 @@ public class Extensions {
 
         return result;
     }
+
     /*
      * Type 3 extension.
      */
@@ -257,10 +258,15 @@ public class Extensions {
                                 result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
                             }
                         } else if (_cyclesSizes.get(label) == 3) {
-                            final var configuration = extend(cyclesByLabel, label, signature, a, b);
-                            if (searchFor2MoveFromOrientedCycle(configuration.getSpi(), configuration.getPi()).isEmpty()) {
+                            final var extension_ = extend(cyclesByLabel, label, signature, a, b);
+                            final var fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
+                            for (int i = 0; i < fractions.length; i++) {
+                                fractions[i] += label;
+                            }
+
+                            if (areSymbolsInCyclicOrder(extension_, fractions)) { // otherwise, it accepts a 2-move
                                 result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s, turn oriented", a, b,
-                                        cyclesByLabel.get(label)), configuration));
+                                        cyclesByLabel.get(label)), Configuration.ofSignature(extension_)));
                             }
                         }
                     }
@@ -271,8 +277,32 @@ public class Extensions {
         return result;
     }
 
-    private static Configuration extend(final Map<Integer, Cycle> cyclesByLabel, final int label, float[] signature,
-                                        final int a, final int b) {
+    public static boolean areSymbolsInCyclicOrder(final float[] elements, final float[] other) {
+        int next = 0;
+
+        outer: for (int i = 0; i < elements.length; i++) {
+            if (elements[i] == other[next]) {
+                for (int j = 0; j <= elements.length; j++) {
+                    int index = (i + j) % elements.length;
+                    if (Math.floor(elements[index]) == Math.floor(other[next % other.length])) {
+                        if (elements[index] == other[next % other.length]) {
+                            next++;
+                            if (next > other.length) {
+                                break outer;
+                            }
+                        } else {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
+        return true;
+    }
+
+    private static float[] extend(final Map<Integer, Cycle> cyclesByLabel, final int label, float[] signature,
+                                  final int a, final int b) {
         final Cycle cycle = cyclesByLabel.get(label).startingBy(cyclesByLabel.get(label).getMaxSymbol());
 
         float[] copiedsignature = new float[signature.length];
@@ -293,9 +323,8 @@ public class Extensions {
         }
         extension.trimToSize();
 
-        return Configuration.ofSignature(extension.elements());
+        return extension.elements();
     }
-
 
     private static boolean remainsUnoriented(final List<Integer> indexes, final int... newIndices) {
         final var intervals = new HashSet<Pair<Integer, Integer>>();
