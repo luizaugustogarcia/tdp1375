@@ -36,7 +36,7 @@ public class Silvaetal extends BaseAlgorithm {
         final var _2_2Seq = searchFor2_2Seq(spi, pi);
         if (_2_2Seq.isPresent()) {
             pi = computeProduct(_2_2Seq.get().getSecond(), _2_2Seq.get().getFirst(), pi).asNCycle();
-            spi = computeProduct(true, sigma, pi.getInverse());
+            spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
             sorting.addAll(Arrays.asList(_2_2Seq.get().getFirst(), _2_2Seq.get().getSecond()));
         }
 
@@ -44,7 +44,7 @@ public class Silvaetal extends BaseAlgorithm {
             final var pair = apply2MoveTwoOddCycles(spi, pi);
             sorting.add(pair.getFirst());
             pi = pair.getSecond();
-            spi = computeProduct(true, sigma, pi.getInverse());
+            spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
         }
 
         final List<List<Cycle>> badSmallComponents = new ArrayList<>();
@@ -54,7 +54,7 @@ public class Silvaetal extends BaseAlgorithm {
             final var _2move = searchFor2MoveFromOrientedCycle(nonBadSmallComponents, pi);
             if (_2move.isPresent()) {
                 pi = computeProduct(_2move.get(), pi).asNCycle();
-                spi = computeProduct(true, sigma, pi.getInverse());
+                spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
                 sorting.add(_2move.get());
             } else {
                 final var orientedCycle = searchForOrientedCycleBiggerThan5(nonBadSmallComponents, pi);
@@ -62,7 +62,7 @@ public class Silvaetal extends BaseAlgorithm {
                     final var pair = apply4_3SeqOrientedCase(orientedCycle, pi);
                     sorting.addAll(pair.getFirst());
                     pi = pair.getSecond();
-                    spi = computeProduct(true, sigma, pi.getInverse());
+                    spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
                 } else {
                     List<Cycle> component = new ArrayList<>();
                     final var gamma = nonBadSmallComponents.stream().findFirst().get();
@@ -83,8 +83,8 @@ public class Silvaetal extends BaseAlgorithm {
                         final var seq = searchFor11_8_Seq(component, pi);
                         if (seq.isPresent()) {
                             for (final var move : seq.get())
-                                pi = computeProduct(move, pi).asNCycle();
-                            spi = computeProduct(true, sigma, pi.getInverse());
+                                pi = applyTransposition(pi, move);
+                            spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
                             sorting.addAll(seq.get());
                             break;
                         }
@@ -96,7 +96,7 @@ public class Silvaetal extends BaseAlgorithm {
                 }
             }
 
-            final var badSmallComponentsCycles = badSmallComponents.stream().flatMap(c -> c.stream()).collect(Collectors.toList());
+            final var badSmallComponentsCycles = badSmallComponents.stream().flatMap(Collection::stream).collect(Collectors.toList());
 
             if (get3Norm(badSmallComponentsCycles) >= 8) {
                 final var _11_8Seq = searchForSeqBadSmallComponents(badSmallComponentsCycles, pi);
@@ -104,7 +104,7 @@ public class Silvaetal extends BaseAlgorithm {
                     pi = computeProduct(move, pi).asNCycle();
                 }
                 sorting.addAll(_11_8Seq.get());
-                spi = computeProduct(true, sigma, pi.getInverse());
+                spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
                 badSmallComponents.clear();
             }
 
@@ -124,7 +124,7 @@ public class Silvaetal extends BaseAlgorithm {
                 pi = pair.getSecond();
                 sorting.addAll(pair.getFirst());
             }
-            spi = computeProduct(true, sigma, pi.getInverse());
+            spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
         }
 
         return new Pair<>(initialPi, sorting);

@@ -220,7 +220,6 @@ public class CommonOperations implements Serializable {
                                 }).map(k -> {
                                     int a = pi.get(i), b = pi.get(j), c = pi.get(k);
 
-                                    // TODO improve this performance
                                     final var move = Cycle.create(a, b, c);
                                     final var spi_ = computeProduct(true, pi.getMaxSymbol() + 1, spi, move.getInverse());
                                     final var delta = spi_.getNumberOfEvenCycles() - numberOfEvenCycles;
@@ -241,41 +240,42 @@ public class CommonOperations implements Serializable {
     public static Stream<Pair<Cycle, Integer>> generateAll2MovesFromOddCycles(final MulticyclePermutation spi, final Cycle pi) {
         final var ci = cycleIndex(spi, pi);
         return IntStream.range(0, pi.size() - 2).boxed()
-                .filter(i -> ci[pi.get(i)].size() > 1)
+                .filter(i -> ci[pi.get(i)].size() > 1 && !ci[pi.get(i)].isEven())
                 .flatMap(i -> IntStream.range(i + 1, pi.size() - 1).boxed()
-                        .filter(j -> ci[pi.get(j)].size() > 1).flatMap(j -> IntStream.range(j + 1, pi.size()).boxed()
-                                .filter(k -> ci[pi.get(k)].size() > 1)
-                                .filter(k -> {
-                                    int a = pi.get(i), b = pi.get(j), c = pi.get(k);
-                                    final var is_2Move = ci[a] != ci[b] && ci[b] != ci[c] && ci[a] != ci[c];
-                                    // skip (-2)-moves
-                                    return !is_2Move;
-                                }).map(k -> {
-                                    int a = pi.get(i), b = pi.get(j), c = pi.get(k);
-                                    if (!(ci[a] == ci[b] && ci[b] == ci[c]) && !ci[a].isEven() && !ci[b].isEven() && !ci[c].isEven()) {
-                                        if (ci[a] == ci[b]) {
-                                            int segment1 = ci[a].startingBy(a).getK(a, b);
-                                            int segment2 = (ci[a].size() + ci[c].size()) - segment1;
-                                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
-                                                return new Pair<>(Cycle.create(a, b, c), 2);
-                                            }
-                                        } else if (ci[a] == ci[c]) {
-                                            int segment1 = ci[a].startingBy(c).getK(c, a);
-                                            int segment2 = (ci[a].size() + ci[b].size()) - segment1;
-                                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
-                                                return new Pair<>(Cycle.create(a, b, c), 2);
-                                            }
-                                        } else if (ci[b] == ci[c]) {
-                                            int segment1 = ci[b].startingBy(b).getK(b, c);
-                                            int segment2 = (ci[b].size() + ci[a].size()) - segment1;
-                                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
-                                                return new Pair<>(Cycle.create(a, b, c), 2);
-                                            }
-                                        }
-                                    }
+                .filter(j -> ci[pi.get(j)].size() > 1 && !ci[pi.get(j)].isEven())
+                .flatMap(j -> IntStream.range(j + 1, pi.size()).boxed()
+                .filter(k -> ci[pi.get(k)].size() > 1 && !ci[pi.get(k)].isEven())
+                .filter(k -> {
+                    int a = pi.get(i), b = pi.get(j), c = pi.get(k);
+                    final var is_2Move = ci[a] != ci[b] && ci[b] != ci[c] && ci[a] != ci[c];
+                    // skip (-2)-moves
+                    return !is_2Move;
+                }).map(k -> {
+                    int a = pi.get(i), b = pi.get(j), c = pi.get(k);
+                    if (!(ci[a] == ci[b] && ci[b] == ci[c])) {
+                        if (ci[a] == ci[b]) {
+                            int segment1 = ci[a].startingBy(a).getK(a, b);
+                            int segment2 = (ci[a].size() + ci[c].size()) - segment1;
+                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
+                                return new Pair<>(Cycle.create(a, b, c), 2);
+                            }
+                        } else if (ci[a] == ci[c]) {
+                            int segment1 = ci[a].startingBy(c).getK(c, a);
+                            int segment2 = (ci[a].size() + ci[b].size()) - segment1;
+                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
+                                return new Pair<>(Cycle.create(a, b, c), 2);
+                            }
+                        } else if (ci[b] == ci[c]) {
+                            int segment1 = ci[b].startingBy(b).getK(b, c);
+                            int segment2 = (ci[b].size() + ci[a].size()) - segment1;
+                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
+                                return new Pair<>(Cycle.create(a, b, c), 2);
+                            }
+                        }
+                    }
 
-                                    return null;
-                                }))).filter(Objects::nonNull);
+                    return null;
+                }))).filter(Objects::nonNull);
     }
 
     public static List<Cycle> generateAll2MovesFromOrientedCycles(final Collection<Cycle> spi, final Cycle pi) {

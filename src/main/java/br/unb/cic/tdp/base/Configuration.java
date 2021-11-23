@@ -163,7 +163,7 @@ public class Configuration {
             final var spis = Lists.newArrayList(new MulticyclePermutation[]{config.getSpi()});
             var mirroredMoves = new ArrayList<Cycle>();
             for (final var move : sorting) {
-                pis.add(computeProduct(false, move, pis.get(pis.size() - 1)).asNCycle());
+                pis.add(computeProduct(false, config.getPi().size(), move, pis.get(pis.size() - 1)).asNCycle());
                 spis.add(computeProduct(spis.get(spis.size() - 1), move.getInverse()));
                 mirroredMoves.add(move.getInverse().conjugateBy(spis.get(spis.size() - 1)).asNCycle());
             }
