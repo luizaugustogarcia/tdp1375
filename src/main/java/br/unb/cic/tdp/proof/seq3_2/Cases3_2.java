@@ -13,6 +13,11 @@ import static br.unb.cic.tdp.base.CommonOperations.*;
 
 public class Cases3_2 {
 
+    public static void main(String[] args) {
+        generate().forEach(p -> System.out.println(p.getFirst().getCanonical().getSpi() + "->" +
+                p.getFirst().getCanonical().translatedSorting(p.getFirst(), p.getSecond())));
+    }
+
     /**
      * Generate the (3,2)-sequences to apply when we have either two interleaving
      * pairs or three intersecting 3-cycles in \spi.
