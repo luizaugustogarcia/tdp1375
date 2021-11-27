@@ -71,8 +71,6 @@ public abstract class BaseAlgorithm {
         final var openGates = getOpenGates(config, pi);
 
         // Type 1 extension
-        // These two outer loops are O(1), since at this point, ||mu|| never
-        // exceeds 16
         for (final int openGate: openGates) {
             final var symbol = pi.getSymbols()[openGate];
             final var cycle = configCycleIndex[symbol];
@@ -92,26 +90,23 @@ public abstract class BaseAlgorithm {
         }
 
         // Type 2 extension
-        // O(n)
-        if (openGates.isEmpty()) {
-            for (Cycle cycle : config) {
-                for (int i = 0; i < cycle.size(); i++) {
-                    final var aPos = piInverse.indexOf(cycle.get(i));
-                    final var bPos = piInverse.indexOf(cycle.image(cycle.get(i)));
-                    for (int j = 1; j < (aPos < bPos ? bPos - aPos : piInverse.size() - (aPos - bPos)); j++) {
-                        final var index = (j + aPos) % piInverse.size();
-                        if (configCycleIndex[piInverse.get(index)] == null) {
-                            final var intersectingCycle = spiCycleIndex[piInverse.get(index)];
-                            if (intersectingCycle != null && intersectingCycle.size() > 1
-                                    && !contains(configSymbols, spiCycleIndex[intersectingCycle.get(0)])) {
-                                final var a = piInverse.get(index);
-                                final var b = intersectingCycle.image(a);
-                                if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
-                                    final var c = intersectingCycle.image(b);
-                                    final var _config = new ArrayList<>(config);
-                                    _config.add(Cycle.create(a, b, c));
-                                    return _config;
-                                }
+        for (Cycle cycle : config) {
+            for (int i = 0; i < cycle.size(); i++) {
+                final var aPos = piInverse.indexOf(cycle.get(i));
+                final var bPos = piInverse.indexOf(cycle.image(cycle.get(i)));
+                for (int j = 1; j < (aPos < bPos ? bPos - aPos : piInverse.size() - (aPos - bPos)); j++) {
+                    final var index = (j + aPos) % piInverse.size();
+                    if (configCycleIndex[piInverse.get(index)] == null) {
+                        final var intersectingCycle = spiCycleIndex[piInverse.get(index)];
+                        if (intersectingCycle != null && intersectingCycle.size() > 1
+                                && !contains(configSymbols, spiCycleIndex[intersectingCycle.get(0)])) {
+                            final var a = piInverse.get(index);
+                            final var b = intersectingCycle.image(a);
+                            if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
+                                final var c = intersectingCycle.image(b);
+                                final var _config = new ArrayList<>(config);
+                                _config.add(Cycle.create(a, b, c));
+                                return _config;
                             }
                         }
                     }
