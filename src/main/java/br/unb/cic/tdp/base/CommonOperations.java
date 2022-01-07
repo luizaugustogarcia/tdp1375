@@ -148,7 +148,7 @@ public class CommonOperations implements Serializable {
 
         boolean leap = false;
         for (int i = 0; i < symbols.length; i++) {
-            if (symbolIndexes[symbols[i]] > symbolIndexes[symbols[(i + 1) % symbols.length]]) {
+            if (symbolIndexes.get(symbols[i]) > symbolIndexes.get(symbols[(i + 1) % symbols.length])) {
                 if (!leap) {
                     leap = true;
                 } else {

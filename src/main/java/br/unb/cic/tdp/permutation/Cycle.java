@@ -2,6 +2,9 @@ package br.unb.cic.tdp.permutation;
 
 import cern.colt.list.IntArrayList;
 import org.apache.commons.lang.ArrayUtils;
+import org.eclipse.collections.api.map.primitive.IntIntMap;
+import org.eclipse.collections.api.map.primitive.MutableIntIntMap;
+import org.eclipse.collections.impl.factory.primitive.IntIntMaps;
 
 import java.util.*;
 
@@ -9,7 +12,7 @@ import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
     private int[] symbols;
-    private int[] symbolIndexes;
+    private MutableIntIntMap symbolIndexes;
     private int minSymbol = -1;
     private int maxSymbol = -1;
     private Cycle inverse;
@@ -54,12 +57,10 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             }
         }
 
-        symbolIndexes = new int[maxSymbol + 1];
-
-        Arrays.fill(symbolIndexes, (int) -1);
+        symbolIndexes = IntIntMaps.mutable.empty();
 
         for (var i = 0; i < symbols.length; i++) {
-            symbolIndexes[symbols[i]] = (int) i;
+            symbolIndexes.put(symbols[i], i);
         }
     }
 
@@ -138,11 +139,11 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public int image(final int a) {
-        return symbols[(symbolIndexes[a] + 1) % symbols.length];
+        return symbols[(symbolIndexes.get(a) + 1) % symbols.length];
     }
 
     public int pow(final int a, final int power) {
-        return symbols[mod(symbolIndexes[a] + power, symbols.length)];
+        return symbols[mod(symbolIndexes.get(a) + power, symbols.length)];
     }
 
     public int getK(final int a, final int b) {
@@ -183,11 +184,11 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public int indexOf(final int symbol) {
-        return symbolIndexes[symbol];
+        return symbolIndexes.get(symbol);
     }
 
     public boolean contains(final int symbol) {
-        return symbol <= symbolIndexes.length - 1 && symbolIndexes[symbol] != -1;
+        return symbolIndexes.containsKey(symbol);
     }
 
     @Override
@@ -204,7 +205,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return this.size() > 3;
     }
 
-    public int[] getSymbolIndexes() {
+    public MutableIntIntMap getSymbolIndexes() {
         return symbolIndexes;
     }
 }
