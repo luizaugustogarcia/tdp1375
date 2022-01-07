@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import org.apache.commons.lang.ArrayUtils;
+import org.eclipse.collections.api.map.primitive.MutableIntIntMap;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -150,7 +151,7 @@ public class Configuration {
             ArrayUtils.reverse(mirroredSignature);
 
             final var labelLabelMapping = new int[spi.size() + 1];
-            final var orientedIndexMapping = new int[spi.size() + 1][];
+            final var orientedIndexMapping = new MutableIntIntMap[spi.size() + 1];
 
             var nextLabel = 1;
             for (int j = 0; j < mirroredSignature.length; j++) {
@@ -170,7 +171,7 @@ public class Configuration {
                     }
 
                     final var index = Math.abs(j - shifting.size()) - 1;
-                    final var orientationIndex = orientedIndexMapping[newLabel][shifting.get(index)] + 1;
+                    final var orientationIndex = orientedIndexMapping[newLabel].get(shifting.get(index)) + 1;
                     mirroredSignature[j] = newLabel + ((float) orientationIndex / 100);
                 } else {
                     mirroredSignature[j] = newLabel;
