@@ -7,7 +7,6 @@ import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.util.Pair;
 import com.google.common.collect.Multimap;
 import lombok.SneakyThrows;
-import org.apache.commons.collections.ListUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -146,33 +145,11 @@ public class EliasAndHartman extends BaseAlgorithm {
         final var eh = new EliasAndHartman();
         System.out.println("Finished loading...");
         var pi = Cycle.create(args[0]);
-        final var sorting = eh.sort(pi);
+        final var moves = eh.sort(pi);
         System.out.println(pi);
-        for (Cycle move : sorting.getSecond()) {
-            final var i = pi.indexOf(move.get(0));
-            final var j = pi.indexOf(move.get(1));
-            final var k = pi.indexOf(move.get(2));
-
-            final var a = new int[]{(i == 0 ? pi.size() : i),
-                                    (j == 0 ? pi.size() : j),
-                                    (k == 0 ? pi.size() : k)};
-            Arrays.sort(a);
-
-            final var pi_ = Arrays.stream(pi.getSymbols())
-                    .filter(c -> c > 0)
-                    .mapToObj(Integer::toString)
-                    .collect(Collectors.joining("\\;"));
-
-            System.out.print("$\\rho(" + a[0] + "," + a[1] + "," + a[2] + ")\\cdot[" + pi_ + "]=[");
-
+        for (Cycle move : moves.getSecond()) {
             pi = PermutationGroups.computeProduct(move, pi).asNCycle();
-
-            final var pi__ = Arrays.stream(pi.getSymbols())
-                    .filter(c -> c > 0)
-                    .mapToObj(Integer::toString)
-                    .collect(Collectors.joining("\\;"));
-
-            System.out.println(pi__ + "]$\\\\");
+            System.out.println(pi);
         }
     }
 }
