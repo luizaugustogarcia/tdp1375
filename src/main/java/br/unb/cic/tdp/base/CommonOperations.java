@@ -7,8 +7,6 @@ import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
 import cern.colt.list.FloatArrayList;
 import org.apache.commons.lang.ArrayUtils;
-import org.paukov.combinatorics.Factory;
-import org.paukov.combinatorics.Generator;
 
 import java.io.Serializable;
 import java.util.*;
@@ -125,11 +123,11 @@ public class CommonOperations implements Serializable {
      * Creates an array where the cycles in <code>bigGamma</code> can be accessed by the symbols of <code>pi</code>
      * (being the indexes of the resulting array).
      */
-    public static Cycle[] cycleIndex(final List<Cycle> cycle, final Cycle pi) {
-        return cyclesIndex(Collections.singletonList(cycle), pi);
+    public static Cycle[] cycleIndex(final Collection<Cycle> cycle, final Cycle pi) {
+        return cyclesIndex(List.of(cycle), pi);
     }
 
-    public static Cycle[] cyclesIndex(final List<List<Cycle>> components, final Cycle pi) {
+    public static Cycle[] cyclesIndex(final List<Collection<Cycle>> components, final Cycle pi) {
         final var index = new Cycle[pi.getMaxSymbol() + 1];
 
         components.forEach(component -> {
@@ -148,7 +146,7 @@ public class CommonOperations implements Serializable {
 
         boolean leap = false;
         for (int i = 0; i < symbols.length; i++) {
-            if (symbolIndexes.get(symbols[i]) > symbolIndexes.get(symbols[(i + 1) % symbols.length])) {
+            if (symbolIndexes[symbols[i]] > symbolIndexes[symbols[(i + 1) % symbols.length]]) {
                 if (!leap) {
                     leap = true;
                 } else {
@@ -231,53 +229,6 @@ public class CommonOperations implements Serializable {
                                 }))).filter(Objects::nonNull);
     }
 
-    public static Stream<Pair<Cycle, Integer>> generateAll2Moves(final MulticyclePermutation spi, final Cycle pi) {
-        return Stream.concat(
-                generateAll2MovesFromOddCycles(spi, pi),
-                generateAll2MovesFromOrientedCycles(spi, pi).stream().map(m -> new Pair<>(m, 2)));
-    }
-
-    public static Stream<Pair<Cycle, Integer>> generateAll2MovesFromOddCycles(final MulticyclePermutation spi, final Cycle pi) {
-        final var ci = cycleIndex(spi, pi);
-        return IntStream.range(0, pi.size() - 2).boxed()
-                .filter(i -> ci[pi.get(i)].size() > 1 && !ci[pi.get(i)].isEven())
-                .flatMap(i -> IntStream.range(i + 1, pi.size() - 1).boxed()
-                .filter(j -> ci[pi.get(j)].size() > 1 && !ci[pi.get(j)].isEven())
-                .flatMap(j -> IntStream.range(j + 1, pi.size()).boxed()
-                .filter(k -> ci[pi.get(k)].size() > 1 && !ci[pi.get(k)].isEven())
-                .filter(k -> {
-                    int a = pi.get(i), b = pi.get(j), c = pi.get(k);
-                    final var is_2Move = ci[a] != ci[b] && ci[b] != ci[c] && ci[a] != ci[c];
-                    // skip (-2)-moves
-                    return !is_2Move;
-                }).map(k -> {
-                    int a = pi.get(i), b = pi.get(j), c = pi.get(k);
-                    if (!(ci[a] == ci[b] && ci[b] == ci[c])) {
-                        if (ci[a] == ci[b]) {
-                            int segment1 = ci[a].startingBy(a).getK(a, b);
-                            int segment2 = (ci[a].size() + ci[c].size()) - segment1;
-                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
-                                return new Pair<>(Cycle.create(a, b, c), 2);
-                            }
-                        } else if (ci[a] == ci[c]) {
-                            int segment1 = ci[a].startingBy(c).getK(c, a);
-                            int segment2 = (ci[a].size() + ci[b].size()) - segment1;
-                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
-                                return new Pair<>(Cycle.create(a, b, c), 2);
-                            }
-                        } else if (ci[b] == ci[c]) {
-                            int segment1 = ci[b].startingBy(b).getK(b, c);
-                            int segment2 = (ci[b].size() + ci[a].size()) - segment1;
-                            if (segment1 % 2 == 1 && segment2 % 2 == 1) {
-                                return new Pair<>(Cycle.create(a, b, c), 2);
-                            }
-                        }
-                    }
-
-                    return null;
-                }))).filter(Objects::nonNull);
-    }
-
     public static List<Cycle> generateAll2MovesFromOrientedCycles(final Collection<Cycle> spi, final Cycle pi) {
         final var _2moves = new ArrayList<Cycle>();
 
@@ -312,10 +263,6 @@ public class CommonOperations implements Serializable {
         return generateAll2MovesFromOrientedCycles(spi, pi).stream().findFirst();
     }
 
-    public static <T> Generator<T> combinations(final Collection<T> collection, final int k) {
-        return Factory.createSimpleCombinationGenerator(Factory.createVector(collection), k);
-    }
-
     /**
      * Tells if a <code>cycle</code> is oriented or not having <code>pi</code> as reference.
      */
@@ -324,7 +271,7 @@ public class CommonOperations implements Serializable {
     }
 
     // optimize
-    public static List<Collection<Cycle>> getComponents(final List<Cycle> spi, final Cycle pi) {
+    public static List<Collection<Cycle>> getComponents(final Collection<Cycle> spi, final Cycle pi) {
         final var cycleIndex = cycleIndex(spi, pi);
         final var piInverse = pi.getInverse();
 
@@ -377,11 +324,11 @@ public class CommonOperations implements Serializable {
         return components;
     }
 
-    public static Set<Integer> getOpenGates(final List<Cycle> config, final Cycle pi) {
+    public static Set<Integer> getOpenGates(final Collection<Cycle> config, final Cycle pi) {
         return getOpenGates(config, pi, Configuration.signature(config, pi));
     }
 
-    public static Set<Integer> getOpenGates(final List<Cycle> config, final Cycle pi, float[] signature) {
+    public static Set<Integer> getOpenGates(final Collection<Cycle> config, final Cycle pi, float[] signature) {
         final Set<Integer> openGates = new HashSet<>();
 
         final var piInverse = pi.getInverse();
@@ -417,11 +364,8 @@ public class CommonOperations implements Serializable {
             pi = applyTransposition(pi, move);
             spi = PermutationGroups.computeProduct(spi, move.getInverse());
         }
-        if (!spi.stream().allMatch(Cycle::isEven)) {
-            throw new RuntimeException("ERROR");
-        }
         final var after = spi.getNumberOfEvenCycles();
         final var ratio = (float) moves.size() / ((after - before) / 2);
-        return ratio <= ((float) 11 / 8);
+        return ratio >= 1 && ratio <= ((float) 11 / 8);
     }
 }

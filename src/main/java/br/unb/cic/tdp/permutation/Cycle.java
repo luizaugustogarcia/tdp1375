@@ -2,9 +2,6 @@ package br.unb.cic.tdp.permutation;
 
 import cern.colt.list.IntArrayList;
 import org.apache.commons.lang.ArrayUtils;
-import org.eclipse.collections.api.map.primitive.IntIntMap;
-import org.eclipse.collections.api.map.primitive.MutableIntIntMap;
-import org.eclipse.collections.impl.factory.primitive.IntIntMaps;
 
 import java.util.*;
 
@@ -12,13 +9,13 @@ import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
     private int[] symbols;
-    private MutableIntIntMap symbolIndexes;
+    private int[] symbolIndexes;
     private int minSymbol = -1;
     private int maxSymbol = -1;
     private Cycle inverse;
     private Integer hashCode;
 
-    private Cycle(final int... symbols) {
+    public Cycle(final int... symbols) {
         this.symbols = symbols;
         updateInternalState();
     }
@@ -43,6 +40,11 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return new Cycle(symbols);
     }
 
+    public void update(final int... symbols) {
+        this.symbols = symbols;
+        updateInternalState();
+    }
+
     public int[] getSymbols() {
         return symbols;
     }
@@ -57,10 +59,12 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             }
         }
 
-        symbolIndexes = IntIntMaps.mutable.empty();
+        symbolIndexes = new int[maxSymbol + 1];
+
+        Arrays.fill(symbolIndexes, -1);
 
         for (var i = 0; i < symbols.length; i++) {
-            symbolIndexes.put(symbols[i], i);
+            symbolIndexes[symbols[i]] = i;
         }
     }
 
@@ -130,6 +134,13 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             return false;
         }
 
+        if (getMinSymbol() != other.getMinSymbol() || getMaxSymbol() != other.getMaxSymbol())
+            return false;
+
+        if (this.hashCode() != obj.hashCode()) {
+            return false;
+        }
+
         return Arrays.equals(startingBy(getMinSymbol()).getSymbols(),
                 ((Cycle) obj).startingBy(((Cycle) obj).getMinSymbol()).getSymbols());
     }
@@ -139,11 +150,11 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public int image(final int a) {
-        return symbols[(symbolIndexes.get(a) + 1) % symbols.length];
+        return symbols[(symbolIndexes[a] + 1) % symbols.length];
     }
 
     public int pow(final int a, final int power) {
-        return symbols[mod(symbolIndexes.get(a) + power, symbols.length)];
+        return symbols[mod(symbolIndexes[a] + power, symbols.length)];
     }
 
     public int getK(final int a, final int b) {
@@ -184,11 +195,11 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public int indexOf(final int symbol) {
-        return symbolIndexes.get(symbol);
+        return symbolIndexes[symbol];
     }
 
     public boolean contains(final int symbol) {
-        return symbolIndexes.containsKey(symbol);
+        return symbol <= symbolIndexes.length - 1 && symbolIndexes[symbol] != -1;
     }
 
     @Override
@@ -205,7 +216,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return this.size() > 3;
     }
 
-    public MutableIntIntMap getSymbolIndexes() {
+    public int[] getSymbolIndexes() {
         return symbolIndexes;
     }
 }

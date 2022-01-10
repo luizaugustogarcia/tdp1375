@@ -8,6 +8,7 @@ import org.apache.commons.math3.util.Pair;
 import org.paukov.combinatorics.Factory;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 
@@ -31,7 +32,8 @@ public class Oriented5Cycle {
 
         final var spi = new MulticyclePermutation(orientedCycle);
 
-        for (final var permutation : Factory.createPermutationGenerator(Factory.createVector(spi.getSymbols()))) {
+        for (final var permutation : Factory.createPermutationGenerator(Factory
+                .createVector(Arrays.stream(spi.getSymbols().toArray()).boxed().collect(Collectors.toSet())))) {
             final var pi = Cycle.create(Ints.toArray(permutation.getVector()));
             final var config = new Configuration(spi, pi);
 

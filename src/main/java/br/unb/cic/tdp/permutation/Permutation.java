@@ -13,6 +13,8 @@ public interface Permutation extends Serializable {
     Cycle asNCycle();
 
     default Permutation conjugateBy(final Permutation conjugator) {
-        return PermutationGroups.computeProduct(false,conjugator, this, conjugator.getInverse());
+        return PermutationGroups.computeProduct(false, conjugator, this, conjugator.getInverse());
     }
+
+    int image(int a);
 }

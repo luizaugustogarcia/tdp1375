@@ -9,7 +9,6 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import org.apache.commons.lang.ArrayUtils;
-import org.eclipse.collections.api.map.primitive.MutableIntIntMap;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -53,7 +52,7 @@ public class Configuration {
         this(new MulticyclePermutation(spi));
     }
 
-    public static float[] signature(final List<Cycle> spi, final Cycle pi) {
+    public static float[] signature(final Collection<Cycle> spi, final Cycle pi) {
         final var labelByCycle = new HashMap<Cycle, Float>();
         final var cycleIndex = cycleIndex(spi, pi);
         final var orientedCycles = spi.stream().filter(c -> !areSymbolsInCyclicOrder(pi.getInverse(), c.getSymbols()))
@@ -92,7 +91,7 @@ public class Configuration {
         final var n = signature.length;
         float a = signature[mod(i, n)], b = signature[mod(i - 1, n)], c = signature[mod(i - 2, n)];
         return (a % 1 == 0 && a == b) || (a % 1 > 0 && b % 1 > 0 && c % 1 > 0 &&
-                Math.floor(a) == Math.floor(b) && Math.floor(a) == Math.floor(c) && c < a && a < b && c < b);
+                Math.floor(a) == Math.floor(b) && Math.floor(a) == Math.floor(c) && c < a && a < b);
     }
 
     public static Configuration ofSignature(float[] signature) {
@@ -132,7 +131,34 @@ public class Configuration {
 
     public Configuration getCanonical() {
         if (canonical == null) {
-            canonical = ofSignature(getEquivalentSignatures().stream().min(comparing(Signature::hashCode)).get().getContent());
+            float[] canonicalSignature = null;
+            var leastHashCode = Integer.MAX_VALUE;
+
+            for (final var equivalentSignature : getEquivalentSignatures()) {
+                var hashCode = equivalentSignature.hashCode();
+
+                if (hashCode < leastHashCode) {
+                    leastHashCode = hashCode;
+                    canonicalSignature = equivalentSignature.content;
+                } else if (hashCode == leastHashCode) {
+                    canonicalSignature = least(equivalentSignature.content, canonicalSignature);
+                }
+            }
+
+            canonical = ofSignature(canonicalSignature);
+        }
+
+        return canonical;
+    }
+
+    private static float[] least(final float[] signature, final float[] canonical) {
+        for (int i = 0; i < signature.length; i++) {
+            if (signature[i] != canonical[i]) {
+                if (signature[i] < canonical[i])
+                    return signature;
+                else
+                    return canonical;
+            }
         }
         return canonical;
     }
@@ -151,7 +177,7 @@ public class Configuration {
             ArrayUtils.reverse(mirroredSignature);
 
             final var labelLabelMapping = new int[spi.size() + 1];
-            final var orientedIndexMapping = new MutableIntIntMap[spi.size() + 1];
+            final var orientedIndexMapping = new int[spi.size() + 1][];
 
             var nextLabel = 1;
             for (int j = 0; j < mirroredSignature.length; j++) {
@@ -171,7 +197,7 @@ public class Configuration {
                     }
 
                     final var index = Math.abs(j - shifting.size()) - 1;
-                    final var orientationIndex = orientedIndexMapping[newLabel].get(shifting.get(index)) + 1;
+                    final var orientationIndex = orientedIndexMapping[newLabel][shifting.getSymbols()[index]] + 1;
                     mirroredSignature[j] = newLabel + ((float) orientationIndex / 100);
                 } else {
                     mirroredSignature[j] = newLabel;
