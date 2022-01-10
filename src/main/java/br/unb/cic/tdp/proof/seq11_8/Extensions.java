@@ -3,10 +3,11 @@ package br.unb.cic.tdp.proof.seq11_8;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.proof.util.SortOrExtend;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.FloatArrayList;
 import com.google.common.base.Preconditions;
-import lombok.AllArgsConstructor;
+import com.google.common.base.Throwables;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 
@@ -19,6 +20,7 @@ import java.util.*;
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.proof.ProofGenerator.*;
 import java.util.concurrent.*;
+import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.base.Configuration.*;
 
@@ -35,15 +37,15 @@ public class Extensions {
         cleanUpBadExtensionAndInvalidFiles(outputDir + "/dfs/");
 
         // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the dfs directory.
-        // Otherwise, it will skip cases.
+        // Otherwise, it will wrongly skip cases.
 
         var pool = new ForkJoinPool();
         // oriented 5-cycle
-        pool.execute(new SortOrExtend(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
+        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
         // interleaving pair
-        pool.execute(new SortOrExtend(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
+        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
         // intersecting pair
-        pool.execute(new SortOrExtend(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
+        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
@@ -60,22 +62,22 @@ public class Extensions {
         executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
     }
 
-
     @SneakyThrows
     public static void cleanUpBadExtensionAndInvalidFiles(final String outputDir) {
+        final var dir = new File(outputDir);
+
         final var files = new ArrayList<File>();
-        Files.list(Paths.get(outputDir))
+        Stream.of(dir.listFiles(file -> file.getName().endsWith(".html")))
                 .parallel()
-                .map(Path::toFile)
-                .filter(File::isFile)
                 .forEach(f -> {
                     final var file = new File(outputDir + f.getName());
+
                     try {
                         if (isBadExtension(file)) {
                             files.add(file);
                         } else {
                             final var canonical = new Configuration(new MulticyclePermutation(f.getName().replace(" ", ",")));
-                            final var sorting = ListCases.getSorting(new File(outputDir + "/" + canonical.getSpi() + ".html").toPath());
+                            final var sorting = getSorting(file.toPath());
                             if (!is11_8(canonical.getSpi(), canonical.getPi(), sorting.getSecond())) {
                                 files.add(file);
                             }
@@ -96,6 +98,70 @@ public class Extensions {
 
         if (!canContinue)
             throw new RuntimeException("ERROR: files not deleted, cannot continue.");
+    }
+
+    @SneakyThrows
+    public static Pair<MulticyclePermutation, List<Cycle>> getSorting(final Path path) {
+        final var reader = new BufferedReader(new FileReader(path.toFile()), 1024 * 10);
+        var line = reader.readLine();
+        MulticyclePermutation spi = null;
+
+        while ((line = reader.readLine()) != null) {
+            line = line.trim();
+
+            if (line.startsWith("<h6>")) {
+                spi = new MulticyclePermutation(line.trim().replace("<h6>", "")
+                        .replace("</h6>", "").replace(" ", ","));
+            }
+
+            if (line.equals("THE EXTENSIONS ARE:")) {
+                return new Pair<>(spi, null);
+            }
+
+            final var sorting = new ArrayList<Cycle>();
+            if (line.trim().equals("ALLOWS (11/8)-SEQUENCE")) {
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+
+                    if (!line.equals("<div style=\"margin-top: 10px; \">")) {
+                        continue;
+                    }
+
+                    line = reader.readLine();
+
+                    final var move = line.split(": ")[1].replace(" ", ",")
+                            .replace("<br>", "");
+                    sorting.add(Cycle.create(move));
+                }
+                return new Pair<>(spi, sorting);
+            }
+        }
+
+        throw new IllegalStateException("Unknown file " + path.toFile());
+    }
+
+    public static boolean isBadExtension(final File file) {
+        final BufferedReader reader;
+        try {
+            reader = new BufferedReader(new FileReader(file), 1024 * 10);
+            var line = reader.readLine();
+
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+
+                if (line.equals("THE EXTENSIONS ARE:")) {
+                    return true;
+                }
+
+                if (line.trim().equals("ALLOWS (11/8)-SEQUENCE")) {
+                    return false;
+                }
+            }
+        } catch (Throwable e) {
+            Throwables.propagate(e);
+        }
+
+        throw new IllegalStateException("Unknown file");
     }
 
     @SneakyThrows
@@ -132,38 +198,21 @@ public class Extensions {
 
         Files.list(Paths.get(outputDir + "/working/"))
                 .map(Path::toFile)
-                .forEach(workingFile -> {
-                    final var sortingFile = new File(outputDir + workingFile.getName() + ".html");
-                    final var badCaseFile = new File(outputDir + "/bad-cases/" + workingFile.getName());
-                    if (!sortingFile.exists() && !badCaseFile.exists()) {
-                        excludeFiles.add(workingFile);
-                    }
-                });
+                .forEach(excludeFiles::add);
 
-        excludeFiles.forEach(File::delete);
-    }
-
-    @SneakyThrows
-    public static boolean isBadExtension(final File file) {
-        final var reader = new BufferedReader(new FileReader(file));
-        var line = reader.readLine();
-        MulticyclePermutation spi = null;
-
-        while ((line = reader.readLine()) != null) {
-            line = line.trim();
-
-            if (line.equals("THE EXTENSIONS ARE:")) {
-                return true;
-            }
-
-            if (line.trim().equals("ALLOWS (12/9)-SEQUENCE")) {
-                return false;
+        boolean canContinue = true;
+        for (final var file : excludeFiles) {
+            boolean deleted = FileUtils.deleteQuietly(file);
+            canContinue &= deleted;
+            if (!deleted) {
+                System.out.println("rm \"" + file + "\"");
             }
         }
 
-        return false;
+        if (!canContinue)
+            throw new RuntimeException("ERROR: working files not deleted, cannot continue.");
     }
-    
+
     /*
      * Type 1 extension.
      */
@@ -362,70 +411,6 @@ public class Extensions {
         return extension;
     }
 
-    @AllArgsConstructor
-    static class SortOrExtend extends RecursiveAction {
-        final Configuration config;
-        final String outputDir;
-
-        @SneakyThrows
-        @Override
-        protected void compute() {
-            final var canonical = config.getCanonical();
-
-            try (final var file = new RandomAccessFile(new File(outputDir + "/" + canonical.getSpi() + ".html"), "r")) {
-                // if it's already sorted, return
-                return;
-            } catch (FileNotFoundException e) {
-                // ignore, there is not sort
-            }
-
-            boolean knownBadCase = false;
-            try (final var file = new RandomAccessFile(new File(outputDir + "/bad-cases/" + canonical.getSpi()), "r")) {
-                knownBadCase = true;
-            } catch (FileNotFoundException e) {
-                // ignore, not marked as a bad case yet
-            }
-
-            if (!knownBadCase) {
-                try {
-                    try (final var workingFile = new RandomAccessFile(new File(outputDir + "/working/" + canonical.getSpi()), "rw")) {
-                        final var buffer = new StringBuffer();
-                        while (workingFile.getFilePointer() < workingFile.length()) {
-                            buffer.append(workingFile.readLine());
-                        }
-
-                        if (buffer.toString().equals("working")) {
-                            // some thread already is working on this case, skipping
-                            return;
-                        }
-
-                        workingFile.write("working".getBytes());
-
-                        final var sorting = searchForSorting(canonical);
-                        if (sorting.isPresent()) {
-                            try (final var sortingFile = new RandomAccessFile(outputDir + "/" + canonical.getSpi() + ".html", "rw")) {
-                                try (final var writer = new FileWriter(sortingFile.getFD())) {
-                                    renderSorting(canonical, sorting.get(), writer);
-                                    return;
-                                }
-                            }
-                        } else {
-                            try (final var badCaseFile = new RandomAccessFile(outputDir + "/bad-cases/" + canonical.getSpi(), "rw")) {
-                                badCaseFile.write("bad case".getBytes());
-                            }
-                        }
-                    }
-                } finally {
-                    new File(outputDir + "/working/" + canonical.getSpi()).delete();
-                }
-            }
-
-            type1Extensions(canonical).stream().map(extension -> new SortOrExtend(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
-            type2Extensions(canonical).stream().map(extension -> new SortOrExtend(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
-            type3Extensions(canonical).stream().map(extension -> new SortOrExtend(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
-        }
-    }
-
     @SneakyThrows
     private static void makeHtmlNavigation (final Configuration configuration, final String outputDir) {
         try (final var out = new PrintStream(outputDir + "/dfs/" + configuration.getSpi() + ".html")) {
@@ -499,6 +484,20 @@ public class Extensions {
 
             out.println("</body>");
             out.println("</html>");
+        }
+    }
+
+    static class SortOrExtendExtensions extends SortOrExtend {
+
+        public SortOrExtendExtensions(final Configuration configuration, final String outputDir) {
+            super(configuration, outputDir);
+        }
+
+        @Override
+        protected void extend(Configuration canonical) {
+            type1Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
+            type2Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
+            type3Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
         }
     }
 }
