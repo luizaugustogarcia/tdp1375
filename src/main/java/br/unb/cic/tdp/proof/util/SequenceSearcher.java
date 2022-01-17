@@ -3,7 +3,6 @@ package br.unb.cic.tdp.proof.util;
 import br.unb.cic.tdp.util.Triplet;
 import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
-import org.apache.commons.lang.ArrayUtils;
 
 import java.util.Arrays;
 
@@ -119,166 +118,6 @@ public class SequenceSearcher {
         }
 
         return ListOfCycles.EMPTY_LIST;
-    }
-
-    private static boolean contains(final String[] array, final String string) {
-        for (String s : array) {
-            if (s.equals(string))
-                return true;
-        }
-        return false;
-    }
-
-    private static String getCanonicalSignature(final ListOfCycles spi,
-                                                final int[] pi,
-                                                final int[][] spiIndex,
-                                                final int maxSymbol) {
-        var leastHashCode = Integer.MAX_VALUE;
-        float[] canonical = null;
-
-        for (int symbol : pi) {
-            final var shifting = startingBy(pi, symbol);
-
-            var signature = signature(spi, shifting, spiIndex, maxSymbol);
-
-            var hashCode = Arrays.hashCode(signature);
-
-            if (hashCode < leastHashCode) {
-                leastHashCode = hashCode;
-                canonical = signature;
-            } else if (hashCode == leastHashCode) {
-                canonical = least(signature, canonical);
-            }
-
-            final var mirroredSignature = signature.clone();
-            ArrayUtils.reverse(mirroredSignature);
-
-            final var labelLabelMapping = new int[spi.size + 1];
-            final var orientedIndexMapping = new int[spi.size + 1][];
-
-            var nextLabel = 1;
-            for (int j = 0; j < mirroredSignature.length; j++) {
-                final var label = mirroredSignature[j];
-
-                if (labelLabelMapping[(int) label] == 0) {
-                    labelLabelMapping[(int) label] = nextLabel++;
-                }
-
-                final var newLabel = labelLabelMapping[(int) label];
-
-                if (label % 1 > 0) {
-                    if (orientedIndexMapping[newLabel] == null) {
-                        final var index = Math.abs(j - shifting.length) - 1;
-                        final int[] cycle = startingBy(spiIndex[shifting[index]], shifting[index]);
-                        orientedIndexMapping[newLabel] = cycleIndex(cycle);
-                    }
-
-                    final var index = Math.abs(j - shifting.length) - 1;
-                    final var orientationIndex = orientedIndexMapping[newLabel][shifting[index]] + 1;
-                    mirroredSignature[j] = newLabel + ((float) orientationIndex / 100);
-                } else {
-                    mirroredSignature[j] = newLabel;
-                }
-            }
-
-            hashCode = Arrays.hashCode(mirroredSignature);
-            if (hashCode < leastHashCode) {
-                leastHashCode = hashCode;
-                canonical = signature;
-            } else if (hashCode == leastHashCode) {
-                canonical = least(signature, canonical);
-            }
-        }
-
-        return toString(canonical);
-    }
-
-    private static float[] least(final float[] signature, final float[] canonical) {
-        for (int i = 0; i < signature.length; i++) {
-            if (signature[i] != canonical[i]) {
-                if (signature[i] < canonical[i])
-                    return signature;
-                else
-                    return canonical;
-            }
-        }
-        return canonical;
-    }
-
-    public static float[] signature(final ListOfCycles spi, final int[] pi, final int[][] spiIndex, final int maxSymbol) {
-        final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
-        final var orientedCycles = getOrientedCycles(spi, piInverseIndex);
-
-        final var orientationByCycle = new boolean[maxSymbol + 1];
-        Arrays.fill(orientationByCycle, false);
-
-        var current = orientedCycles.head;
-        for (int l = 0; l < orientedCycles.size; l++) {
-            orientationByCycle[current.data[0]] = true;
-        }
-
-        final var labelByCycle = new float[maxSymbol + 1];
-        Arrays.fill(labelByCycle, -1);
-
-        final var symbolIndexByOrientedCycle = new int[maxSymbol + 1][];
-
-        final var signature = new float[pi.length];
-
-        // Pi index
-        final var piIndex = new int[maxSymbol + 1];
-        for (var i = 0; i < pi.length; i++) {
-            piIndex[pi[i]] = i;
-        }
-
-        var currentLabel = 1f;
-
-        for (var i = 0; i < signature.length; i++) {
-            final int symbol = pi[i];
-            final var cycle = spiIndex[symbol];
-
-            if (orientationByCycle[cycle[0]]) {
-                final var symbolIndex = new int[maxSymbol + 1];
-
-                var symbolMinIndex = Integer.MAX_VALUE;
-                for (int s : cycle) {
-                    if (piIndex[s] < symbolMinIndex)
-                        symbolMinIndex = piIndex[s];
-                }
-
-                for (int j = 0; j < cycle.length; j++) {
-                    if (cycle[j] == symbolMinIndex) {
-                        for (int k = 0; k < cycle.length; k++) {
-                            symbolIndex[cycle[(j + k) % cycle.length]] = k + 1;
-                        }
-                        break;
-                    }
-                }
-                symbolIndexByOrientedCycle[cycle[0]] = symbolIndex;
-            }
-
-            if (labelByCycle[cycle[0]] == -1) {
-                labelByCycle[cycle[0]] = currentLabel;
-                currentLabel++;
-            }
-
-            signature[i] = orientationByCycle[cycle[0]] ?
-                    labelByCycle[cycle[0]] + (float) symbolIndexByOrientedCycle[cycle[0]][symbol] / 100 : labelByCycle[cycle[0]];
-        }
-
-        return signature;
-    }
-
-    private static String toString(final float[] signature) {
-        final var builder = new StringBuilder();
-        for (float v : signature) {
-            if (v % 1 == 0) {
-                builder.append((int) v);
-            } else {
-                builder.append(v);
-            }
-            builder.append(',');
-        }
-        return builder.toString();
     }
 
     private ListOfCycles analyzeOrientedCycles(final ListOfCycles spi,
@@ -649,25 +488,23 @@ public class SequenceSearcher {
                                                                                        final int a,
                                                                                        final int b,
                                                                                        final int c) {
-        final int a_ = b, b_ = a, c_ = c;
-
         final var oldCycle = cycleIndex[a];
 
-        final int[] symbols = startingBy(oldCycle, a_);
+        final int[] symbols = startingBy(oldCycle, b);
         final var newCycle = new int[oldCycle.length];
 
         final int[] oldCycleIndex = cycleIndex(oldCycle);
 
-        newCycle[0] = a_;
-        final var ab_k = getK(oldCycleIndex, oldCycle, a_, b_);
-        final var bc_k = getK(oldCycleIndex, oldCycle, b_, c_);
+        newCycle[0] = b;
+        final var ab_k = getK(oldCycleIndex, oldCycle, b, a);
+        final var bc_k = getK(oldCycleIndex, oldCycle, a, c);
         System.arraycopy(symbols, ab_k + 1, newCycle, 1, bc_k - 1);
-        newCycle[bc_k] = c_;
+        newCycle[bc_k] = c;
 
         System.arraycopy(symbols, 1, newCycle, 1 + bc_k, ab_k - 1);
-        newCycle[ab_k + bc_k] = b_;
+        newCycle[ab_k + bc_k] = a;
 
-        final var ca_k = getK(oldCycleIndex, oldCycle, c_, a_);
+        final var ca_k = getK(oldCycleIndex, oldCycle, c, b);
         System.arraycopy(symbols, ab_k + bc_k + 1,
                 newCycle, ab_k + bc_k + 1, ca_k - 1);
 
