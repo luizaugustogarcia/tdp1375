@@ -18,20 +18,20 @@ import java.util.concurrent.locks.ReentrantLock;
 public class ShortPermutations {
 
     public static void main(String[] args) throws IOException, InterruptedException {
-        System.out.println("= EH =");
-        audit(args[0], new EliasAndHartman());
+//        System.out.println("= EH =");
+//        audit(args[0], new EliasAndHartman());
         System.out.println("= Silva et al. =");
         audit(args[0], new Silvaetal());
     }
 
     @SneakyThrows
     static void audit(final String exactDistancesRoot, final BaseAlgorithm algorithm) {
-        for (int i = 2; i <= 12; i++) {
+        for (int i = 6; i <= 10; i++) {
             final var pool = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(),
                     Runtime.getRuntime().availableProcessors(), 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<>(100));
             pool.setRejectedExecutionHandler(new BlockPolicy());
 
-            try (final var br = new BufferedReader(new FileReader(exactDistancesRoot + "exact" + i + ".txt"), 1024 * 1024 * 10)) {
+            try (final var br = new BufferedReader(new FileReader(exactDistancesRoot + "exact-distances-" + i), 1024 * 1024 * 10)) {
                 final float[] maxRatio = {0};
                 final var lock = new ReentrantLock(true);
                 final BigDecimal[] sumRatios = {BigDecimal.ZERO};

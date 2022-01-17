@@ -178,6 +178,8 @@ public class Configuration {
 
             final var labelLabelMapping = new int[spi.size() + 1];
             final var orientedIndexMapping = new int[spi.size() + 1][];
+            final var deltas = new float[spi.size() + 1];
+            Arrays.fill(deltas, -1);
 
             var nextLabel = 1;
             for (int j = 0; j < mirroredSignature.length; j++) {
@@ -193,12 +195,16 @@ public class Configuration {
                     if (orientedIndexMapping[newLabel] == null) {
                         final var index = Math.abs(j - shifting.size()) - 1;
                         final var cycle = cycleIndex[shifting.get(index)].startingBy(shifting.get(index));
-                        orientedIndexMapping[newLabel] = cycle.getSymbolIndexes();
+                        orientedIndexMapping[newLabel] = cycle.getInverse().getSymbolIndexes();
+                        final var delta = cycle.size() - round((label % 1) * 100);
+                        deltas[newLabel] = delta;
                     }
 
                     final var index = Math.abs(j - shifting.size()) - 1;
                     final var orientationIndex = orientedIndexMapping[newLabel][shifting.getSymbols()[index]] + 1;
-                    mirroredSignature[j] = newLabel + ((float) orientationIndex / 100);
+                    mirroredSignature[j] = newLabel + (((orientationIndex + deltas[newLabel]) % cycleIndex[shifting.get(index)].size()) / 100);
+                    if (mirroredSignature[j] % 1 == 0)
+                        mirroredSignature[j] = newLabel + (cycleIndex[shifting.get(index)].size() / 100f);
                 } else {
                     mirroredSignature[j] = newLabel;
                 }
@@ -208,6 +214,10 @@ public class Configuration {
         }
 
         return equivalentSignatures;
+    }
+
+    private float round(final float value) {
+        return (float) Math.round(value * 100) / 100;
     }
 
     /**
