@@ -152,7 +152,7 @@ public class Silvaetal extends BaseAlgorithm {
     @SneakyThrows
     private void loadSortingsOriented7Cycles(final String resource, final Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings) {
         final Path file = Paths.get(ProofGenerator.class.getClassLoader().getResource(resource).toURI());
-        final var br = new BufferedReader(new FileReader(file.toFile()), 10 * 1024 * 1024);
+        final var br = new BufferedReader(new FileReader(file.toFile()));
 
         String line;
         while ((line = br.readLine()) != null) {
