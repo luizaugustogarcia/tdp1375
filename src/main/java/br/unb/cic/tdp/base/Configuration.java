@@ -2,7 +2,6 @@ package br.unb.cic.tdp.base;
 
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import com.google.common.collect.Lists;
 import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import lombok.Getter;
@@ -17,7 +16,6 @@ import java.util.stream.Collectors;
 import java.util.zip.CRC32;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
-import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static java.util.Comparator.comparing;
 
 /**
@@ -151,16 +149,16 @@ public class Configuration {
         return canonical;
     }
 
-    private static float[] least(final float[] signature, final float[] canonical) {
-        for (int i = 0; i < signature.length; i++) {
-            if (signature[i] != canonical[i]) {
-                if (signature[i] < canonical[i])
-                    return signature;
+    private static float[] least(final float[] signature1, final float[] signature2) {
+        for (int i = 0; i < signature1.length; i++) {
+            if (signature1[i] != signature2[i]) {
+                if (signature1[i] < signature2[i])
+                    return signature1;
                 else
-                    return canonical;
+                    return signature2;
             }
         }
-        return canonical;
+        return signature2;
     }
 
     public Collection<Signature> getEquivalentSignatures() {
@@ -249,23 +247,6 @@ public class Configuration {
         }
 
         return translatedSorting;
-    }
-
-    @Deprecated // replace by translatedSorting
-    public List<Cycle> equivalentSorting(final Signature signature, final List<Cycle> sorting) {
-        if (signature.isMirror()) {
-            final var pis = Lists.newArrayList(this.getPi());
-            final var spis = Lists.newArrayList(new MulticyclePermutation[]{this.getSpi()});
-            var mirroredMoves = new ArrayList<Cycle>();
-            for (final var move : sorting) {
-                pis.add(computeProduct(move, pis.get(pis.size() - 1)).asNCycle());
-                spis.add(computeProduct(spis.get(spis.size() - 1), move.getInverse()));
-                mirroredMoves.add(move.getInverse().conjugateBy(spis.get(spis.size() - 1)).asNCycle());
-            }
-            return mirroredMoves;
-        }
-
-        return sorting;
     }
 
     @ToString.Include

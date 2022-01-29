@@ -39,7 +39,7 @@ public abstract class SortOrExtend extends RecursiveAction {
                     }
 
                     if (buffer.toString().equals("working")) {
-                        // some thread already is working on this case, skipping
+                        // some thread is already working on this case, skipping
                         return;
                     }
 
@@ -55,7 +55,7 @@ public abstract class SortOrExtend extends RecursiveAction {
                         }
                     } else {
                         try (final var writer = new FileWriter(outputDir + "/bad-cases/" + canonical.getSpi())) {
-                            // create the base case
+                            // create the bad case
                         }
                     }
                 }

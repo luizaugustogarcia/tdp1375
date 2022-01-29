@@ -495,9 +495,9 @@ public class Extensions {
 
         @Override
         protected void extend(Configuration canonical) {
-            type1Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
-            type2Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
-            type3Extensions(canonical).stream().map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).forEach(ForkJoinTask::fork);
+            Stream.concat(Stream.concat(type1Extensions(canonical).stream(), type2Extensions(canonical).stream()), type3Extensions(canonical).stream())
+                    .map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).
+                    forEach(ForkJoinTask::fork);
         }
     }
 }
