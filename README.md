@@ -2,7 +2,7 @@
 
 Algorithm for sorting by transpositions based on an algebraic approach with guarantee of approximation ratio of 1.375 for all permutations in the Symmetric Group S_n (not only for the subset of the simple permutations). For the details on the algorithm, please refer to the paper [A new 1.375-approximation algorithm for Sorting By Transpositions](https://rdcu.be/cE4ZC) by L. A. G. Silva, L. A. B. Kowada, N. R. Rocco and M. E. M. T. Walter.
 
-This project requires Maven.
+This project requires Maven version 3.6.3+ and Java JDK 11+.
 
 To execute the program that generates the case analysis which is the base of the correctness proof of the algorithm, run the command
 
