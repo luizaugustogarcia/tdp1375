@@ -63,23 +63,23 @@ public class Silvaetal extends BaseAlgorithm {
                     pi = pair.getSecond();
                     spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
                 } else {
-                    List<Cycle> component = new ArrayList<>();
+                    List<Cycle> configuration = new ArrayList<>();
                     final var gamma = nonBadSmallComponents.stream().findFirst().get();
-                    component.add(Cycle.create(gamma.get(0), gamma.get(1), gamma.get(2)));
+                    configuration.add(Cycle.create(gamma.get(0), gamma.get(1), gamma.get(2)));
 
                     var badSmallComponent = false;
 
                     for (var i = 0; i < 8; i++) {
-                        final var norm = get3Norm(component);
+                        final var norm = get3Norm(configuration);
 
-                        component = extend(component, spi, pi);
+                        configuration = extend(configuration, spi, pi);
 
-                        if (norm == get3Norm(component)) {
+                        if (norm == get3Norm(configuration)) {
                             badSmallComponent = true;
                             break;
                         }
 
-                        final var seq = searchFor11_8_Seq(component, pi);
+                        final var seq = searchFor11_8_Seq(configuration, pi);
                         if (seq.isPresent()) {
                             for (final var move : seq.get())
                                 pi = applyTransposition(pi, move);
@@ -90,7 +90,7 @@ public class Silvaetal extends BaseAlgorithm {
                     }
 
                     if (badSmallComponent) {
-                        badSmallComponents.add(component);
+                        badSmallComponents.add(configuration);
                     }
                 }
             }
