@@ -3,6 +3,7 @@ package br.unb.cic.tdp.proof.util;
 import br.unb.cic.tdp.util.Triplet;
 import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
+import lombok.val;
 
 import java.util.Arrays;
 
@@ -17,7 +18,7 @@ public class SequenceSearcher {
                                final MovesStack moves,
                                final MoveTreeNode root) {
         if (root.mu == 0) {
-            final var sorting = analyze0Moves(spi, parity, spiIndex, maxSymbol, pi, moves, root);
+            val sorting = analyze0Moves(spi, parity, spiIndex, maxSymbol, pi, moves, root);
             if (!sorting.isEmpty()) {
                 return sorting;
             }
@@ -56,7 +57,7 @@ public class SequenceSearcher {
                     if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c])
                         continue;
 
-                    final var is_2Move = spiIndex[a] != spiIndex[b] &&
+                    val is_2Move = spiIndex[a] != spiIndex[b] &&
                             spiIndex[b] != spiIndex[c] &&
                             spiIndex[a] != spiIndex[c];
                     if (is_2Move)
@@ -76,7 +77,7 @@ public class SequenceSearcher {
 
                     var current = triplet.second.head;
                     for (int l = 0; l < triplet.second.size; l++) {
-                        final var cycle = current.data;
+                        val cycle = current.data;
 
                         if (cycle.length > 1) {
                             spi.add(cycle);
@@ -92,9 +93,9 @@ public class SequenceSearcher {
                     if (root.children.length == 0) {
                         return moves.toListOfCycles();
                     } else {
-                        for (final var m : root.children) {
+                        for (val m : root.children) {
                             int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
-                            final var sorting = search(spi, parity, spiIndex, maxSymbol, newPi, moves, m);
+                            val sorting = search(spi, parity, spiIndex, maxSymbol, newPi, moves, m);
                             if (!sorting.isEmpty()) {
                                 return moves.toListOfCycles();
                             }
@@ -104,7 +105,7 @@ public class SequenceSearcher {
                     // ==== ROLLBACK ====
                     current = triplet.second.head;
                     for (int l = 0; l < triplet.second.size; l++) {
-                        final var cycle = current.data;
+                        val cycle = current.data;
                         if (cycle.length > 1) spi.remove(cycle);
                         current = current.next;
                     }
@@ -127,32 +128,32 @@ public class SequenceSearcher {
                                                final int[] pi,
                                                final MovesStack moves,
                                                final MoveTreeNode root) {
-        final var piInverseIndex = getPiInverseIndex(pi, maxSymbol);
+        val piInverseIndex = getPiInverseIndex(pi, maxSymbol);
 
-        final var orientedCycles = getOrientedCycles(spi, piInverseIndex);
+        val orientedCycles = getOrientedCycles(spi, piInverseIndex);
 
         var current = orientedCycles.head;
         for (int l = 0; l < orientedCycles.size; l++) {
-            final var cycle = current.data;
+            val cycle = current.data;
 
-            final var before = parity[cycle[0]] ? 1 : 0;
+            val before = parity[cycle[0]] ? 1 : 0;
 
             for (var i = 0; i < cycle.length - 2; i++) {
                 for (var j = i + 1; j < cycle.length - 1; j++) {
-                    final var ab_k = j - i;
+                    val ab_k = j - i;
 
                     if (before == 1 && (ab_k & 1) == 0) {
                         continue;
                     }
 
                     for (var k = j + 1; k < cycle.length; k++) {
-                        final var bc_k = k - j;
+                        val bc_k = k - j;
 
                         if (before == 1 && (bc_k & 1) == 0) {
                             continue;
                         }
 
-                        final var ca_k = (cycle.length - k) + i;
+                        val ca_k = (cycle.length - k) + i;
 
                         int a = cycle[i], b = cycle[j], c = cycle[k];
 
@@ -163,15 +164,15 @@ public class SequenceSearcher {
                         // check if it's applicable
                         if (after - before == 2 && areSymbolsInCyclicOrder(piInverseIndex, a, c, b)) {
                             final int[] symbols = startingBy(cycle, a);
-                            final var aCycle = new int[ca_k];
+                            val aCycle = new int[ca_k];
                             aCycle[0] = a;
                             System.arraycopy(symbols, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
 
-                            final var bCycle = new int[ab_k];
+                            val bCycle = new int[ab_k];
                             bCycle[0] = b;
                             System.arraycopy(symbols, 1, bCycle, 1, ab_k - 1);
 
-                            final var cCycle = new int[bc_k];
+                            val cCycle = new int[bc_k];
                             cCycle[0] = c;
                             System.arraycopy(symbols, ab_k + 1, cCycle, 1, bc_k - 1);
 
@@ -189,9 +190,9 @@ public class SequenceSearcher {
                             if (root.children.length == 0) {
                                 return moves.toListOfCycles();
                             } else {
-                                for (final var m : root.children) {
+                                for (val m : root.children) {
                                     int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
-                                    final var sorting = search(spi, parity, spiIndex, maxSymbol, newPi, moves, m);
+                                    val sorting = search(spi, parity, spiIndex, maxSymbol, newPi, moves, m);
                                     if (!sorting.isEmpty()) {
                                         return moves.toListOfCycles();
                                     }
@@ -230,7 +231,7 @@ public class SequenceSearcher {
                                        final int[] pi,
                                        final MovesStack moves,
                                        final MoveTreeNode root) {
-        final var cycleIndexes = new int[maxSymbol + 1][];
+        val cycleIndexes = new int[maxSymbol + 1][];
 
         for (int i = 0; i < pi.length - 2; i++) {
             for (int j = i + 1; j < pi.length - 1; j++) {
@@ -238,7 +239,7 @@ public class SequenceSearcher {
 
                     int a = pi[i], b = pi[j], c = pi[k];
 
-                    final var is_2Move = spiIndex[a] != spiIndex[b] &&
+                    val is_2Move = spiIndex[a] != spiIndex[b] &&
                             spiIndex[b] != spiIndex[c] &&
                             spiIndex[a] != spiIndex[c];
                     if (is_2Move)
@@ -247,25 +248,25 @@ public class SequenceSearcher {
                     final Triplet<ListOfCycles, ListOfCycles, Integer> triplet;
                     // if it's the same cycle
                     if (spiIndex[a] == spiIndex[b] && spiIndex[b] == spiIndex[c]) {
-                        final var cycle = spiIndex[a];
+                        val cycle = spiIndex[a];
 
                         if (cycleIndexes[a] == null) {
-                            final var index = cycleIndex(cycle);
+                            val index = cycleIndex(cycle);
                             cycleIndexes[a] = index;
                             cycleIndexes[b] = index;
                             cycleIndexes[c] = index;
                         }
 
-                        final var index = cycleIndexes[a];
+                        val index = cycleIndexes[a];
 
                         if (areSymbolsInCyclicOrder(index, a, b, c)) {
-                            final var before = cycle.length & 1;
+                            val before = cycle.length & 1;
 
-                            final var ab_k = getK(index, cycle, a, b);
+                            val ab_k = getK(index, cycle, a, b);
                             var after = ab_k & 1;
-                            final var bc_k = getK(index, cycle, b, c);
+                            val bc_k = getK(index, cycle, b, c);
                             after += bc_k & 1;
-                            final var ca_k = getK(index, cycle, c, a);
+                            val ca_k = getK(index, cycle, c, a);
                             after += ca_k & 1;
 
                             if (after - before == 2) {
@@ -275,17 +276,17 @@ public class SequenceSearcher {
 
                             after = 0;
                             final int[] symbols = startingBy(cycle, a);
-                            final var aCycle = new int[ca_k];
+                            val aCycle = new int[ca_k];
                             aCycle[0] = a;
                             System.arraycopy(symbols, ab_k + bc_k + 1, aCycle, 1, ca_k - 1);
                             after += aCycle.length & 1;
 
-                            final var bCycle = new int[ab_k];
+                            val bCycle = new int[ab_k];
                             bCycle[0] = b;
                             System.arraycopy(symbols, 1, bCycle, 1, ab_k - 1);
                             after += bCycle.length & 1;
 
-                            final var cCycle = new int[bc_k];
+                            val cCycle = new int[bc_k];
                             cCycle[0] = c;
                             System.arraycopy(symbols, ab_k + 1, cCycle, 1, bc_k - 1);
                             after += cCycle.length & 1;
@@ -309,7 +310,7 @@ public class SequenceSearcher {
 
                     var current = triplet.second.head;
                     for (int l = 0; l < triplet.second.size; l++) {
-                        final var cycle = current.data;
+                        val cycle = current.data;
 
                         if (cycle.length > 1) {
                             spi.add(cycle);
@@ -324,9 +325,9 @@ public class SequenceSearcher {
                     if (root.children.length == 0) {
                         return moves.toListOfCycles();
                     } else {
-                        for (final var m : root.children) {
+                        for (val m : root.children) {
                             int[] newPi = applyTransposition(pi, a, b, c, pi.length - numberOfTrivialCycles, spiIndex);
-                            final var sorting = search(spi, parity, spiIndex, maxSymbol, newPi, moves, m);
+                            val sorting = search(spi, parity, spiIndex, maxSymbol, newPi, moves, m);
                             if (!sorting.isEmpty()) {
                                 return moves.toListOfCycles();
                             }
@@ -336,7 +337,7 @@ public class SequenceSearcher {
                     // ==== ROLLBACK ====
                     current = triplet.second.head;
                     for (int l = 0; l < triplet.second.size; l++) {
-                        final var cycle = current.data;
+                        val cycle = current.data;
                         if (cycle.length > 1) spi.remove(cycle);
                         current = current.next;
                     }
@@ -354,7 +355,7 @@ public class SequenceSearcher {
 
     private static void update(final int[][] index, final boolean[] parity, final int[]... cycles) {
         for (int[] cycle : cycles) {
-            final var p = (cycle.length & 1) == 1;
+            val p = (cycle.length & 1) == 1;
             for (int k : cycle) {
                 index[k] = cycle;
                 parity[k] = p;
@@ -363,7 +364,7 @@ public class SequenceSearcher {
     }
 
     private static int[] getPiInverseIndex(final int[] pi, final int maxSymbol) {
-        final var piInverseIndex = new int[maxSymbol + 1];
+        val piInverseIndex = new int[maxSymbol + 1];
         for (var i = 0; i < pi.length; i++) {
             piInverseIndex[pi[pi.length - i - 1]] = i;
         }
@@ -371,7 +372,7 @@ public class SequenceSearcher {
     }
 
     private static ListOfCycles getOrientedCycles(final ListOfCycles spi, final int[] piInverseIndex) {
-        final var orientedCycles = new ListOfCycles();
+        val orientedCycles = new ListOfCycles();
         var current = spi.head;
         for (int i = 0; i < spi.size; i++) {
             final int[] cycle = current.data;
@@ -384,14 +385,14 @@ public class SequenceSearcher {
 
     private static void updateIndex(final int[][] index, final boolean[] parity, final ListOfCycles cycles) {
         for (var current = cycles.head; current != null; current = current.next) {
-            final var cycle = current.data;
+            val cycle = current.data;
             updateIndex(index, parity, cycle);
         }
     }
 
     private static void updateIndex(final int[][] index, final boolean[] parity, final int[]... cycles) {
         for (int[] cycle : cycles) {
-            final var p = (cycle.length & 1) == 1;
+            val p = (cycle.length & 1) == 1;
             for (int k : cycle) {
                 index[k] = cycle;
                 parity[k] = p;
@@ -444,20 +445,20 @@ public class SequenceSearcher {
             numberOfEvenCycles += spiIndex[c].length & 1;
         }
 
-        final var index = cycleIndex(spiIndex[c_]);
-        final var cImage = image(index, spiIndex[c_], c_);
-        final var abCycle = startingBy(spiIndex[a_], a_);
-        final var cCycle = startingBy(spiIndex[c_], cImage);
+        val index = cycleIndex(spiIndex[c_]);
+        val cImage = image(index, spiIndex[c_], c_);
+        val abCycle = startingBy(spiIndex[a_], a_);
+        val cCycle = startingBy(spiIndex[c_], cImage);
 
-        final var abCycleIndex = cycleIndex(abCycle);
+        val abCycleIndex = cycleIndex(abCycle);
 
-        final var ba_k = getK(abCycleIndex, abCycle, b_, a_);
-        final var newaCycle = new int[1 + ba_k - 1];
+        val ba_k = getK(abCycleIndex, abCycle, b_, a_);
+        val newaCycle = new int[1 + ba_k - 1];
         newaCycle[0] = a_;
-        final var ab_k = getK(abCycleIndex, abCycle, a_, b_);
+        val ab_k = getK(abCycleIndex, abCycle, a_, b_);
         System.arraycopy(abCycle,  ab_k + 1, newaCycle, 1, ba_k - 1);
 
-        final var newbCycle = new int[1 + cCycle.length + (ab_k - 1)];
+        val newbCycle = new int[1 + cCycle.length + (ab_k - 1)];
         newbCycle[0] = b_;
         System.arraycopy(cCycle, 0, newbCycle, 1, cCycle.length);
         System.arraycopy(abCycle, 1, newbCycle, 1 + cCycle.length, ab_k - 1);
@@ -466,14 +467,14 @@ public class SequenceSearcher {
         newNumberOfEvenCycles += newaCycle.length & 1;
         newNumberOfEvenCycles += newbCycle.length & 1;
 
-        final var oldCycles = new ListOfCycles();
+        val oldCycles = new ListOfCycles();
         oldCycles.add(spiIndex[a]);
         if (!oldCycles.contains(spiIndex[b]))
             oldCycles.add(spiIndex[b]);
         if (!oldCycles.contains(spiIndex[c]))
             oldCycles.add(spiIndex[c]);
 
-        final var newCycles = new ListOfCycles();
+        val newCycles = new ListOfCycles();
         newCycles.add(newaCycle);
         newCycles.add(newbCycle);
 
@@ -488,23 +489,23 @@ public class SequenceSearcher {
                                                                                        final int a,
                                                                                        final int b,
                                                                                        final int c) {
-        final var oldCycle = cycleIndex[a];
+        val oldCycle = cycleIndex[a];
 
         final int[] symbols = startingBy(oldCycle, b);
-        final var newCycle = new int[oldCycle.length];
+        val newCycle = new int[oldCycle.length];
 
         final int[] oldCycleIndex = cycleIndex(oldCycle);
 
         newCycle[0] = b;
-        final var ab_k = getK(oldCycleIndex, oldCycle, b, a);
-        final var bc_k = getK(oldCycleIndex, oldCycle, a, c);
+        val ab_k = getK(oldCycleIndex, oldCycle, b, a);
+        val bc_k = getK(oldCycleIndex, oldCycle, a, c);
         System.arraycopy(symbols, ab_k + 1, newCycle, 1, bc_k - 1);
         newCycle[bc_k] = c;
 
         System.arraycopy(symbols, 1, newCycle, 1 + bc_k, ab_k - 1);
         newCycle[ab_k + bc_k] = a;
 
-        final var ca_k = getK(oldCycleIndex, oldCycle, c, b);
+        val ca_k = getK(oldCycleIndex, oldCycle, c, b);
         System.arraycopy(symbols, ab_k + bc_k + 1,
                 newCycle, ab_k + bc_k + 1, ca_k - 1);
 
@@ -512,7 +513,7 @@ public class SequenceSearcher {
     }
 
     private static int[] cycleIndex(int[] cycle) {
-        final var index = new int[Ints.max(cycle) + 1];
+        val index = new int[Ints.max(cycle) + 1];
 
         for (int i = 0; i < cycle.length; i++) {
             index[cycle[i]] = i;
@@ -522,8 +523,8 @@ public class SequenceSearcher {
     }
 
     private static int getK(int[] cycleIndex, int[] cycle, int a, int b) {
-        final var aIndex = cycleIndex[a];
-        final var bIndex = cycleIndex[b];
+        val aIndex = cycleIndex[a];
+        val bIndex = cycleIndex[b];
 
         if (bIndex >= aIndex)
             return bIndex - aIndex;
@@ -535,7 +536,7 @@ public class SequenceSearcher {
         if (symbols[0] == a)
             return symbols;
 
-        final var result = new int[symbols.length];
+        val result = new int[symbols.length];
         for (int i = 0; i < symbols.length; i++) {
             if (symbols[i] == a) {
                 System.arraycopy(symbols, i, result, 0, symbols.length - i);
@@ -552,7 +553,7 @@ public class SequenceSearcher {
                                             final int b,
                                             final int c,
                                             int numberOfSymbols, int[][] spiIndex) {
-        final var indexes = new int[3];
+        val indexes = new int[3];
         Arrays.fill(indexes, -1);
 
         for (var i = 0; i < pi.length; i++) {
@@ -569,24 +570,24 @@ public class SequenceSearcher {
 
         // sort indexes - this is CPU efficient
         if (indexes[0] > indexes[2]) {
-            final var temp = indexes[0];
+            val temp = indexes[0];
             indexes[0] = indexes[2];
             indexes[2] = temp;
         }
 
         if (indexes[0] > indexes[1]) {
-            final var temp = indexes[0];
+            val temp = indexes[0];
             indexes[0] = indexes[1];
             indexes[1] = temp;
         }
 
         if (indexes[1] > indexes[2]) {
-            final var temp = indexes[1];
+            val temp = indexes[1];
             indexes[1] = indexes[2];
             indexes[2] = temp;
         }
 
-        final var result = new int[numberOfSymbols];
+        val result = new int[numberOfSymbols];
 
         int counter = 0;
         for (int i = 0; i < indexes[0]; i++) {

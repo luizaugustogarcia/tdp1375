@@ -1,16 +1,12 @@
 package br.unb.cic.tdp.base;
 
 import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.PermutationGroups;
+import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
-import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
-import static br.unb.cic.tdp.base.CommonOperations.applyTransposition;
-import static br.unb.cic.tdp.base.CommonOperations.areSymbolsInCyclicOrder;
-import static br.unb.cic.tdp.base.CommonOperations.isOriented;
-import static br.unb.cic.tdp.base.CommonOperations.simplify;
+import static br.unb.cic.tdp.base.CommonOperations.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CommonOperationsTest {
@@ -24,16 +20,16 @@ class CommonOperationsTest {
 
     @Test
     void testApplyTransposition() {
-        assertEquals(Cycle.create("0 1 2 3 4 5 6"), applyTransposition(Cycle.create("0 4 5 6 1 2 3"), Cycle.create("0 4 1")));
+        assertEquals(Cycle.create("0 1 2 3 4 5 6"), applyTranspositionOptimized(Cycle.create("0 4 5 6 1 2 3"), Cycle.create("0 4 1")));
     }
 
     @Test
     void testCycleIndex() {
-        final var pi = Cycle.create("0 5 4 3 2 1");
-        final var c0 = Cycle.create("0 2 4");
-        final var c1 = Cycle.create("1 3 5");
+        val pi = Cycle.create("0 5 4 3 2 1");
+        val c0 = Cycle.create("0 2 4");
+        val c1 = Cycle.create("1 3 5");
 
-        final var index = CommonOperations.cycleIndex(Arrays.asList(c0, c1), pi);
+        val index = CommonOperations.cycleIndex(Arrays.asList(c0, c1), pi);
         assertArrayEquals(new Cycle[]{c0, c1, c0, c1, c0, c1}, index);
     }
 

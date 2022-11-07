@@ -1,5 +1,7 @@
 package br.unb.cic.tdp.proof.util;
 
+import lombok.val;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -14,14 +16,14 @@ public class ListOfCycles {
     }
 
     public static ListOfCycles singleton(int[] data) {
-        final var singleton = new ListOfCycles();
+        val singleton = new ListOfCycles();
         singleton.head = new Node(data);
         singleton.size = 1;
         return singleton;
     }
 
     public static ListOfCycles asList(int[]... elements) {
-        final var list = new ListOfCycles();
+        val list = new ListOfCycles();
         for (int[] element : elements) {
             list.add(element);
         }
@@ -29,7 +31,7 @@ public class ListOfCycles {
     }
 
     public void add(int[] data) {
-        final var newNode = new Node(data);
+        val newNode = new Node(data);
 
         if (head == null) {
             head = tail = newNode;
@@ -83,15 +85,9 @@ public class ListOfCycles {
         return false;
     }
 
-    public void removeAll(final List<int[]> other) {
-        for (int[] cycle : other) {
-            remove(cycle);
-        }
-    }
-
     @Override
     public String toString() {
-        final var str = new StringBuilder();
+        val str = new StringBuilder();
         str.append("[");
 
         for (var current = head; current != null; current = current.next) {
@@ -121,7 +117,7 @@ public class ListOfCycles {
     }
 
     public List<int[]> toList() {
-        final var list = new ArrayList<int[]>();
+        val list = new ArrayList<int[]>();
         for (var current = head; current != null; current = current.next) {
             list.add(current.data);
         }

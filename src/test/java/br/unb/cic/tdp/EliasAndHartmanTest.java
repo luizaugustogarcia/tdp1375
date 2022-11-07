@@ -38,6 +38,6 @@ class EliasAndHartmanTest {
 
     @Test
     void testAdHoc2() {
-        assertEquals(10, eliasAndHartman.sort(Cycle.create("0,11,20,17,3,18,15,12,19,9,1,14,8,16,5,2,13,6,10,7,4")).getSecond().size());
+        assertEquals(9, eliasAndHartman.sort(Cycle.create("0,11,20,17,3,18,15,12,19,9,1,14,8,16,5,2,13,6,10,7,4")).getSecond().size());
     }
 }

@@ -4,6 +4,7 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import lombok.SneakyThrows;
+import lombok.val;
 import org.apache.commons.lang.StringUtils;
 
 import java.io.BufferedReader;
@@ -16,7 +17,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
-import static br.unb.cic.tdp.base.CommonOperations.applyTransposition;
+import static br.unb.cic.tdp.base.CommonOperations.applyTranspositionOptimized;
 
 public class EHProofTraverser {
 
@@ -31,9 +32,9 @@ public class EHProofTraverser {
     @SneakyThrows
     private static void traverse(final String baseFolder, final String startFile, final int depth,
                                  final CaseProcessor processor, final Set<Configuration> processedConfigs) {
-        final var spi = readSpi(startFile);
-        final var configuration = new Configuration(spi);
-        final var sorting = readSorting(baseFolder + startFile);
+        val spi = readSpi(startFile);
+        val configuration = new Configuration(spi);
+        val sorting = readSorting(baseFolder + startFile);
 
         processor.process(configuration, sorting, depth, processedConfigs.contains(configuration));
 
@@ -47,15 +48,15 @@ public class EHProofTraverser {
             return;
         }
 
-        try (final var fr = new BufferedReader(new FileReader(baseFolder + startFile))) {
-            try (final var scanner = new Scanner(fr)) {
+        try (val fr = new BufferedReader(new FileReader(baseFolder + startFile))) {
+            try (val scanner = new Scanner(fr)) {
                 scanner.useDelimiter("\\n");
 
                 while (scanner.hasNext()) {
-                    final var line = scanner.next();
+                    val line = scanner.next();
 
                     if (line.startsWith("View")) {
-                        final var matcher = SPI_PATTERN.matcher(line);
+                        val matcher = SPI_PATTERN.matcher(line);
                         if (matcher.matches())
                             traverse(baseFolder, matcher.group(1), depth + 1, processor, processedConfigs);
                     }
@@ -65,7 +66,7 @@ public class EHProofTraverser {
     }
 
     private static MulticyclePermutation readSpi(final String file) {
-        final var _file = new File(file);
+        val _file = new File(file);
         var str = StringUtils.removeEnd(_file.getName().replace("_", ","), ".html");
         str = str.replaceAll("\\[.*?\\]", "");
         str = str.replace(" ", ",");
@@ -74,35 +75,35 @@ public class EHProofTraverser {
 
     @SneakyThrows
     private static List<Cycle> readSorting(final String file) {
-        final var spi = readSpi(file);
+        val spi = readSpi(file);
         var pi = CANONICAL_PI[spi.getNumberOfSymbols()];
 
         var hasSorting = false;
 
-        final var sorting = new ArrayList<Cycle>();
+        val sorting = new ArrayList<Cycle>();
 
-        try (final var fr = new BufferedReader(new FileReader(file), 1024 * 1024)) {
-            try (final var scanner = new Scanner(fr)) {
+        try (val fr = new BufferedReader(new FileReader(file), 1024 * 1024)) {
+            try (val scanner = new Scanner(fr)) {
                 scanner.useDelimiter("\\n");
 
                 while (scanner.hasNext()) {
-                    final var line = scanner.next();
+                    val line = scanner.next();
 
                     if (line.contains("SORTING"))
                         hasSorting = true;
 
                     if (hasSorting) {
-                        final var matcher = SORTING_PATTERN.matcher(line);
+                        val matcher = SORTING_PATTERN.matcher(line);
 
                         if (matcher.matches()) {
-                            final var a = Integer.parseInt(matcher.group(1));
-                            final var b = Integer.parseInt(matcher.group(2));
-                            final var c = Integer.parseInt(matcher.group(3));
+                            val a = Integer.parseInt(matcher.group(1));
+                            val b = Integer.parseInt(matcher.group(2));
+                            val c = Integer.parseInt(matcher.group(3));
 
-                            final var rho = Cycle.create(pi.get(a), pi.get(b), pi.get(c));
+                            val rho = Cycle.create(pi.get(a), pi.get(b), pi.get(c));
                             sorting.add(rho);
 
-                            pi = applyTransposition(pi, rho);
+                            pi = applyTranspositionOptimized(pi, rho);
                         }
                     }
                 }

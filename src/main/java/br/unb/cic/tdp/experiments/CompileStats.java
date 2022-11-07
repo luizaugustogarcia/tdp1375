@@ -1,6 +1,7 @@
 package br.unb.cic.tdp.experiments;
 
 import lombok.SneakyThrows;
+import lombok.val;
 
 import java.math.BigDecimal;
 import java.nio.file.Files;
@@ -10,9 +11,9 @@ public class CompileStats {
 
     @SneakyThrows
     public static void main(String[] args) {
-        for (int i = 2; i <= 50; i++) {
-            final var resource = LongerPermutations.class.getResource("/stats/stats" + i * 10 + ".txt");
-            final var path = Paths.get(resource.toURI());
+        for (var i = 2; i <= 50; i++) {
+            val resource = LongerPermutations.class.getResource("/stats/stats" + i * 10 + ".txt");
+            val path = Paths.get(resource.toURI());
 
             final float[] maxRatioSilva = {0};
             final float[] maxRatioEh = {0};
@@ -22,16 +23,16 @@ public class CompileStats {
             final BigDecimal[] sumRatiosEh = {BigDecimal.ZERO};
 
             Files.lines(path).forEach(line -> {
-                final var split = line.split(",");
+                val split = line.split(",");
 
-                final var ratioSilva = Float.parseFloat(split[1]) / Float.parseFloat(split[0]);
+                val ratioSilva = Float.parseFloat(split[1]) / Float.parseFloat(split[0]);
                 if (ratioSilva > maxRatioSilva[0]) {
                     maxRatioSilva[0] = ratioSilva;
                 }
 
                 sumRatiosSilva[0] = sumRatiosSilva[0].add(new BigDecimal(ratioSilva));
 
-                final var ratioEh = Float.parseFloat(split[3]) / Float.parseFloat(split[0]);
+                val ratioEh = Float.parseFloat(split[3]) / Float.parseFloat(split[0]);
                 if (ratioEh > maxRatioEh[0]) {
                     maxRatioEh[0] = ratioEh;
                 }
@@ -40,10 +41,8 @@ public class CompileStats {
             });
 
             System.out.println(i * 10 + "," +
-
                     maxRatioSilva[0] + "," +
                     sumRatiosSilva[0].floatValue() / 1000 + "," +
-
                     maxRatioEh[0] + "," +
                     sumRatiosEh[0].floatValue() / 1000);
         }
@@ -51,8 +50,8 @@ public class CompileStats {
         System.out.println(">>>>>");
 
         for (int i = 2; i <= 50; i++) {
-            final var resource = LongerPermutations.class.getResource("/stats/stats" + i * 10 + ".txt");
-            final var path = Paths.get(resource.toURI());
+            val resource = LongerPermutations.class.getResource("/stats/stats" + i * 10 + ".txt");
+            val path = Paths.get(resource.toURI());
 
             final int[] timeTotalSilva = {0};
 
@@ -63,7 +62,7 @@ public class CompileStats {
             final int[] maxSilva = {0};
 
             Files.lines(path).forEach(line -> {
-                final var split = line.split(",");
+                val split = line.split(",");
 
                 if (Integer.parseInt(split[2]) > maxSilva[0]) {
                     maxSilva[0] = Integer.parseInt(split[2]);

@@ -8,14 +8,23 @@ import cern.colt.list.FloatArrayList;
 import com.google.common.primitives.Floats;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.val;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.TimeUnit;
 
-import static br.unb.cic.tdp.proof.ProofGenerator.*;
+import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
 import static br.unb.cic.tdp.proof.seq11_8.Extensions.cleanUpBadExtensionAndInvalidFiles;
 import static br.unb.cic.tdp.proof.seq11_8.Extensions.cleanUpIncompleteCases;
 
@@ -53,7 +62,7 @@ public class Combinations {
 
         var pool = new ForkJoinPool();
 
-        for (final var configuration : BAD_SMALL_COMPONENTS) {
+        for (val configuration : BAD_SMALL_COMPONENTS) {
             pool.execute(new SortOrExtendCombinations(configuration, outputDir + "/comb/"));
         }
 
@@ -68,14 +77,14 @@ public class Combinations {
     }
 
     private static List<Pair<String, Configuration>> extend(final Configuration config) {
-        final var result = new ArrayList<Pair<String, Configuration>>();
-        for (final var badSmallComponent : BAD_SMALL_COMPONENTS) {
+        val result = new ArrayList<Pair<String, Configuration>>();
+        for (val badSmallComponent : BAD_SMALL_COMPONENTS) {
             for (int i = 0; i < config.getPi().size(); i++) {
-                final var badSmallComponentSignature = badSmallComponent.getSignature().getContent().clone();
+                val badSmallComponentSignature = badSmallComponent.getSignature().getContent().clone();
                 for (int j = 0; j < badSmallComponentSignature.length; j++) {
                     badSmallComponentSignature[j] += config.getSpi().size();
                 }
-                final var signature = new FloatArrayList(config.getSignature().getContent().clone());
+                val signature = new FloatArrayList(config.getSignature().getContent().clone());
                 signature.beforeInsertAllOf(i, Floats.asList(badSmallComponentSignature));
                 signature.trimToSize();
 
@@ -107,11 +116,11 @@ public class Combinations {
         @SneakyThrows
         @Override
         protected void compute() {
-            final var file = new File(outputDir + "/comb/" + configuration.getSpi() + ".html");
+            val file = new File(outputDir + "/comb/" + configuration.getSpi() + ".html");
             if (file.exists())
                 return;
 
-            try (final var out = new PrintStream(new BufferedOutputStream(new FileOutputStream(file), 1024 * 100))) {
+            try (val out = new PrintStream(new BufferedOutputStream(new FileOutputStream(file), 1024 * 100))) {
                 out.println("<html>\n" +
                         "\t<head>\n" +
                         "\t\t<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css\" integrity=\"sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh\" crossorigin=\"anonymous\">\n" +
@@ -167,12 +176,12 @@ public class Combinations {
         @SneakyThrows
         private void renderExtensions(final Configuration configuration,
                                       final PrintStream out, final String outputDir) {
-            for (final var extension : extend(configuration)) {
-                final var canonical = extension.getSecond().getCanonical();
+            for (val extension : extend(configuration)) {
+                val canonical = extension.getSecond().getCanonical();
 
-                final var badCaseFile = new File(outputDir + "/comb/bad-cases/" + canonical.getSpi());
+                val badCaseFile = new File(outputDir + "/comb/bad-cases/" + canonical.getSpi());
 
-                final var hasSorting = !badCaseFile.exists();
+                val hasSorting = !badCaseFile.exists();
 
                 out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
                         "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
@@ -182,7 +191,7 @@ public class Combinations {
                 out.println("3-norm: " + extension.getSecond().getSpi().get3Norm() + "<br>");
                 out.println("Signature: " + extension.getSecond().getSignature() + "<br>");
 
-                final var jsSpi = permutationToJsArray(extension.getSecond().getSpi());
+                val jsSpi = permutationToJsArray(extension.getSecond().getSpi());
                 out.printf("Extension: <a href=\"\" " +
                                 "onclick=\"" +
                                 "updateCanvas('modalCanvas', %s); " +
@@ -224,14 +233,14 @@ public class Combinations {
         }
 
         private List<Configuration> extendCombinations(final Configuration config) {
-            final var result = new ArrayList<Configuration>();
-            for (final var badSmallComponent : BAD_SMALL_COMPONENTS) {
+            val result = new ArrayList<Configuration>();
+            for (val badSmallComponent : BAD_SMALL_COMPONENTS) {
                 for (int i = 0; i < config.getPi().size(); i++) {
-                    final var badSmallComponentSignature = badSmallComponent.getSignature().getContent().clone();
+                    val badSmallComponentSignature = badSmallComponent.getSignature().getContent().clone();
                     for (int j = 0; j < badSmallComponentSignature.length; j++) {
                         badSmallComponentSignature[j] += config.getSpi().size();
                     }
-                    final var signature = new FloatArrayList(config.getSignature().getContent().clone());
+                    val signature = new FloatArrayList(config.getSignature().getContent().clone());
                     signature.beforeInsertAllOf(i, Floats.asList(badSmallComponentSignature));
                     signature.trimToSize();
 
