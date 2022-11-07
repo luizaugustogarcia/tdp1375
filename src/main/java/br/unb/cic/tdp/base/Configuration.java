@@ -7,16 +7,19 @@ import com.google.common.primitives.Ints;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
-import org.apache.commons.lang.ArrayUtils;
+import lombok.val;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.zip.CRC32;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static java.util.Comparator.comparing;
+import static java.util.stream.Collectors.toCollection;
 
 /**
  * Only supports oriented cycles whose length is at most 100.
@@ -46,29 +49,29 @@ public class Configuration {
         this(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
     }
 
-    public Configuration(String spi) {
+    public Configuration(final String spi) {
         this(new MulticyclePermutation(spi));
     }
 
     public static float[] signature(final Collection<Cycle> spi, final Cycle pi) {
-        final var labelByCycle = new HashMap<Cycle, Float>();
-        final var cycleIndex = cycleIndex(spi, pi);
-        final var orientedCycles = spi.stream().filter(c -> !areSymbolsInCyclicOrder(pi.getInverse(), c.getSymbols()))
+        val labelByCycle = new HashMap<Cycle, Float>();
+        val cycleIndex = cycleIndex(spi, pi);
+        val orientedCycles = spi.stream().filter(c -> !areSymbolsInCyclicOrder(pi.getInverse(), c.getSymbols()))
                 .collect(Collectors.toSet());
-        final var symbolIndexByOrientedCycle = new HashMap<Cycle, int[]>();
+        val symbolIndexByOrientedCycle = new HashMap<Cycle, int[]>();
 
-        final var signature = new float[pi.size()];
+        val signature = new float[pi.size()];
 
         for (var i = 0; i < signature.length; i++) {
-            final int symbol = pi.get(i);
-            final var cycle = cycleIndex[symbol];
+            val symbol = pi.get(i);
+            val cycle = cycleIndex[symbol];
             if (orientedCycles.contains(cycle)) {
                 symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
-                    final var symbolIndex = new int[pi.getMaxSymbol() + 1];
-                    final int symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
-                    for (int j = 0; j < c.getSymbols().length; j++) {
+                    val symbolIndex = new int[pi.getMaxSymbol() + 1];
+                    val symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
+                    for (var j = 0; j < c.getSymbols().length; j++) {
                         if (c.getSymbols()[j] == symbolMinIndex) {
-                            for (int k = 0; k < c.getSymbols().length; k++) {
+                            for (var k = 0; k < c.getSymbols().length; k++) {
                                 symbolIndex[c.getSymbols()[(j + k) % c.getSymbols().length]] = k + 1;
                             }
                             break;
@@ -85,22 +88,15 @@ public class Configuration {
         return signature;
     }
 
-    public static boolean isOpenGate(final int i, final float[] signature) {
-        final var n = signature.length;
-        float a = signature[mod(i, n)], b = signature[mod(i - 1, n)], c = signature[mod(i - 2, n)];
-        return (a % 1 == 0 && a == b) || (a % 1 > 0 && b % 1 > 0 && c % 1 > 0 &&
-                Math.floor(a) == Math.floor(b) && Math.floor(a) == Math.floor(c) && c < a && a < b);
-    }
-
     public static Configuration ofSignature(float[] signature) {
-        final var pi = CANONICAL_PI[signature.length];
+        val pi = CANONICAL_PI[signature.length];
 
-        final var cyclesByLabel = new HashMap<Integer, List<Integer>>();
-        final var piSymbolsByOrientedCycleSymbols = new HashMap<Float, Integer>();
-        final var orientedCyclesByLabel = new HashMap<Integer, List<Integer>>();
+        val cyclesByLabel = new HashMap<Integer, List<Integer>>();
+        val piSymbolsByOrientedCycleSymbols = new HashMap<Float, Integer>();
+        val orientedCyclesByLabel = new HashMap<Integer, List<Integer>>();
 
-        for (int i = signature.length - 1; i >= 0; i--) {
-            int label = (int) Math.floor(signature[i]);
+        for (var i = signature.length - 1; i >= 0; i--) {
+            val label = (int) Math.floor(signature[i]);
             cyclesByLabel.computeIfAbsent(label, key -> new ArrayList<>());
             cyclesByLabel.get(label).add(i);
             if (signature[i] % 1 > 0) {
@@ -110,10 +106,10 @@ public class Configuration {
         }
 
         orientedCyclesByLabel.forEach((key, value) -> {
-            final var sortedSignature = signature.clone();
+            val sortedSignature = signature.clone();
             Arrays.sort(sortedSignature);
-            final var orientedCycle = new ArrayList<Integer>();
-            for (int i = 0; i < signature.length; i++) {
+            val orientedCycle = new ArrayList<Integer>();
+            for (var i = 0; i < signature.length; i++) {
                 if (Math.floor(sortedSignature[i]) == key) {
                     orientedCycle.add(piSymbolsByOrientedCycleSymbols.get(sortedSignature[i]));
                 }
@@ -122,8 +118,8 @@ public class Configuration {
             value.addAll(orientedCycle);
         });
 
-        final var spi = cyclesByLabel.values().stream().map(c -> Cycle.create(Ints.toArray(c)))
-                .collect(Collectors.toCollection(MulticyclePermutation::new));
+        val spi = cyclesByLabel.values().stream().map(c -> Cycle.create(Ints.toArray(c)))
+                .collect(toCollection(MulticyclePermutation::new));
         return new Configuration(spi, pi);
     }
 
@@ -132,8 +128,9 @@ public class Configuration {
             float[] canonicalSignature = null;
             var leastHashCode = Integer.MAX_VALUE;
 
-            for (final var equivalentSignature : getEquivalentSignatures()) {
-                var hashCode = equivalentSignature.hashCode();
+            for (var it = getEquivalentSignatures().iterator(); it.hasNext(); ) {
+                val equivalentSignature = it.next();
+                val hashCode = equivalentSignature.hashCode();
 
                 if (hashCode < leastHashCode) {
                     leastHashCode = hashCode;
@@ -150,7 +147,7 @@ public class Configuration {
     }
 
     private static float[] least(final float[] signature1, final float[] signature2) {
-        for (int i = 0; i < signature1.length; i++) {
+        for (var i = 0; i < signature1.length; i++) {
             if (signature1[i] != signature2[i]) {
                 if (signature1[i] < signature2[i])
                     return signature1;
@@ -161,89 +158,45 @@ public class Configuration {
         return signature2;
     }
 
-    public Collection<Signature> getEquivalentSignatures() {
-        Set<Signature> equivalentSignatures = new HashSet<>();
+    public Stream<Signature> getEquivalentSignatures() {
+        return IntStream.range(0, pi.size()).boxed().flatMap(i -> {
+            val shiftedPi = pi.startingBy(pi.get(i));
+            return Stream.of(new Signature(shiftedPi, signature(spi, shiftedPi), false), mirror(spi, shiftedPi));
+        });
+    }
 
-        final var cycleIndex = cycleIndex(spi, pi);
-
-        for (var i = 0; i < pi.size(); i++) {
-            final var shifting = pi.startingBy(pi.get(i));
-            final var signature = signature(spi, shifting);
-            equivalentSignatures.add(new Signature(shifting, signature, false));
-
-            final var mirroredSignature = signature.clone();
-            ArrayUtils.reverse(mirroredSignature);
-
-            final var labelLabelMapping = new int[spi.size() + 1];
-            final var orientedIndexMapping = new int[spi.size() + 1][];
-            final var deltas = new float[spi.size() + 1];
-            Arrays.fill(deltas, -1);
-
-            var nextLabel = 1;
-            for (int j = 0; j < mirroredSignature.length; j++) {
-                final var label = mirroredSignature[j];
-
-                if (labelLabelMapping[(int) label] == 0) {
-                    labelLabelMapping[(int) label] = nextLabel++;
-                }
-
-                final var newLabel = labelLabelMapping[(int) label];
-
-                if (label % 1 > 0) {
-                    if (orientedIndexMapping[newLabel] == null) {
-                        final var index = Math.abs(j - shifting.size()) - 1;
-                        final var cycle = cycleIndex[shifting.get(index)].startingBy(shifting.get(index));
-                        orientedIndexMapping[newLabel] = cycle.getInverse().getSymbolIndexes();
-                        final var delta = cycle.size() - round((label % 1) * 100);
-                        deltas[newLabel] = delta;
-                    }
-
-                    final var index = Math.abs(j - shifting.size()) - 1;
-                    final var orientationIndex = orientedIndexMapping[newLabel][shifting.getSymbols()[index]] + 1;
-                    mirroredSignature[j] = newLabel + (((orientationIndex + deltas[newLabel]) % cycleIndex[shifting.get(index)].size()) / 100);
-                    if (mirroredSignature[j] % 1 == 0)
-                        mirroredSignature[j] = newLabel + (cycleIndex[shifting.get(index)].size() / 100f);
-                } else {
-                    mirroredSignature[j] = newLabel;
-                }
-            }
-
-            equivalentSignatures.add(new Signature(shifting, mirroredSignature, true));
+    private static Signature mirror(final MulticyclePermutation spi, final Cycle pi) {
+        val conjugator = new MulticyclePermutation();
+        for (var i = 0; i < pi.size() / 2; i++) {
+            conjugator.add(Cycle.create(pi.get(i), pi.get(pi.size() - 1 - i)));
         }
-
-        return equivalentSignatures;
+        val mirroredSpi = spi.conjugateBy(conjugator).getInverse();
+        return new Signature(pi, signature(mirroredSpi, pi), true);
     }
 
-    private float round(final float value) {
-        return (float) Math.round(value * 100) / 100;
-    }
-
-    /**
-     * Assumes that this configuration is equivalent to the one provided as parameter.
-     */
     public List<Cycle> translatedSorting(final Configuration config, final List<Cycle> sorting) {
-        final var matchedSignature = this.getEquivalentSignatures().stream()
+        val matchedSignature = this.getEquivalentSignatures()
                 .filter(c -> Arrays.equals(c.getContent(), config.getSignature().getContent()))
                 .findFirst().get();
 
-        final var translatedSorting = new ArrayList<Cycle>();
+        val translatedSorting = new ArrayList<Cycle>();
         var pi = config.getPi();
-        var _pi = matchedSignature.pi;
+        var signaturePi = matchedSignature.pi;
 
-        for (final var move : sorting) {
+        for (val move : sorting) {
             if (matchedSignature.isMirror()) {
                 translatedSorting.add(Cycle.create(
-                        _pi.get(Math.abs(pi.indexOf(move.get(0)) - pi.size()) - 1),
-                        _pi.get(Math.abs(pi.indexOf(move.get(1)) - pi.size()) - 1),
-                        _pi.get(Math.abs(pi.indexOf(move.get(2)) - pi.size()) - 1)).getInverse());
+                        signaturePi.get(Math.abs(pi.indexOf(move.get(0)) - pi.size()) - 1),
+                        signaturePi.get(Math.abs(pi.indexOf(move.get(1)) - pi.size()) - 1),
+                        signaturePi.get(Math.abs(pi.indexOf(move.get(2)) - pi.size()) - 1)).getInverse());
             } else {
                 translatedSorting.add(Cycle.create(
-                        _pi.get(pi.indexOf(move.get(0))),
-                        _pi.get(pi.indexOf(move.get(1))),
-                        _pi.get(pi.indexOf(move.get(2)))));
+                        signaturePi.get(pi.indexOf(move.get(0))),
+                        signaturePi.get(pi.indexOf(move.get(1))),
+                        signaturePi.get(pi.indexOf(move.get(2)))));
             }
-            pi = applyTransposition(pi, move);
-            _pi = applyTransposition(_pi, translatedSorting.get(translatedSorting.size() - 1));
+            pi = applyTranspositionOptimized(pi, move);
+            signaturePi = applyTranspositionOptimized(signaturePi, translatedSorting.get(translatedSorting.size() - 1));
         }
 
         return translatedSorting;
@@ -276,7 +229,7 @@ public class Configuration {
             return false;
         }
 
-        final var other = (Configuration) obj;
+        val other = (Configuration) obj;
 
         if (this.signature.content.length != other.signature.content.length ||
                 this.spi.size() != other.spi.size()) {
@@ -286,15 +239,8 @@ public class Configuration {
         return getCanonical().signature.equals(other.getCanonical().signature);
     }
 
-    public List<Integer> getOpenGates() {
-        final var result = new ArrayList<Integer>();
-        final var n = signature.content.length;
-        for (int i = 0; i < n; i++) {
-            if (isOpenGate(i, signature.content)) {
-                result.add(i);
-            }
-        }
-        return result;
+    public Set<Integer> getOpenGates() {
+        return CommonOperations.getOpenGates(spi, pi);
     }
 
     public static class Signature {
@@ -320,8 +266,8 @@ public class Configuration {
         public boolean equals(final Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
-            final var other = (Signature) o;
-            for (int i = 0; i < other.content.length; i++) {
+            val other = (Signature) o;
+            for (var i = 0; i < other.content.length; i++) {
                 if (content[i] != other.content[i]) {
                     return false;
                 }
@@ -333,12 +279,12 @@ public class Configuration {
         @Override
         public int hashCode() {
             if (hashCode == null) {
-                final var bas = new ByteArrayOutputStream();
-                final var ds = new DataOutputStream(bas);
-                for (float f : content)
+                val bas = new ByteArrayOutputStream();
+                val ds = new DataOutputStream(bas);
+                for (val f : content)
                     ds.writeFloat(f);
-                byte[] bytes = bas.toByteArray();
-                final var crc32 = new CRC32();
+                val bytes = bas.toByteArray();
+                val crc32 = new CRC32();
                 crc32.update(bytes, 0, bytes.length);
                 hashCode = (int) crc32.getValue();
             }

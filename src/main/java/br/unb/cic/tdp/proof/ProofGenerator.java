@@ -15,16 +15,19 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
+import lombok.val;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
 import java.io.Writer;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.base.CommonOperations.*;
+import static br.unb.cic.tdp.base.CommonOperations.getComponents;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.stream.Collectors.toList;
@@ -33,18 +36,14 @@ public class ProofGenerator {
 
     static Multimap<Integer, Pair<Configuration, List<Cycle>>> ehSortings = HashMultimap.create();
 
-    static final int[][] _4_3 = new int[][]{{0,2,2,2}};
+    static final int[][] _4_3 = new int[][]{{0, 2, 2, 2}};
 
     static final int[][] _8_6 = new int[][]{
-            {0,2,2,0,2,2,2,2},
-            {0,2,0,2,2,2,2,2},
-            {0,0,2,2,2,2,2,2}};
+            {0, 2, 2, 0, 2, 2, 2, 2},
+            {0, 2, 0, 2, 2, 2, 2, 2},
+            {0, 0, 2, 2, 2, 2, 2, 2}};
 
     static final int[][] _11_8 = new int[][]{
-                {0, 2, 2, 2},
-                {0, 2, 2, 0, 2, 2, 2, 2},
-                {0, 2, 0, 2, 2, 2, 2, 2},
-                {0, 0, 2, 2, 2, 2, 2, 2},
                 {0, 2, 2, 0, 2, 2, 2, 0, 2, 2, 2},
                 {0, 2, 2, 0, 2, 2, 0, 2, 2, 2, 2},
                 {0, 2, 2, 0, 2, 0, 2, 2, 2, 2, 2},
@@ -73,17 +72,17 @@ public class ProofGenerator {
     }
 
     public static void toTrie(final int[][] seqs, MoveTreeNode root) {
-        final var root_ = root;
+        val root_ = root;
         for (int[] seq : seqs) {
             root = root_;
             for (int j = 1; j < seq.length; j++) {
-                final var move = seq[j];
+                val move = seq[j];
                 if (Arrays.stream(root.children).noneMatch(m -> m.mu == move)) {
                     if (root.children.length == 0) {
                         root.children = new MoveTreeNode[1];
                         root.children[0] = new MoveTreeNode(move, new MoveTreeNode[0], root);
                     } else {
-                        final var children = new MoveTreeNode[2];
+                        val children = new MoveTreeNode[2];
                         children[0] = root.children[0];
                         children[1] = new MoveTreeNode(move, new MoveTreeNode[0], root);
                         root.children = children;
@@ -121,10 +120,10 @@ public class ProofGenerator {
     @SneakyThrows
     private static void loadEhSortings(final Path file) {
         Files.lines(file).forEach(line -> {
-            final var lineSplit = line.trim().split("->");
+            val lineSplit = line.trim().split("->");
             if (lineSplit.length > 1) {
-                final var spi = new MulticyclePermutation(lineSplit[0].split("#")[1].replace(" ", ","));
-                final var config = new Configuration(spi);
+                val spi = new MulticyclePermutation(lineSplit[0].split("#")[1].replace(" ", ","));
+                val config = new Configuration(spi);
                 ehSortings.put(config.hashCode(),
                         new Pair<>(config, Arrays.stream(lineSplit[1].split(";"))
                                 .map(s -> s.replace(" ", ",")).map(Cycle::create).collect(Collectors.toList())));
@@ -152,7 +151,7 @@ public class ProofGenerator {
             }
         }
 
-        final var _3norm = configuration.getSpi().get3Norm();
+        val _3norm = configuration.getSpi().get3Norm();
 
         List<Cycle> sorting = Collections.emptyList();
 
@@ -187,14 +186,14 @@ public class ProofGenerator {
     }
 
     public static List<Cycle> searchSorting(final Configuration configuration, final MoveTreeNode rootMove) {
-        final var spi = new ListOfCycles();
+        val spi = new ListOfCycles();
         configuration.getSpi().stream().map(Cycle::getSymbols).forEach(spi::add);
 
-        final var parity = new boolean[configuration.getPi().size()];
+        val parity = new boolean[configuration.getPi().size()];
         int[][] spiIndex = new int[configuration.getPi().size()][];
         var current = spi.head;
         while (current != null) {
-            final var cycle = current.data;
+            val cycle = current.data;
             for (int i : cycle) {
                 spiIndex[i] = cycle;
                 parity[i] = (cycle.length & 1) == 1;
@@ -202,18 +201,18 @@ public class ProofGenerator {
             current = current.next;
         }
 
-        final var pi = configuration.getPi().getSymbols();
+        val pi = configuration.getPi().getSymbols();
 
-        final var stack = new MovesStack(rootMove.getHeight());
+        val stack = new MovesStack(rootMove.getHeight());
 
         return new SequenceSearcher()
                 .search(spi, parity, spiIndex, spiIndex.length, pi, stack, rootMove)
                 .toList().stream().map(Cycle::create).collect(toList());
     }
 
-    public static Cycle removeExtraSymbols(final MutableIntSet symbols, final Cycle pi) {
-        final var newPi = new IntArrayList(symbols.size());
-        for (final var symbol: pi.getSymbols()) {
+    public static Cycle removeExtraSymbols(final Set<Integer> symbols, final Cycle pi) {
+        val newPi = new IntArrayList(symbols.size());
+        for (val symbol: pi.getSymbols()) {
             if (symbols.contains(symbol))
                 newPi.add(symbol);
         }
@@ -243,9 +242,9 @@ public class ProofGenerator {
         context.put("jsPi", cycleToJsArray(canonicalConfig.getPi()));
         context.put("sorting", sorting);
 
-        final var spis = new ArrayList<MulticyclePermutation>();
-        final var jsSpis = new ArrayList<String>();
-        final var jsPis = new ArrayList<String>();
+        val spis = new ArrayList<MulticyclePermutation>();
+        val jsSpis = new ArrayList<String>();
+        val jsPis = new ArrayList<String>();
         var spi = canonicalConfig.getSpi();
         var pi = canonicalConfig.getPi();
         for (final Cycle move : sorting) {
@@ -257,7 +256,7 @@ public class ProofGenerator {
         context.put("jsSpis", jsSpis);
         context.put("jsPis", jsPis);
 
-        final var template = Velocity.getTemplate("templates/sorting.html");
+        val template = Velocity.getTemplate("templates/sorting.html");
         template.merge(context, writer);
     }
 }

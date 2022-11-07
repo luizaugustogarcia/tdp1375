@@ -1,9 +1,10 @@
 package br.unb.cic.tdp.permutation;
 
 import cern.colt.list.IntArrayList;
+import lombok.val;
 import org.apache.commons.lang.ArrayUtils;
 
-import java.util.*;
+import java.util.Arrays;
 
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
@@ -21,17 +22,17 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public static Cycle create(final String cycle) {
-        final var strSymbols = cycle.replace("(", "").replace(")", "").split(",|\\s");
-        final var symbols = new int[strSymbols.length];
+        val strSymbols = cycle.replace("(", "").replace(")", "").split(",|\\s");
+        val symbols = new int[strSymbols.length];
         for (var i = 0; i < strSymbols.length; i++) {
-            final var strSymbol = strSymbols[i];
+            val strSymbol = strSymbols[i];
             symbols[i] = Integer.parseInt(strSymbol);
         }
         return create(symbols);
     }
 
     public static Cycle create(final IntArrayList lSymbols) {
-        final var symbols = new int[lSymbols.size()];
+        val symbols = new int[lSymbols.size()];
         System.arraycopy(lSymbols.elements(), 0, symbols, 0, lSymbols.size());
         return create(symbols);
     }
@@ -50,7 +51,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     private void updateInternalState() {
-        for (int symbol : symbols) {
+        for (val symbol : symbols) {
             if (minSymbol == -1 || symbol < minSymbol) {
                 minSymbol = symbol;
             }
@@ -84,7 +85,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     @Override
     public Cycle getInverse() {
         if (inverse == null) {
-            final var symbolsCopy = new int[this.symbols.length];
+            val symbolsCopy = new int[this.symbols.length];
             System.arraycopy(this.symbols, 0, symbolsCopy, 0, this.symbols.length);
             ArrayUtils.reverse(symbolsCopy);
             inverse = Cycle.create(symbolsCopy);
@@ -97,9 +98,9 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     private String defaultStringRepresentation() {
-        final var _default = this.startingBy(minSymbol);
+        val _default = this.startingBy(minSymbol);
 
-        final var representation = new StringBuilder().append("(");
+        val representation = new StringBuilder().append("(");
 
         for (var i = 0; ; i++) {
             representation.append(_default.symbols[i]);
@@ -128,7 +129,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final var other = (Cycle) obj;
+        val other = (Cycle) obj;
 
         if (size() != other.size()) {
             return false;
@@ -158,8 +159,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public int getK(final int a, final int b) {
-        final var aIndex = indexOf(a);
-        final var bIndex = indexOf(b);
+        val aIndex = indexOf(a);
+        val bIndex = indexOf(b);
 
         if (bIndex >= aIndex)
             return bIndex - aIndex;
@@ -172,8 +173,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             return this;
         }
 
-        final var index = indexOf(symbol);
-        final var symbols = new int[this.symbols.length];
+        val index = indexOf(symbol);
+        val symbols = new int[this.symbols.length];
         System.arraycopy(this.symbols, index, symbols, 0, symbols.length - index);
         System.arraycopy(this.symbols, 0, symbols, symbols.length - index, index);
 
@@ -199,7 +200,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public boolean contains(final int symbol) {
-        return symbol <= symbolIndexes.length - 1 && symbolIndexes[symbol] != -1;
+        return (symbol >= 0 && symbol <= symbolIndexes.length - 1) && symbolIndexes[symbol] != -1;
     }
 
     @Override

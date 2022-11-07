@@ -2,7 +2,6 @@ package br.unb.cic.tdp.permutation;
 
 import org.junit.jupiter.api.Test;
 
-import static br.unb.cic.tdp.base.CommonOperations.applyTransposition;
 import static org.junit.jupiter.api.Assertions.*;
 
 class PermutationGroupsTest {
@@ -14,7 +13,7 @@ class PermutationGroupsTest {
 
     @Test
     void testComputeProductNotIncluding1Cycles() {
-        assertEquals(new MulticyclePermutation(""), PermutationGroups.computeProduct(false, Cycle.create("0 1 2 3 4 5"), Cycle.create("0 1 2 3 4 5").getInverse()));
+        assertEquals(new MulticyclePermutation(), PermutationGroups.computeProduct(false, Cycle.create("0 1 2 3 4 5"), Cycle.create("0 1 2 3 4 5").getInverse()));
     }
 
     @Test

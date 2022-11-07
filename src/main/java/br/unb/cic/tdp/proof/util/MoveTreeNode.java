@@ -1,5 +1,7 @@
 package br.unb.cic.tdp.proof.util;
 
+import lombok.val;
+
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
@@ -24,7 +26,7 @@ public class MoveTreeNode {
         if (move.children.length == 0)
             return 1;
 
-            int lDepth = maxDepth(move.children[0]);
+        int lDepth = maxDepth(move.children[0]);
         int rDepth = move.children.length == 1 ? 1 : maxDepth(move.children[1]);
 
         if (lDepth > rDepth)
@@ -43,7 +45,7 @@ public class MoveTreeNode {
 
     public String pathToRoot() {
         if (pathToRoot == null) {
-            final var list = new ArrayList<String>();
+            val list = new ArrayList<String>();
             var current = this;
             while (current != null) {
                 list.add(Integer.toString(current.mu));

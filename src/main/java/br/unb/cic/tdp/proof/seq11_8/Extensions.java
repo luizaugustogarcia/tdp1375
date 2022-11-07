@@ -9,20 +9,28 @@ import cern.colt.list.FloatArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import lombok.SneakyThrows;
+import lombok.val;
 import org.apache.commons.io.FileUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-
-import static br.unb.cic.tdp.base.CommonOperations.*;
-import static br.unb.cic.tdp.proof.ProofGenerator.*;
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static br.unb.cic.tdp.base.Configuration.*;
+import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
+import static br.unb.cic.tdp.base.CommonOperations.is11_8;
+import static br.unb.cic.tdp.base.Configuration.ofSignature;
+import static br.unb.cic.tdp.base.Configuration.signature;
+import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
 
 public class Extensions {
 
@@ -50,7 +58,7 @@ public class Extensions {
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 
-        final var executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
                 .map(Path::toFile)
                 .forEach(file -> {
@@ -64,20 +72,20 @@ public class Extensions {
 
     @SneakyThrows
     public static void cleanUpBadExtensionAndInvalidFiles(final String outputDir) {
-        final var dir = new File(outputDir);
+        val dir = new File(outputDir);
 
-        final var files = new ArrayList<File>();
+        val files = new ArrayList<File>();
         Stream.of(dir.listFiles(file -> file.getName().endsWith(".html")))
                 .parallel()
                 .forEach(f -> {
-                    final var file = new File(outputDir + f.getName());
+                    val file = new File(outputDir + f.getName());
 
                     try {
                         if (isBadExtension(file)) {
                             files.add(file);
                         } else {
-                            final var canonical = new Configuration(new MulticyclePermutation(f.getName().replace(" ", ",")));
-                            final var sorting = getSorting(file.toPath());
+                            val canonical = new Configuration(new MulticyclePermutation(f.getName().replace(" ", ",")));
+                            val sorting = getSorting(file.toPath());
                             if (!is11_8(canonical.getSpi(), canonical.getPi(), sorting.getSecond())) {
                                 files.add(file);
                             }
@@ -88,7 +96,7 @@ public class Extensions {
                 });
 
         boolean canContinue = true;
-        for (final var file : files) {
+        for (val file : files) {
             boolean deleted = FileUtils.deleteQuietly(file);
             canContinue &= deleted;
             if (!deleted) {
@@ -102,7 +110,7 @@ public class Extensions {
 
     @SneakyThrows
     public static Pair<MulticyclePermutation, List<Cycle>> getSorting(final Path path) {
-        final var reader = new BufferedReader(new FileReader(path.toFile()), 1024 * 10);
+        val reader = new BufferedReader(new FileReader(path.toFile()), 1024 * 10);
         var line = reader.readLine();
         MulticyclePermutation spi = null;
 
@@ -118,7 +126,7 @@ public class Extensions {
                 return new Pair<>(spi, null);
             }
 
-            final var sorting = new ArrayList<Cycle>();
+            val sorting = new ArrayList<Cycle>();
             if (line.trim().equals("ALLOWS (11/8)-SEQUENCE")) {
                 while ((line = reader.readLine()) != null) {
                     line = line.trim();
@@ -129,7 +137,7 @@ public class Extensions {
 
                     line = reader.readLine();
 
-                    final var move = line.split(": ")[1].replace(" ", ",")
+                    val move = line.split(": ")[1].replace(" ", ",")
                             .replace("<br>", "");
                     sorting.add(Cycle.create(move));
                 }
@@ -166,12 +174,12 @@ public class Extensions {
 
     @SneakyThrows
     private static void renderExtensions(final List<Pair<String, Configuration>> extensions, final PrintStream out, final String outputDir) {
-        for (final var extension : extensions) {
-            final var configuration = extension.getSecond();
-            final var canonical = extension.getSecond().getCanonical();
+        for (val extension : extensions) {
+            val configuration = extension.getSecond();
+            val canonical = extension.getSecond().getCanonical();
 
-            final var badCaseFile = new File(outputDir + "/dfs/bad-cases/" + canonical.getSpi());
-            final var hasSorting = !badCaseFile.exists();
+            val badCaseFile = new File(outputDir + "/dfs/bad-cases/" + canonical.getSpi());
+            val hasSorting = !badCaseFile.exists();
             out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
                     "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
             out.println(extension.getFirst() + "<br>");
@@ -179,7 +187,7 @@ public class Extensions {
             out.println("Hash code: " + configuration.hashCode() + "<br>");
             out.println("3-norm: " + configuration.getSpi().get3Norm() + "<br>");
             out.println("Signature: " + configuration.getSignature() + "<br>");
-            final var jsSpi = permutationToJsArray(configuration.getSpi());
+            val jsSpi = permutationToJsArray(configuration.getSpi());
             out.printf("Extension: <a href=\"\" " +
                             "onclick=\"" +
                             "updateCanvas('modalCanvas', %s); " +
@@ -194,14 +202,14 @@ public class Extensions {
 
     @SneakyThrows
     public static void cleanUpIncompleteCases(final String outputDir) {
-        final var excludeFiles = new ArrayList<File>();
+        val excludeFiles = new ArrayList<File>();
 
         Files.list(Paths.get(outputDir + "/working/"))
                 .map(Path::toFile)
                 .forEach(excludeFiles::add);
 
         boolean canContinue = true;
-        for (final var file : excludeFiles) {
+        for (val file : excludeFiles) {
             boolean deleted = FileUtils.deleteQuietly(file);
             canContinue &= deleted;
             if (!deleted) {
@@ -217,11 +225,11 @@ public class Extensions {
      * Type 1 extension.
      */
     private static List<Pair<String, Configuration>> type1Extensions(final Configuration config) {
-        final var result = new ArrayList<Pair<String, Configuration>>();
+        val result = new ArrayList<Pair<String, Configuration>>();
 
-        final var newCycleLabel = config.getSpi().size() + 1;
+        val newCycleLabel = config.getSpi().size() + 1;
 
-        final var signature = signature(config.getSpi(), config.getPi());
+        val signature = signature(config.getSpi(), config.getPi());
 
         for (int i = 0; i < signature.length; i++) {
             if (config.getOpenGates().contains(i)) {
@@ -247,11 +255,11 @@ public class Extensions {
             return Collections.emptyList();
         }
 
-        final var result = new ArrayList<Pair<String, Configuration>>();
+        val result = new ArrayList<Pair<String, Configuration>>();
 
-        final var newCycleLabel = config.getSpi().size() + 1;
+        val newCycleLabel = config.getSpi().size() + 1;
 
-        final var signature = signature(config.getSpi(), config.getPi());
+        val signature = signature(config.getSpi(), config.getPi());
 
         for (int a = 0; a < signature.length; a++) {
             for (int b = a; b < signature.length; b++) {
@@ -271,11 +279,11 @@ public class Extensions {
      * Type 3 extension.
      */
     private static List<Pair<String, Configuration>> type3Extensions(final Configuration config) {
-        final var result = new ArrayList<Pair<String, Configuration>>();
+        val result = new ArrayList<Pair<String, Configuration>>();
 
-        final var signature = signature(config.getSpi(), config.getPi());
-        final var _cyclesSizes = new HashMap<Integer, Integer>();
-        final var indexesByLabel = new HashMap<Integer, List<Integer>>();
+        val signature = signature(config.getSpi(), config.getPi());
+        val _cyclesSizes = new HashMap<Integer, Integer>();
+        val indexesByLabel = new HashMap<Integer, List<Integer>>();
         for (int i = 0; i < signature.length; i++) {
             _cyclesSizes.putIfAbsent((int) Math.floor(signature[i]), 0);
             _cyclesSizes.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> v + 1);
@@ -287,8 +295,8 @@ public class Extensions {
             });
         }
 
-        final var cycleIndex = cycleIndex(config.getSpi(), config.getPi());
-        final var cyclesByLabel = new HashMap<Integer, Cycle>();
+        val cycleIndex = cycleIndex(config.getSpi(), config.getPi());
+        val cyclesByLabel = new HashMap<Integer, Cycle>();
         for (int i = 0; i < signature.length; i++) {
             final int _i = i;
             cyclesByLabel.computeIfAbsent((int) Math.floor(signature[i]), k -> cycleIndex[config.getPi().get(_i)]);
@@ -307,8 +315,8 @@ public class Extensions {
                                 result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
                             }
                         } else if (_cyclesSizes.get(label) == 3) {
-                            final var extension_ = extend(cyclesByLabel, label, signature, a, b);
-                            final var fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
+                            val extension_ = extend(cyclesByLabel, label, signature, a, b);
+                            val fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
                             for (int i = 0; i < fractions.length; i++) {
                                 fractions[i] += label;
                             }
@@ -362,8 +370,8 @@ public class Extensions {
         }
 
         float next = 0.5f;
-        final var positions = new int[]{a, b};
-        final var extension = new FloatArrayList(copiedsignature);
+        val positions = new int[]{a, b};
+        val extension = new FloatArrayList(copiedsignature);
         int inserted = 0;
         for (int position : positions) {
             extension.beforeInsert(position + inserted, label + next);
@@ -376,11 +384,12 @@ public class Extensions {
     }
 
     private static boolean remainsUnoriented(final List<Integer> indexes, final int... newIndices) {
-        final var intervals = new HashSet<Pair<Integer, Integer>>();
+        val intervals = new HashSet<Pair<Integer, Integer>>();
 
-        for (final var index : newIndices) {
+        for (val index : newIndices) {
             for (int i = 0; i < indexes.size(); i++) {
-                int left = indexes.get(i), right = indexes.get((i + 1) % indexes.size());
+                int left = indexes.get(i);
+                int right = indexes.get((i + 1) % indexes.size());
                 if ((left < index && index <= right) ||
                         (right < left && (left < index || index <= right))) {
                     intervals.add(new Pair<>(left, right));
@@ -403,7 +412,7 @@ public class Extensions {
     private static FloatArrayList unorientedExtension(final float[] signature, final int label, final int... positions) {
         Preconditions.checkArgument(1 < positions.length && positions.length <= 3);
         Arrays.sort(positions);
-        final var extension = new FloatArrayList(signature);
+        val extension = new FloatArrayList(signature);
         for (int i = 0; i < positions.length; i++) {
             extension.beforeInsert(positions[i] + i, label);
         }
@@ -413,7 +422,7 @@ public class Extensions {
 
     @SneakyThrows
     private static void makeHtmlNavigation (final Configuration configuration, final String outputDir) {
-        try (final var out = new PrintStream(outputDir + "/dfs/" + configuration.getSpi() + ".html")) {
+        try (val out = new PrintStream(outputDir + "/dfs/" + configuration.getSpi() + ".html")) {
             out.println("<html>\n" +
                     "\t<head>\n" +
                     "\t\t<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css\" integrity=\"sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh\" crossorigin=\"anonymous\">\n" +

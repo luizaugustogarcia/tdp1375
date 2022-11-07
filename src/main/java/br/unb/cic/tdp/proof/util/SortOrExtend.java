@@ -3,6 +3,7 @@ package br.unb.cic.tdp.proof.util;
 import br.unb.cic.tdp.base.Configuration;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.val;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -20,20 +21,20 @@ public abstract class SortOrExtend extends RecursiveAction {
     @SneakyThrows
     @Override
     protected void compute() {
-        final var canonical = configuration.getCanonical();
+        val canonical = configuration.getCanonical();
 
-        final var sortingFile = new File(outputDir + "/" + canonical.getSpi() + ".html");
+        val sortingFile = new File(outputDir + "/" + canonical.getSpi() + ".html");
         if (sortingFile.exists()) {
             // if it's already sorted, return
             return;
         }
 
-        final var badCaseFile = new File(outputDir + "/bad-cases/" + canonical.getSpi());
+        val badCaseFile = new File(outputDir + "/bad-cases/" + canonical.getSpi());
 
         if (!badCaseFile.exists()) {
             try {
-                try (final var workingFile = new RandomAccessFile(new File(outputDir + "/working/" + canonical.getSpi()), "rw")) {
-                    final var buffer = new StringBuffer();
+                try (val workingFile = new RandomAccessFile(new File(outputDir + "/working/" + canonical.getSpi()), "rw")) {
+                    var buffer = new StringBuilder();
                     while (workingFile.getFilePointer() < workingFile.length()) {
                         buffer.append(workingFile.readLine());
                     }
@@ -45,16 +46,16 @@ public abstract class SortOrExtend extends RecursiveAction {
 
                     workingFile.write("working".getBytes());
 
-                    final var sorting = searchForSorting(canonical);
+                    val sorting = searchForSorting(canonical);
                     if (sorting.isPresent()) {
-                        try (final var file = new RandomAccessFile(outputDir + "/" + canonical.getSpi() + ".html", "rw")) {
-                            try (final var writer = new FileWriter(file.getFD())) {
+                        try (val file = new RandomAccessFile(outputDir + "/" + canonical.getSpi() + ".html", "rw")) {
+                            try (val writer = new FileWriter(file.getFD())) {
                                 renderSorting(canonical, sorting.get(), writer);
                                 return;
                             }
                         }
                     } else {
-                        try (final var writer = new FileWriter(outputDir + "/bad-cases/" + canonical.getSpi())) {
+                        try (val writer = new FileWriter(outputDir + "/bad-cases/" + canonical.getSpi())) {
                             // create the bad case
                         }
                     }

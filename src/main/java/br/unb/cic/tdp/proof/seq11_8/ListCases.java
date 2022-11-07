@@ -6,6 +6,7 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.util.Pair;
 import com.google.common.base.Throwables;
 import lombok.SneakyThrows;
+import lombok.val;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -23,15 +24,15 @@ public class ListCases {
     }
 
     public static void list(final String inputDir, final String outputFile) throws IOException {
-        try (final var writer = new PrintWriter(outputFile)) {
-            final var dir = new File(inputDir);
+        try (val writer = new PrintWriter(outputFile)) {
+            val dir = new File(inputDir);
             File[] files = dir.listFiles(file -> file.getName().endsWith(".html"));
 
             if (files != null && files.length > 0)
                 Arrays.stream(files)
                         .forEach(file -> {
                             try {
-                                final var reader = new BufferedReader(new FileReader(file));
+                                val reader = new BufferedReader(new FileReader(file));
                                 var line = reader.readLine();
                                 MulticyclePermutation spi = null;
                                 while ((line = reader.readLine()) != null) {
@@ -44,7 +45,7 @@ public class ListCases {
                                     if (line.equals("THE EXTENSIONS ARE:")) {
                                         return;
                                     }
-                                    final var sorting = new ArrayList<Cycle>();
+                                    val sorting = new ArrayList<Cycle>();
                                     if (line.trim().equals("ALLOWS (11/8)-SEQUENCE")) {
                                         while ((line = reader.readLine()) != null) {
                                             line = line.trim();
@@ -55,7 +56,7 @@ public class ListCases {
 
                                             line = reader.readLine();
 
-                                            final var move = line.split(": ")[1].replace(" ", ",")
+                                            val move = line.split(": ")[1].replace(" ", ",")
                                                     .replace("<br>", "");
                                             sorting.add(Cycle.create(move));
                                         }
@@ -72,7 +73,7 @@ public class ListCases {
 
     @SneakyThrows
     public static Pair<MulticyclePermutation, List<Cycle>> getSorting(final Path path) {
-        final var reader = new BufferedReader(new FileReader(path.toFile()));
+        val reader = new BufferedReader(new FileReader(path.toFile()));
         var line = reader.readLine();
         MulticyclePermutation spi = null;
 
@@ -88,7 +89,7 @@ public class ListCases {
                 return new Pair<>(spi, null);
             }
 
-            final var sorting = new ArrayList<Cycle>();
+            val sorting = new ArrayList<Cycle>();
             if (line.trim().equals("ALLOWS (11/8)-SEQUENCE")) {
                 while ((line = reader.readLine()) != null) {
                     line = line.trim();
@@ -99,7 +100,7 @@ public class ListCases {
 
                     line = reader.readLine();
 
-                    final var move = line.split(": ")[1].replace(" ", ",")
+                    val move = line.split(": ")[1].replace(" ", ",")
                             .replace("<br>", "");
                     sorting.add(Cycle.create(move));
                 }

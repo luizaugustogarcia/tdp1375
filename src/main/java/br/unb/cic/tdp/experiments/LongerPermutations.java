@@ -1,17 +1,16 @@
 package br.unb.cic.tdp.experiments;
 
-import br.unb.cic.tdp.BaseAlgorithm;
+import br.unb.cic.tdp.AbstractSbtAlgorithm;
 import br.unb.cic.tdp.EliasAndHartman;
 import br.unb.cic.tdp.Silvaetal;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import com.google.common.base.Stopwatch;
 import lombok.SneakyThrows;
+import lombok.val;
 
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeUnit;
@@ -19,12 +18,12 @@ import java.util.concurrent.TimeUnit;
 import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
 
 public class LongerPermutations {
-    private static BaseAlgorithm silva = new Silvaetal();
-    private static BaseAlgorithm eh = new EliasAndHartman();
+    private static final AbstractSbtAlgorithm silva = new Silvaetal();
+    private static final AbstractSbtAlgorithm eh = new EliasAndHartman();
 
     @SneakyThrows
-    public static void main(String[] args) throws URISyntaxException, IOException {
-        for (int i = 2; i <= 50; i++) {
+    public static void main(String[] args) {
+        for (var i = 2; i <= 50; i++) {
              run(args[0], i);
         }
     }
@@ -32,11 +31,11 @@ public class LongerPermutations {
     @SneakyThrows
     private static void run(final String root, final int i) {
         System.out.println("stats" + i * 10 + ".txt");
-        final var out = new FileOutputStream( root + "/stats/stats" + i * 10 + ".txt");
-        final var ps = new PrintStream(out);
+        val out = new FileOutputStream( root + "/stats/stats" + i * 10 + ".txt");
+        val ps = new PrintStream(out);
 
-        final var resource = LongerPermutations.class.getResource("/datasets/large" + i * 10 + ".txt");
-        final var path = Paths.get(resource.toURI());
+        val resource = LongerPermutations.class.getResource("/datasets/large" + i * 10 + ".txt");
+        val path = Paths.get(resource.toURI());
 
         Files.lines(path).forEach (line -> {
             var pi = Cycle.create(line);
@@ -47,7 +46,7 @@ public class LongerPermutations {
             ps.print(",");
 
             var sw = Stopwatch.createStarted();
-            final var silvaSorting = silva.sort(pi);
+            val silvaSorting = silva.sort(pi);
             sw.stop();
 
             ps.print(silvaSorting.getSecond().size());
@@ -57,7 +56,7 @@ public class LongerPermutations {
             ps.print(",");
 
             sw = Stopwatch.createStarted();
-            final var ehSorting = eh.sort(pi);
+            val ehSorting = eh.sort(pi);
             sw.stop();
 
             ps.print(ehSorting.getSecond().size());
