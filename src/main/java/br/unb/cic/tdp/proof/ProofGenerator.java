@@ -18,7 +18,6 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
 import java.io.Writer;
 import java.nio.file.Files;
@@ -34,7 +33,7 @@ import static java.util.stream.Collectors.toList;
 
 public class ProofGenerator {
 
-    static Multimap<Integer, Pair<Configuration, List<Cycle>>> ehSortings = HashMultimap.create();
+    static final Multimap<Integer, Pair<Configuration, List<Cycle>>> ehSortings = HashMultimap.create();
 
     static final int[][] _4_3 = new int[][]{{0, 2, 2, 2}};
 
@@ -72,9 +71,9 @@ public class ProofGenerator {
     }
 
     public static void toTrie(final int[][] seqs, MoveTreeNode root) {
-        val root_ = root;
+        val rootPrime = root;
         for (int[] seq : seqs) {
-            root = root_;
+            root = rootPrime;
             for (int j = 1; j < seq.length; j++) {
                 val move = seq[j];
                 if (Arrays.stream(root.children).noneMatch(m -> m.mu == move)) {

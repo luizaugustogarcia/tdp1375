@@ -68,7 +68,7 @@ public class Configuration {
             if (orientedCycles.contains(cycle)) {
                 symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
                     val symbolIndex = new int[pi.getMaxSymbol() + 1];
-                    val symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
+                    int symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
                     for (var j = 0; j < c.getSymbols().length; j++) {
                         if (c.getSymbols()[j] == symbolMinIndex) {
                             for (var k = 0; k < c.getSymbols().length; k++) {

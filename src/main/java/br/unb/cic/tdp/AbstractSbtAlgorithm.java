@@ -25,8 +25,8 @@ import static java.nio.file.Files.lines;
 
 public abstract class AbstractSbtAlgorithm {
 
-    protected Multimap<Integer, Pair<Configuration, List<Cycle>>> _3_2_sortings = Multimaps.synchronizedMultimap(HashMultimap.create());
-    protected Multimap<Integer, Pair<Configuration, List<Cycle>>> _11_8_sortings = Multimaps.synchronizedMultimap(HashMultimap.create());
+    protected final Multimap<Integer, Pair<Configuration, List<Cycle>>> _3_2_sortings = Multimaps.synchronizedMultimap(HashMultimap.create());
+    protected final Multimap<Integer, Pair<Configuration, List<Cycle>>> _11_8_sortings = Multimaps.synchronizedMultimap(HashMultimap.create());
 
     private final Pattern INPUT_PATTERN = Pattern.compile("^\\d+(,\\d+)*$");
 
@@ -106,10 +106,10 @@ public abstract class AbstractSbtAlgorithm {
                 int a = intersectingCycle.get().get(0);
                 int b = intersectingCycle.get().image(a);
                 int c = intersectingCycle.get().image(b);
-                val _config = new ArrayList<>(config);
-                _config.add(Cycle.create(a, b, c));
+                val configPrime = new ArrayList<>(config);
+                configPrime.add(Cycle.create(a, b, c));
 
-                return _config;
+                return configPrime;
             }
         }
 
@@ -129,9 +129,9 @@ public abstract class AbstractSbtAlgorithm {
                                 val b = intersectingCycle.image(a);
                                 if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
                                     val c = intersectingCycle.image(b);
-                                    val _config = new ArrayList<>(config);
-                                    _config.add(Cycle.create(a, b, c));
-                                    return _config;
+                                    val configPrime = new ArrayList<>(config);
+                                    configPrime.add(Cycle.create(a, b, c));
+                                    return configPrime;
                                 }
                             }
                         }
@@ -201,10 +201,10 @@ public abstract class AbstractSbtAlgorithm {
     protected Optional<Pair<Cycle, Cycle>> searchFor2_2Seq(final MulticyclePermutation spi, final Cycle pi) {
         for (Pair<Cycle, Integer> move : (Iterable<Pair<Cycle, Integer>>) generateAll0And2Moves(spi, pi)
                 .filter(r -> r.getSecond() == 2)::iterator) {
-            val _spi = PermutationGroups
+            val spiPrime = PermutationGroups
                     .computeProduct(spi, move.getFirst().getInverse());
-            val _pi = applyTranspositionOptimized(pi, move.getFirst());
-            val secondMove = generateAll0And2Moves(_spi, _pi).filter(r -> r.getSecond() == 2).findFirst();
+            val piPrime = applyTranspositionOptimized(pi, move.getFirst());
+            val secondMove = generateAll0And2Moves(spiPrime, piPrime).filter(r -> r.getSecond() == 2).findFirst();
             if (secondMove.isPresent())
                 return Optional.of(new Pair<>(move.getFirst(), secondMove.get().getFirst()));
         }
@@ -213,11 +213,11 @@ public abstract class AbstractSbtAlgorithm {
     }
 
     protected Cycle applyMoves(final Cycle pi, final List<Cycle> moves) {
-        var _pi = pi;
+        var piPrime = pi;
         for (val move : moves) {
-            _pi = applyTranspositionOptimized(_pi, move);
+            piPrime = applyTranspositionOptimized(piPrime, move);
         }
-        return _pi;
+        return piPrime;
     }
 
     protected Optional<List<Cycle>> searchFor11_8_Seq(final List<Cycle> mu, final Cycle pi) {
@@ -226,8 +226,8 @@ public abstract class AbstractSbtAlgorithm {
 
     protected Optional<List<Cycle>> searchForSeq(final Collection<Cycle> mu, final Cycle pi,
                                                  final Multimap<Integer, Pair<Configuration, List<Cycle>>> sortings) {
-        val _mu = new MulticyclePermutation(mu);
-        val config = new Configuration(_mu, removeExtraSymbols(_mu.getSymbols(), pi));
+        val muPrime = new MulticyclePermutation(mu);
+        val config = new Configuration(muPrime, removeExtraSymbols(muPrime.getSymbols(), pi));
 
         val pair = sortings.get(config.hashCode()).stream()
                 .filter(p -> p.getFirst().equals(config)).findFirst();

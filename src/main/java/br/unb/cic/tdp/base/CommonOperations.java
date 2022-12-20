@@ -36,13 +36,13 @@ public class CommonOperations implements Serializable {
      * Assumes \sigma=(0,1,2,...,n).
      */
     public static Cycle simplify(Cycle pi) {
-        var _pi = new FloatArrayList();
+        var piPrime = new FloatArrayList();
         for (var i = 0; i < pi.getSymbols().length; i++) {
-            _pi.add(pi.getSymbols()[i]);
+            piPrime.add(pi.getSymbols()[i]);
         }
 
         var sigma = new IntArrayList();
-        for (var i = 0; i < _pi.size(); i++) {
+        for (var i = 0; i < piPrime.size(); i++) {
             sigma.add(i);
         }
 
@@ -51,15 +51,15 @@ public class CommonOperations implements Serializable {
         Cycle bigCycle;
         while ((bigCycle = sigmaPiInverse.stream().filter(c -> c.size() > 3).findFirst().orElse(null)) != null) {
             val leftMostSymbol = leftMostSymbol(bigCycle, pi);
-            val newSymbol = _pi.get(_pi.indexOf(leftMostSymbol) - 1) + 0.001F;
-            _pi.beforeInsert(_pi.indexOf(bigCycle.pow(leftMostSymbol, -2)), newSymbol);
+            val newSymbol = piPrime.get(piPrime.indexOf(leftMostSymbol) - 1) + 0.001F;
+            piPrime.beforeInsert(piPrime.indexOf(bigCycle.pow(leftMostSymbol, -2)), newSymbol);
 
-            val piCopy = new FloatArrayList(Arrays.copyOf(_pi.elements(), _pi.size()));
+            val piCopy = new FloatArrayList(Arrays.copyOf(piPrime.elements(), piPrime.size()));
             piCopy.sort();
 
             val newPi = new IntArrayList();
             for (var i = 0; i < piCopy.size(); i++) {
-                newPi.add(piCopy.indexOf(_pi.get(i)));
+                newPi.add(piCopy.indexOf(piPrime.get(i)));
             }
 
             sigma = new IntArrayList();
@@ -69,9 +69,9 @@ public class CommonOperations implements Serializable {
 
             sigmaPiInverse = computeProduct(Cycle.create(sigma), Cycle.create(newPi).getInverse());
 
-            _pi = new FloatArrayList();
+            piPrime = new FloatArrayList();
             for (var i = 0; i < newPi.size(); i++) {
-                _pi.add(newPi.get(i));
+                piPrime.add(newPi.get(i));
             }
             pi = Cycle.create(newPi);
         }
@@ -181,10 +181,10 @@ public class CommonOperations implements Serializable {
                     val pair = iterator.next();
                     val move = pair.getFirst();
 
-                    val _bigGamma = PermutationGroups.computeProduct(bigGamma, move.getInverse());
+                    val bigGammaPrime = PermutationGroups.computeProduct(bigGamma, move.getInverse());
                     moves.push(move);
                     val sorting = searchForSortingSeq(applyTranspositionOptimized(pi, move),
-                            _bigGamma, moves, initialNumberOfEvenCycles, maxRatio);
+                            bigGammaPrime, moves, initialNumberOfEvenCycles, maxRatio);
                     if (!sorting.isEmpty()) {
                         return moves;
                     }
@@ -213,8 +213,8 @@ public class CommonOperations implements Serializable {
                                     int a = pi.get(i), b = pi.get(j), c = pi.get(k);
 
                                     val move = Cycle.create(a, b, c);
-                                    val spi_ = computeProduct(true, pi.getMaxSymbol() + 1, spi, move.getInverse());
-                                    val delta = spi_.getNumberOfEvenCycles() - numberOfEvenCycles;
+                                    val spiPrime = computeProduct(true, pi.getMaxSymbol() + 1, spi, move.getInverse());
+                                    val delta = spiPrime.getNumberOfEvenCycles() - numberOfEvenCycles;
 
                                     if (delta >= 0)
                                         return new Pair<>(move, delta);
@@ -293,13 +293,13 @@ public class CommonOperations implements Serializable {
                     var nextPos = (aPos + 1) % piInverse.size();
 
                     while (nextPos != bPos) {
-                        val _cycle = cycleIndex[piInverse.get(nextPos)];
-                        if (_cycle != null) {
-                            for (int j = 0; j < _cycle.size(); j++) {
-                                val pos = piInverse.indexOf(_cycle.get(j));
-                                if (isOutOfInterval(pos, aPos, bPos) && (!component.contains(cycleIndex[(_cycle.get(j))]))) {
-                                    component.add(cycleIndex[(_cycle.get(j))]);
-                                    queue.add(cycleIndex[(_cycle.get(j))]);
+                        val cyclePrime = cycleIndex[piInverse.get(nextPos)];
+                        if (cyclePrime != null) {
+                            for (int j = 0; j < cyclePrime.size(); j++) {
+                                val pos = piInverse.indexOf(cyclePrime.get(j));
+                                if (isOutOfInterval(pos, aPos, bPos) && (!component.contains(cycleIndex[(cyclePrime.get(j))]))) {
+                                    component.add(cycleIndex[(cyclePrime.get(j))]);
+                                    queue.add(cycleIndex[(cyclePrime.get(j))]);
                                     break;
                                 }
                             }

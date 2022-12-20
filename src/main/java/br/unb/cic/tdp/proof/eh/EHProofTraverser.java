@@ -66,8 +66,8 @@ public class EHProofTraverser {
     }
 
     private static MulticyclePermutation readSpi(final String file) {
-        val _file = new File(file);
-        var str = StringUtils.removeEnd(_file.getName().replace("_", ","), ".html");
+        val filePrime = new File(file);
+        var str = StringUtils.removeEnd(filePrime.getName().replace("_", ","), ".html");
         str = str.replaceAll("\\[.*?\\]", "");
         str = str.replace(" ", ",");
         return new MulticyclePermutation(str);

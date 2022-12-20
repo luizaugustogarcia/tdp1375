@@ -98,13 +98,13 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     private String defaultStringRepresentation() {
-        val _default = this.startingBy(minSymbol);
+        val defaultCycle = this.startingBy(minSymbol);
 
         val representation = new StringBuilder().append("(");
 
         for (var i = 0; ; i++) {
-            representation.append(_default.symbols[i]);
-            if (i == _default.symbols.length - 1)
+            representation.append(defaultCycle.symbols[i]);
+            if (i == defaultCycle.symbols.length - 1)
                 break;
             representation.append(" ");
         }
