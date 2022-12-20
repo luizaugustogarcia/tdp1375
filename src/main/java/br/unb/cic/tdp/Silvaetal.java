@@ -133,11 +133,11 @@ public class Silvaetal extends AbstractSbtAlgorithm {
     public Pair<Cycle, List<Cycle>> doSort(Cycle pi) {
         val n = pi.size();
 
-        val _sigma = new int[n];
+        val sigmaPrime = new int[n];
         for (int i = 0; i < pi.size(); i++) {
-            _sigma[i] = i;
+            sigmaPrime[i] = i;
         }
-        val sigma = Cycle.create(_sigma);
+        val sigma = Cycle.create(sigmaPrime);
 
         return transform(pi, sigma);
     }
@@ -188,13 +188,13 @@ public class Silvaetal extends AbstractSbtAlgorithm {
                 newSymbols[cycle.size() + 1] = spiCycle
                         .image(newSymbols[cycle.size()]);
 
-                final List<Cycle> _config = new ArrayList<>(config);
-                _config.remove(cycle);
-                _config.add(Cycle.create(newSymbols));
+                final List<Cycle> configPrime = new ArrayList<>(config);
+                configPrime.remove(cycle);
+                configPrime.add(Cycle.create(newSymbols));
 
-                val openGates = getOpenGates(_config, pi);
+                val openGates = getOpenGates(configPrime, pi);
                 if (openGates.size() <= 2)
-                    return _config;
+                    return configPrime;
             }
         }
 
@@ -241,14 +241,14 @@ public class Silvaetal extends AbstractSbtAlgorithm {
                     val _7Cycle = Cycle.create(a, d, e, b, f, c, g);
                     val allSymbols = new HashSet<>(Ints.asList(_7Cycle.getSymbols()));
 
-                    val _pi = new IntArrayList(7);
+                    val piPrime = new IntArrayList(7);
                     for (val symbol : pi.getSymbols()) {
                         if (allSymbols.contains(symbol)) {
-                            _pi.add(symbol);
+                            piPrime.add(symbol);
                         }
                     }
 
-                    val config = new Configuration(new MulticyclePermutation(_7Cycle), Cycle.create(_pi));
+                    val config = new Configuration(new MulticyclePermutation(_7Cycle), Cycle.create(piPrime));
                     if (_11_8_sortings.containsKey(config.hashCode())) {
                         val pair = _11_8_sortings.get(config.hashCode()).stream()
                                 .filter(p -> p.getFirst().equals(config)).findFirst().get();

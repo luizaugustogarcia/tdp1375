@@ -6,7 +6,7 @@ import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 public class MoveTreeNode {
-    public MoveTreeNode parent;
+    public final MoveTreeNode parent;
     public final int mu;
     public MoveTreeNode[] children;
     private String pathToRoot;
@@ -43,7 +43,7 @@ public class MoveTreeNode {
         return mu == m.mu;
     }
 
-    public String pathToRoot() {
+    public void pathToRoot() {
         if (pathToRoot == null) {
             val list = new ArrayList<String>();
             var current = this;
@@ -54,7 +54,6 @@ public class MoveTreeNode {
 
             pathToRoot = list.stream().sorted().collect(Collectors.joining());
         }
-        return pathToRoot;
     }
 
     @Override

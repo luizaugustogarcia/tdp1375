@@ -171,8 +171,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
     public boolean add(final Cycle cycle) {
         numberOfEvenCycles += cycle.size() % 2;
         val symbols = cycle.getSymbols();
-        for (int i = 0, symbolsLength = symbols.length; i < symbolsLength; i++) {
-            int s = symbols[i];
+        for (int s : symbols) {
             this.symbols.add(s);
         }
         return cycles.add(cycle);

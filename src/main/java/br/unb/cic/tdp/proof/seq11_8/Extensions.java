@@ -61,9 +61,7 @@ public class Extensions {
         val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
                 .map(Path::toFile)
-                .forEach(file -> {
-                    executor.submit(() -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir));
-                });
+                .forEach(file -> executor.submit(() -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
 
         executor.shutdown();
         // boundless
@@ -282,12 +280,12 @@ public class Extensions {
         val result = new ArrayList<Pair<String, Configuration>>();
 
         val signature = signature(config.getSpi(), config.getPi());
-        val _cyclesSizes = new HashMap<Integer, Integer>();
+        val cyclesSizes = new HashMap<Integer, Integer>();
         val indexesByLabel = new HashMap<Integer, List<Integer>>();
         for (int i = 0; i < signature.length; i++) {
-            _cyclesSizes.putIfAbsent((int) Math.floor(signature[i]), 0);
-            _cyclesSizes.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> v + 1);
-            indexesByLabel.computeIfAbsent((int) Math.floor(signature[i]), _s -> new ArrayList<>());
+            cyclesSizes.putIfAbsent((int) Math.floor(signature[i]), 0);
+            cyclesSizes.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> v + 1);
+            indexesByLabel.computeIfAbsent((int) Math.floor(signature[i]), s -> new ArrayList<>());
             int finalI = i;
             indexesByLabel.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> {
                 v.add(finalI);
@@ -314,16 +312,16 @@ public class Extensions {
                             if (extension.getOpenGates().size() <= 2) {
                                 result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
                             }
-                        } else if (_cyclesSizes.get(label) == 3) {
-                            val extension_ = extend(cyclesByLabel, label, signature, a, b);
+                        } else if (cyclesSizes.get(label) == 3) {
+                            val extensionPrime = extend(cyclesByLabel, label, signature, a, b);
                             val fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
                             for (int i = 0; i < fractions.length; i++) {
                                 fractions[i] += label;
                             }
 
-                            if (areSymbolsInCyclicOrder(extension_, fractions)) { // otherwise, it accepts a 2-move
+                            if (areSymbolsInCyclicOrder(extensionPrime, fractions)) { // otherwise, it accepts a 2-move
                                 result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s, turn oriented", a, b,
-                                        cyclesByLabel.get(label)), Configuration.ofSignature(extension_)));
+                                        cyclesByLabel.get(label)), Configuration.ofSignature(extensionPrime)));
                             }
                         }
                     }

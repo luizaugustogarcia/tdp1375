@@ -27,11 +27,11 @@ public class EliasAndHartman extends AbstractSbtAlgorithm {
 
         val n = pi.size();
 
-        val _sigma = new int[n];
+        val sigmaPrime = new int[n];
         for (int i = 0; i < pi.size(); i++) {
-            _sigma[i] = i;
+            sigmaPrime[i] = i;
         }
-        val sigma = Cycle.create(_sigma);
+        val sigma = Cycle.create(sigmaPrime);
 
         var spi = computeProduct(true, n, sigma, pi.getInverse());
 

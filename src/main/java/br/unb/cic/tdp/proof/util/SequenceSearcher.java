@@ -423,43 +423,43 @@ public class SequenceSearcher {
                                                                                        final int b,
                                                                                        final int c) {
         int numberOfEvenCycles = 0;
-        int a_, b_, c_;
+        int aPrime, bPrime, cPrime;
         if (spiIndex[a] == spiIndex[c]) {
-            a_ = a;
-            b_ = c;
-            c_ = b;
+            aPrime = a;
+            bPrime = c;
+            cPrime = b;
             numberOfEvenCycles += spiIndex[a].length & 1;
             numberOfEvenCycles += spiIndex[b].length & 1;
         } else if (spiIndex[a] == spiIndex[b]) {
-            a_ = b;
-            b_ = a;
-            c_ = c;
+            aPrime = b;
+            bPrime = a;
+            cPrime = c;
             numberOfEvenCycles += spiIndex[a].length & 1;
             numberOfEvenCycles += spiIndex[c].length & 1;
         } else {
             // spi.getCycle(b) == spi.getCycle(c)
-            a_ = c;
-            b_ = b;
-            c_ = a;
+            aPrime = c;
+            bPrime = b;
+            cPrime = a;
             numberOfEvenCycles += spiIndex[a].length & 1;
             numberOfEvenCycles += spiIndex[c].length & 1;
         }
 
-        val index = cycleIndex(spiIndex[c_]);
-        val cImage = image(index, spiIndex[c_], c_);
-        val abCycle = startingBy(spiIndex[a_], a_);
-        val cCycle = startingBy(spiIndex[c_], cImage);
+        val index = cycleIndex(spiIndex[cPrime]);
+        val cImage = image(index, spiIndex[cPrime], cPrime);
+        val abCycle = startingBy(spiIndex[aPrime], aPrime);
+        val cCycle = startingBy(spiIndex[cPrime], cImage);
 
         val abCycleIndex = cycleIndex(abCycle);
 
-        val ba_k = getK(abCycleIndex, abCycle, b_, a_);
+        val ba_k = getK(abCycleIndex, abCycle, bPrime, aPrime);
         val newaCycle = new int[1 + ba_k - 1];
-        newaCycle[0] = a_;
-        val ab_k = getK(abCycleIndex, abCycle, a_, b_);
+        newaCycle[0] = aPrime;
+        val ab_k = getK(abCycleIndex, abCycle, aPrime, bPrime);
         System.arraycopy(abCycle,  ab_k + 1, newaCycle, 1, ba_k - 1);
 
         val newbCycle = new int[1 + cCycle.length + (ab_k - 1)];
-        newbCycle[0] = b_;
+        newbCycle[0] = bPrime;
         System.arraycopy(cCycle, 0, newbCycle, 1, cCycle.length);
         System.arraycopy(abCycle, 1, newbCycle, 1 + cCycle.length, ab_k - 1);
 

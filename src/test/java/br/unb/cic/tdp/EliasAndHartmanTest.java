@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class EliasAndHartmanTest {
 
-    private EliasAndHartman eliasAndHartman = new EliasAndHartman();
+    private final EliasAndHartman eliasAndHartman = new EliasAndHartman();
 
     @Test
     void with2_2Seq() {

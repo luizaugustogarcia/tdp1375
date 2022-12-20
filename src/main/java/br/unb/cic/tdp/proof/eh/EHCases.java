@@ -4,7 +4,6 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import org.apache.commons.lang.StringUtils;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.HashSet;
@@ -19,9 +18,7 @@ public class EHCases {
     }
 
     public static void generate(final String ehProofFolder, final PrintStream printer) {
-        final EHProofTraverser.CaseProcessor configConsumer = (configuration, sorting, depth, alreadyVisited) -> {
-            print(printer, configuration, sorting, depth, alreadyVisited);
-        };
+        final EHProofTraverser.CaseProcessor configConsumer = (configuration, sorting, depth, alreadyVisited) -> print(printer, configuration, sorting, depth, alreadyVisited);
 
         // unoriented interleaving pair
         EHProofTraverser.traverse(ehProofFolder + "bfs_files/", "[3](0_4_2)[3](1_5_3).html",

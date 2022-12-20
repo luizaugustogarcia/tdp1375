@@ -125,7 +125,7 @@ public class ListOfCycles {
     }
 
     public static class Node {
-        public int[] data;
+        public final int[] data;
         public Node next;
         public Node previous;
         public Node(int[] d) { data = d; }
