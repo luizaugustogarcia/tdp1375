@@ -1,6 +1,6 @@
 # 1.375-approximation algorithm for sorting by transpositions
 
-Algorithm for sorting by transpositions based on an [algebraic approach](https://en.m.wikipedia.org/wiki/Abstract_algebra) with guarantee of [approximation ratio](https://en.m.wikipedia.org/wiki/Approximation_algorithm) of 1.375 for all permutations in the [Symmetric Group](https://en.wikipedia.org/wiki/Symmetric_group). For the details on the algorithm, please refer to the paper [A new 1.375-approximation algorithm for Sorting By Transpositions](https://almob.biomedcentral.com/articles/10.1186/s13015-022-00205-z) by L. A. G. Silva, L. A. B. Kowada, N. R. Rocco and M. E. M. T. Walter.
+Algorithm for sorting by transpositions based on an algebraic approach with guarantee of [approximation ratio](https://en.m.wikipedia.org/wiki/Approximation_algorithm) of 1.375 for all permutations in the [Symmetric Group](https://en.wikipedia.org/wiki/Symmetric_group). For the details on the algorithm, please refer to the paper [A new 1.375-approximation algorithm for Sorting By Transpositions](https://almob.biomedcentral.com/articles/10.1186/s13015-022-00205-z) by L. A. G. Silva, L. A. B. Kowada, N. R. Rocco and M. E. M. T. Walter.
 
 This project requires Maven version 3.6.3+ and Java JDK 11+.
 
