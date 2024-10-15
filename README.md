@@ -45,7 +45,7 @@ The generated case analysis is available [here](http://tdp1375proof.s3-website.u
 
 ## What is "Sorting by Transpositions"?
 
-A _transposition_ involves cutting a block of symbols from a permutation and pasting it elsewhere within the same permutation, or equivalently, swapping two adjacent blocks of symbols. The challenge is to determine the minimum number of transpositions required to sort a given permutation. This problem is NP-hard, as proven [here](https://arxiv.org/pdf/1011.1157).
+A _transposition_ consists in cutting a block of symbols from a permutation and pasting it elsewhere within the same permutation, or equivalently, swapping two adjacent blocks of symbols. The challenge is to determine the minimum number of transpositions required to sort a given permutation. This problem is NP-hard, as proven [here](https://arxiv.org/pdf/1011.1157).
 
 The presented algorithm sorts any permutation using at most 1.375 times the known lower bound for the minimum number of transpositions needed.
 
