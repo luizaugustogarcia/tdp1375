@@ -68,7 +68,7 @@ public class Configuration {
             if (orientedCycles.contains(cycle)) {
                 symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
                     val symbolIndex = new int[pi.getMaxSymbol() + 1];
-                    int symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
+                    val symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
                     for (var j = 0; j < c.getSymbols().length; j++) {
                         if (c.getSymbols()[j] == symbolMinIndex) {
                             for (var k = 0; k < c.getSymbols().length; k++) {
@@ -88,7 +88,7 @@ public class Configuration {
         return signature;
     }
 
-    public static Configuration ofSignature(float[] signature) {
+    public static Configuration ofSignature(final float[] signature) {
         val pi = CANONICAL_PI[signature.length];
 
         val cyclesByLabel = new HashMap<Integer, List<Integer>>();
@@ -147,15 +147,7 @@ public class Configuration {
     }
 
     private static float[] least(final float[] signature1, final float[] signature2) {
-        for (var i = 0; i < signature1.length; i++) {
-            if (signature1[i] != signature2[i]) {
-                if (signature1[i] < signature2[i])
-                    return signature1;
-                else
-                    return signature2;
-            }
-        }
-        return signature2;
+        return Arrays.compare(signature1, signature2) == -1 ? signature1 : signature2;
     }
 
     public Stream<Signature> getEquivalentSignatures() {
@@ -296,6 +288,21 @@ public class Configuration {
             return "[" + Floats.asList(content).stream()
                     .map(f -> f % 1 == 0 ? Integer.toString((int) Math.floor(f)) : Float.toString(f))
                     .collect(Collectors.joining(",")) + "]";
+        }
+    }
+
+    public static void main(String[] args) {
+        var spi = new MulticyclePermutation("(0 11 1)(2 13 9)(3 8 6)(4 14 12)(5 10 7)");
+        var pi = CANONICAL_PI[15];
+        var sigma = spi.times(pi);
+
+        System.out.println(new Configuration(spi, pi));
+
+        for (int i = 1; i < pi.size() - 1; i++) {
+            System.out.print(i + "-");
+            pi = pi.conjugateBy(sigma).asNCycle();
+            spi = sigma.times(pi.getInverse());
+            System.out.println(new Configuration(spi, pi));
         }
     }
 }

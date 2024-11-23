@@ -16,6 +16,10 @@ public interface Permutation extends Serializable {
         return PermutationGroups.computeProduct(false, conjugator, this, conjugator.getInverse());
     }
 
+    default MulticyclePermutation times(final Permutation rightOperand) {
+        return PermutationGroups.computeProduct(true, this, rightOperand);
+    }
+
     boolean contains(int i);
 
     int image(int a);
