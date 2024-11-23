@@ -38,7 +38,7 @@ public class LongerPermutations {
         val path = Paths.get(resource.toURI());
 
         Files.lines(path).forEach (line -> {
-            var pi = Cycle.create(line);
+            var pi = Cycle.of(line);
             var sigmaPiInverse = PermutationGroups.computeProduct(CANONICAL_PI[pi.size()],
                     pi.getInverse());
 

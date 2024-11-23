@@ -50,7 +50,7 @@ public class ShortPermutations {
                     val split = line.split(" ");
                     if (!split[1].equals("0")) {
                         pool.submit(() -> {
-                            val pi = Cycle.create("0," + split[0]);
+                            val pi = Cycle.of("0," + split[0]);
                             val exact = Integer.parseInt(split[1]);
 
                             val sorting = algorithm.sort(pi);

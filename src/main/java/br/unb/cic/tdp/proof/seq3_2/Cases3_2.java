@@ -29,7 +29,7 @@ public class Cases3_2 {
     public static List<Pair<Configuration, List<Cycle>>> generate() {
         val result = new ArrayList<Pair<Configuration, List<Cycle>>>();
         result.add(new Pair<>(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")),
-                Arrays.asList(Cycle.create("0,2,4"), Cycle.create("3,1,5"), Cycle.create("2,4,0"))));
+                Arrays.asList(Cycle.of("0,2,4"), Cycle.of("3,1,5"), Cycle.of("2,4,0"))));
         result.addAll(generate(new MulticyclePermutation("(0,1,2)(3,4,5)(6,7,8)")));
         return result;
     }
@@ -40,7 +40,7 @@ public class Cases3_2 {
         val verifiedConfigurations = new HashSet<Configuration>();
 
         Generator.permutation(spi.getSymbols()).simple().stream().forEach(permutation -> {
-            val pi = Cycle.create(Ints.toArray(permutation));
+            val pi = Cycle.of(Ints.toArray(permutation));
             if (spi.stream().noneMatch(cycle -> isOriented(pi, cycle))) {
                 val openGates = new Configuration(spi, pi).getOpenGates();
                 if (openGates.size() <= 2) {

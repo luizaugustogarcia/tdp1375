@@ -43,7 +43,7 @@ public abstract class AbstractSbtAlgorithm {
             throw new RuntimeException("Malformed input");
         }
 
-        val pi = Cycle.create(input);
+        val pi = Cycle.of(input);
         if (pi.getMaxSymbol() != pi.size() - 1) {
             throw new RuntimeException("Provide a permutation using all (non-zero) the symbols of {1, 2, ..., n}");
         }
@@ -107,7 +107,7 @@ public abstract class AbstractSbtAlgorithm {
                 int b = intersectingCycle.get().image(a);
                 int c = intersectingCycle.get().image(b);
                 val configPrime = new ArrayList<>(config);
-                configPrime.add(Cycle.create(a, b, c));
+                configPrime.add(Cycle.of(a, b, c));
 
                 return configPrime;
             }
@@ -130,7 +130,7 @@ public abstract class AbstractSbtAlgorithm {
                                 if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
                                     val c = intersectingCycle.image(b);
                                     val configPrime = new ArrayList<>(config);
-                                    configPrime.add(Cycle.create(a, b, c));
+                                    configPrime.add(Cycle.of(a, b, c));
                                     return configPrime;
                                 }
                             }
@@ -171,7 +171,7 @@ public abstract class AbstractSbtAlgorithm {
 
             val spi = new MulticyclePermutation(lineSplit[0].replace(" ", ","));
             val sorting = Arrays.stream(lineSplit[1].substring(1, lineSplit[1].length() - 1)
-                            .split(", ")).map(c -> c.replace(" ", ",")).map(Cycle::create)
+                            .split(", ")).map(c -> c.replace(" ", ",")).map(Cycle::of)
                     .collect(Collectors.toList());
             val config = new Configuration(spi, CANONICAL_PI[spi.getNumberOfSymbols()]);
             sortings.put(config.hashCode(), new Pair<>(config, sorting));
@@ -186,9 +186,9 @@ public abstract class AbstractSbtAlgorithm {
 
         final Cycle _2Move;
         if (areSymbolsInCyclicOrder(pi, a, b, c)) {
-            _2Move = Cycle.create(a, b, c);
+            _2Move = Cycle.of(a, b, c);
         } else {
-            _2Move = Cycle.create(a, c, b);
+            _2Move = Cycle.of(a, c, b);
         }
 
         return new Pair<>(_2Move, applyMoves(pi, Collections.singletonList(_2Move)));
@@ -258,7 +258,7 @@ public abstract class AbstractSbtAlgorithm {
     protected Pair<List<Cycle>, Cycle> apply3_2_Unoriented(final MulticyclePermutation spi, final Cycle pi) {
         val segment = spi.getNonTrivialCycles().stream().findFirst().get();
         List<Cycle> mu = new ArrayList<>();
-        mu.add(Cycle.create(segment.get(0), segment.get(1), segment.get(2)));
+        mu.add(Cycle.of(segment.get(0), segment.get(1), segment.get(2)));
         for (var i = 0; i < 2; i++) {
             mu = ehExtend(mu, spi, pi);
             val moves =

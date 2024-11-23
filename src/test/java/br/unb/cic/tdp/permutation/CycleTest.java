@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CycleTest {
 
-    private final Cycle cycle = Cycle.create("0 1 2 3 4 5");
+    private final Cycle cycle = Cycle.of("0 1 2 3 4 5");
 
     @Test
     void getSymbols() {
@@ -25,7 +25,7 @@ class CycleTest {
 
     @Test
     void getInverse() {
-        assertEquals(Cycle.create("0 5 4 3 2 1"), cycle.getInverse());
+        assertEquals(Cycle.of("0 5 4 3 2 1"), cycle.getInverse());
     }
 
     @Test
@@ -35,7 +35,7 @@ class CycleTest {
 
     @Test
     void isEven() {
-        assertTrue(Cycle.create("0 1 2 3 4").isEven());
+        assertTrue(Cycle.of("0 1 2 3 4").isEven());
         assertFalse(cycle.isEven());
     }
 
@@ -62,7 +62,7 @@ class CycleTest {
     @Test
     void getNumberOfEvenCycles() {
         assertEquals(0, cycle.getNumberOfEvenCycles());
-        assertEquals(1, Cycle.create("0 1 2").getNumberOfEvenCycles());
+        assertEquals(1, Cycle.of("0 1 2").getNumberOfEvenCycles());
     }
 
     @Test
@@ -79,6 +79,6 @@ class CycleTest {
     @Test
     void isLong() {
         assertTrue(cycle.isLong());
-        assertFalse(Cycle.create("0 1 2").isLong());
+        assertFalse(Cycle.of("0 1 2").isLong());
     }
 }

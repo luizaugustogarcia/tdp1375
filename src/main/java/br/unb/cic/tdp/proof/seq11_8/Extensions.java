@@ -137,7 +137,7 @@ public class Extensions {
 
                     val move = line.split(": ")[1].replace(" ", ",")
                             .replace("<br>", "");
-                    sorting.add(Cycle.create(move));
+                    sorting.add(Cycle.of(move));
                 }
                 return new Pair<>(spi, sorting);
             }

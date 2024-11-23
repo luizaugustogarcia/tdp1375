@@ -31,7 +31,7 @@ public class EliasAndHartman extends AbstractSbtAlgorithm {
         for (int i = 0; i < pi.size(); i++) {
             sigmaPrime[i] = i;
         }
-        val sigma = Cycle.create(sigmaPrime);
+        val sigma = Cycle.of(sigmaPrime);
 
         var spi = computeProduct(true, n, sigma, pi.getInverse());
 
@@ -61,7 +61,7 @@ public class EliasAndHartman extends AbstractSbtAlgorithm {
             } else {
                 List<Cycle> configuration = new ArrayList<>();
                 val gamma = nonBadSmallComponents.stream().filter(c -> c.size() > 1).findFirst().get();
-                configuration.add(Cycle.create(gamma.get(0), gamma.get(1), gamma.get(2)));
+                configuration.add(Cycle.of(gamma.get(0), gamma.get(1), gamma.get(2)));
 
                 var badSmallComponent = false;
 
@@ -135,7 +135,7 @@ public class EliasAndHartman extends AbstractSbtAlgorithm {
                 val spi = new MulticyclePermutation(permutation);
                 val config = new Configuration(spi);
                 sortings.put(config.hashCode(),
-                        new Pair<>(config, Arrays.stream(lineSplit[1].split(";")).map(Cycle::create).collect(Collectors.toList())));
+                        new Pair<>(config, Arrays.stream(lineSplit[1].split(";")).map(Cycle::of).collect(Collectors.toList())));
             }
         });
     }
