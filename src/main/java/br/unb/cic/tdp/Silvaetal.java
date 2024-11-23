@@ -3,7 +3,6 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.proof.ProofGenerator;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
@@ -20,7 +19,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
-import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 
 public class Silvaetal extends AbstractSbtAlgorithm {
 
@@ -31,12 +29,12 @@ public class Silvaetal extends AbstractSbtAlgorithm {
 
         val sorting = new ArrayList<Cycle>();
 
-        var spi = computeProduct(true, n, sigma, pi.getInverse());
+        var spi = sigma.times(pi.getInverse());
 
         val _2_2Seq = searchFor2_2Seq(spi, pi);
         if (_2_2Seq.isPresent()) {
-            pi = computeProduct(_2_2Seq.get().getSecond(), _2_2Seq.get().getFirst(), pi).asNCycle();
-            spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
+            pi = _2_2Seq.get().getSecond().times(_2_2Seq.get().getFirst()).times(pi).asNCycle();
+            spi = sigma.times(pi.getInverse());
             sorting.addAll(Arrays.asList(_2_2Seq.get().getFirst(), _2_2Seq.get().getSecond()));
         }
 
@@ -44,7 +42,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
             val pair = apply2MoveTwoOddCycles(spi, pi);
             sorting.add(pair.getFirst());
             pi = pair.getSecond();
-            spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
+            spi = sigma.times(pi.getInverse());
         }
 
         final List<List<Cycle>> badSmallComponents = new ArrayList<>();
@@ -54,7 +52,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
             val _2move = searchFor2MoveFromOrientedCycle(nonBadSmallComponents, pi);
             if (_2move.isPresent()) {
                 pi = applyTranspositionOptimized(pi, _2move.get());
-                spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
+                spi = sigma.times(pi.getInverse());
                 sorting.add(_2move.get());
             } else {
                 val orientedCycle = searchForOrientedCycleBiggerThan5(nonBadSmallComponents, pi);
@@ -62,7 +60,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
                     val pair = apply4_3SeqOrientedCase(orientedCycle.get(), pi);
                     sorting.addAll(pair.getFirst());
                     pi = pair.getSecond();
-                    spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
+                    spi = sigma.times(pi.getInverse());
                 } else {
                     List<Cycle> configuration = new ArrayList<>();
                     val gamma = nonBadSmallComponents.stream().findFirst().get();
@@ -84,7 +82,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
                         if (seq.isPresent()) {
                             for (val move : seq.get())
                                 pi = applyTranspositionOptimized(pi, move);
-                            spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
+                            spi = sigma.times(pi.getInverse());
                             sorting.addAll(seq.get());
                             break;
                         }
@@ -104,7 +102,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
                     pi = applyTranspositionOptimized(pi, move);
                 }
                 sorting.addAll(_11_8Seq.get());
-                spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
+                spi = sigma.times(pi.getInverse());
                 badSmallComponents.clear();
             }
 
@@ -124,7 +122,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
                 pi = pair.getSecond();
                 sorting.addAll(pair.getFirst());
             }
-            spi = computeProduct(true, pi.size(), sigma, pi.getInverse());
+            spi = sigma.times(pi.getInverse());
         }
 
         return new Pair<>(initialPi, sorting);
@@ -282,14 +280,14 @@ public class Silvaetal extends AbstractSbtAlgorithm {
         return new Pair<>(moves, applyMoves(pi, moves));
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         val silvaetal = new Silvaetal();
         val permutation = "0," + args[0];
         val moves = silvaetal.sort(permutation);
         var pi = Cycle.of(permutation);
         System.out.println(pi);
-        for (Cycle move : moves.getSecond()) {
-            pi = PermutationGroups.computeProduct(move, pi).asNCycle();
+        for (final Cycle move : moves.getSecond()) {
+            pi = move.times(pi).asNCycle();
             System.out.println(pi);
         }
     }
