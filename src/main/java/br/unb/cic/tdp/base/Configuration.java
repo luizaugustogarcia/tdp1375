@@ -118,7 +118,7 @@ public class Configuration {
             value.addAll(orientedCycle);
         });
 
-        val spi = cyclesByLabel.values().stream().map(c -> Cycle.create(Ints.toArray(c)))
+        val spi = cyclesByLabel.values().stream().map(c -> Cycle.of(Ints.toArray(c)))
                 .collect(toCollection(MulticyclePermutation::new));
         return new Configuration(spi, pi);
     }
@@ -168,7 +168,7 @@ public class Configuration {
     private static Signature mirror(final MulticyclePermutation spi, final Cycle pi) {
         val conjugator = new MulticyclePermutation();
         for (var i = 0; i < pi.size() / 2; i++) {
-            conjugator.add(Cycle.create(pi.get(i), pi.get(pi.size() - 1 - i)));
+            conjugator.add(Cycle.of(pi.get(i), pi.get(pi.size() - 1 - i)));
         }
         val mirroredSpi = spi.conjugateBy(conjugator).getInverse();
         return new Signature(pi, signature(mirroredSpi, pi), true);
@@ -185,12 +185,12 @@ public class Configuration {
 
         for (val move : sorting) {
             if (matchedSignature.isMirror()) {
-                translatedSorting.add(Cycle.create(
+                translatedSorting.add(Cycle.of(
                         signaturePi.get(Math.abs(pi.indexOf(move.get(0)) - pi.size()) - 1),
                         signaturePi.get(Math.abs(pi.indexOf(move.get(1)) - pi.size()) - 1),
                         signaturePi.get(Math.abs(pi.indexOf(move.get(2)) - pi.size()) - 1)).getInverse());
             } else {
-                translatedSorting.add(Cycle.create(
+                translatedSorting.add(Cycle.of(
                         signaturePi.get(pi.indexOf(move.get(0))),
                         signaturePi.get(pi.indexOf(move.get(1))),
                         signaturePi.get(pi.indexOf(move.get(2)))));

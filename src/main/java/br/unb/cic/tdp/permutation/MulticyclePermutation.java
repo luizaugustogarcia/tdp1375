@@ -27,7 +27,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
         if (include1Cycles) {
             for (var i = 0; i <= getMaxSymbol(); i++) {
                 if (!getSymbols().contains(i)) {
-                    this.add(Cycle.create(i));
+                    this.add(Cycle.of(i));
                 }
             }
         }
@@ -40,11 +40,11 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
     private void of(String permutation) {
         val cyclePattern = Pattern.compile("\\(([^\\(\\)]*?)\\)");
         if (!permutation.contains("(")) {
-            this.add(Cycle.create(permutation));
+            this.add(Cycle.of(permutation));
         } else {
             val matcher= cyclePattern.matcher(permutation);
             while (matcher.find()) {
-                this.add(Cycle.create(matcher.group(1)));
+                this.add(Cycle.of(matcher.group(1)));
             }
         }
     }

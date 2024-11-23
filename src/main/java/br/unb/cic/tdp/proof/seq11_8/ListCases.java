@@ -58,7 +58,7 @@ public class ListCases {
 
                                             val move = line.split(": ")[1].replace(" ", ",")
                                                     .replace("<br>", "");
-                                            sorting.add(Cycle.create(move));
+                                            sorting.add(Cycle.of(move));
                                         }
                                         writer.println(spi + "->" + sorting);
                                         is11_8(spi, CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()], sorting);
@@ -102,7 +102,7 @@ public class ListCases {
 
                     val move = line.split(": ")[1].replace(" ", ",")
                             .replace("<br>", "");
-                    sorting.add(Cycle.create(move));
+                    sorting.add(Cycle.of(move));
                 }
                 return new Pair<>(spi, sorting);
             }

@@ -66,7 +66,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
                 } else {
                     List<Cycle> configuration = new ArrayList<>();
                     val gamma = nonBadSmallComponents.stream().findFirst().get();
-                    configuration.add(Cycle.create(gamma.get(0), gamma.get(1), gamma.get(2)));
+                    configuration.add(Cycle.of(gamma.get(0), gamma.get(1), gamma.get(2)));
 
                     var badSmallComponent = false;
 
@@ -137,7 +137,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
         for (int i = 0; i < pi.size(); i++) {
             sigmaPrime[i] = i;
         }
-        val sigma = Cycle.create(sigmaPrime);
+        val sigma = Cycle.of(sigmaPrime);
 
         return transform(pi, sigma);
     }
@@ -160,9 +160,9 @@ public class Silvaetal extends AbstractSbtAlgorithm {
 
             val spi = new MulticyclePermutation(new MulticyclePermutation("(0,3,4,1,5,2,6)"));
             val sorting = Arrays.stream(lineSplit[1].substring(1, lineSplit[1].length() - 1)
-                            .split(", ")).map(c -> c.replace(" ", ",")).map(Cycle::create)
+                            .split(", ")).map(c -> c.replace(" ", ",")).map(Cycle::of)
                     .collect(Collectors.toList());
-            val config = new Configuration(spi, Cycle.create(lineSplit[0].replace(" ", ",")));
+            val config = new Configuration(spi, Cycle.of(lineSplit[0].replace(" ", ",")));
             sortings.put(config.hashCode(), new Pair<>(config, sorting));
         }
     }
@@ -190,7 +190,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
 
                 final List<Cycle> configPrime = new ArrayList<>(config);
                 configPrime.remove(cycle);
-                configPrime.add(Cycle.create(newSymbols));
+                configPrime.add(Cycle.of(newSymbols));
 
                 val openGates = getOpenGates(configPrime, pi);
                 if (openGates.size() <= 2)
@@ -238,7 +238,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
                     val c = orientedCycle.get((j + l) % orientedCycle.size());
                     val g = orientedCycle.image(c);
 
-                    val _7Cycle = Cycle.create(a, d, e, b, f, c, g);
+                    val _7Cycle = Cycle.of(a, d, e, b, f, c, g);
                     val allSymbols = new HashSet<>(Ints.asList(_7Cycle.getSymbols()));
 
                     val piPrime = new IntArrayList(7);
@@ -248,7 +248,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
                         }
                     }
 
-                    val config = new Configuration(new MulticyclePermutation(_7Cycle), Cycle.create(piPrime));
+                    val config = new Configuration(new MulticyclePermutation(_7Cycle), Cycle.of(piPrime));
                     if (_11_8_sortings.containsKey(config.hashCode())) {
                         val pair = _11_8_sortings.get(config.hashCode()).stream()
                                 .filter(p -> p.getFirst().equals(config)).findFirst().get();
@@ -277,7 +277,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
         val e = orientedCycle.image(b);
         val c = orientedCycle.image(e);
 
-        val moves = Arrays.asList(Cycle.create(a, b, c), Cycle.create(b, c, d), Cycle.create(c, d, e));
+        val moves = Arrays.asList(Cycle.of(a, b, c), Cycle.of(b, c, d), Cycle.of(c, d, e));
 
         return new Pair<>(moves, applyMoves(pi, moves));
     }
@@ -286,7 +286,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
         val silvaetal = new Silvaetal();
         val permutation = "0," + args[0];
         val moves = silvaetal.sort(permutation);
-        var pi = Cycle.create(permutation);
+        var pi = Cycle.of(permutation);
         System.out.println(pi);
         for (Cycle move : moves.getSecond()) {
             pi = PermutationGroups.computeProduct(move, pi).asNCycle();

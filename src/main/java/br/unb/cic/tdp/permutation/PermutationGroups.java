@@ -66,7 +66,7 @@ public class PermutationGroups implements Serializable {
                 ++counter;
                 seen.set(start);
                 if (include1Cycle)
-                    result.add(Cycle.create(start));
+                    result.add(Cycle.of(start));
                 continue;
             }
             while (!seen.get(start)) {
@@ -82,7 +82,7 @@ public class PermutationGroups implements Serializable {
                 start = image;
             }
 
-            result.add(Cycle.create(Arrays.copyOfRange(cycle.elements(), 0, cycle.size())));
+            result.add(Cycle.of(Arrays.copyOfRange(cycle.elements(), 0, cycle.size())));
             cycle.clear();
         }
 

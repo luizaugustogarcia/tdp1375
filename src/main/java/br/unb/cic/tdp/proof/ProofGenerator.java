@@ -125,7 +125,7 @@ public class ProofGenerator {
                 val config = new Configuration(spi);
                 ehSortings.put(config.hashCode(),
                         new Pair<>(config, Arrays.stream(lineSplit[1].split(";"))
-                                .map(s -> s.replace(" ", ",")).map(Cycle::create).collect(Collectors.toList())));
+                                .map(s -> s.replace(" ", ",")).map(Cycle::of).collect(Collectors.toList())));
             }
         });
     }
@@ -206,7 +206,7 @@ public class ProofGenerator {
 
         return new SequenceSearcher()
                 .search(spi, parity, spiIndex, spiIndex.length, pi, stack, rootMove)
-                .toList().stream().map(Cycle::create).collect(toList());
+                .toList().stream().map(Cycle::of).collect(toList());
     }
 
     public static Cycle removeExtraSymbols(final Set<Integer> symbols, final Cycle pi) {
@@ -215,7 +215,7 @@ public class ProofGenerator {
             if (symbols.contains(symbol))
                 newPi.add(symbol);
         }
-        return Cycle.create(newPi);
+        return Cycle.of(newPi);
     }
 
     public static String permutationToJsArray(final MulticyclePermutation permutation) {

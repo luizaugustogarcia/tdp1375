@@ -26,7 +26,7 @@ public class Oriented5Cycle {
      * equals to 5 that doesn't allow the application of a 2-move.
      */
     public static List<Pair<Configuration, List<Cycle>>> generate() {
-        val orientedCycle = Cycle.create("(0,3,1,4,2)");
+        val orientedCycle = Cycle.of("(0,3,1,4,2)");
         val triple = new int[]{0, 1, 2};
 
         val result = new ArrayList<Pair<Configuration, List<Cycle>>>();
@@ -35,7 +35,7 @@ public class Oriented5Cycle {
 
         val spi = new MulticyclePermutation(orientedCycle);
 
-        Generator.permutation(spi.getSymbols()).simple().stream().map(permutation -> Cycle.create(Ints.toArray(permutation))).forEach(pi -> {
+        Generator.permutation(spi.getSymbols()).simple().stream().map(permutation -> Cycle.of(Ints.toArray(permutation))).forEach(pi -> {
             val config = new Configuration(spi, pi);
             if (areSymbolsInCyclicOrder(pi, triple) && !verifiedConfigurations.contains(config)) {
                 verifiedConfigurations.add(config);

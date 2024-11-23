@@ -100,7 +100,7 @@ public class EHProofTraverser {
                             val b = Integer.parseInt(matcher.group(2));
                             val c = Integer.parseInt(matcher.group(3));
 
-                            val rho = Cycle.create(pi.get(a), pi.get(b), pi.get(c));
+                            val rho = Cycle.of(pi.get(a), pi.get(b), pi.get(c));
                             sorting.add(rho);
 
                             pi = applyTranspositionOptimized(pi, rho);
