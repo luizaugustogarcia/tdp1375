@@ -1,15 +1,6 @@
 package br.unb.cic.tdp;
 
-import br.unb.cic.tdp.base.Configuration;
-import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.ProofGenerator;
-import br.unb.cic.tdp.util.Pair;
-import cern.colt.list.IntArrayList;
-import com.google.common.collect.Multimap;
-import com.google.common.primitives.Ints;
-import lombok.SneakyThrows;
-import lombok.val;
+import static br.unb.cic.tdp.base.CommonOperations.*;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -18,7 +9,18 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.base.CommonOperations.*;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
+import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.permutation.Permutation;
+import br.unb.cic.tdp.proof.ProofGenerator;
+import br.unb.cic.tdp.util.Pair;
+import cern.colt.list.IntArrayList;
+import lombok.SneakyThrows;
+import lombok.val;
 
 public class Silvaetal extends AbstractSbtAlgorithm {
 
@@ -281,14 +283,106 @@ public class Silvaetal extends AbstractSbtAlgorithm {
     }
 
     public static void main(final String[] args) {
-        val silvaetal = new Silvaetal();
-        val permutation = "0," + args[0];
-        val moves = silvaetal.sort(permutation);
-        var pi = Cycle.of(permutation);
-        System.out.println(pi);
-        for (final Cycle move : moves.getSecond()) {
-            pi = move.times(pi).asNCycle();
-            System.out.println(pi);
+        var sigma = Cycle.of(0, 1, 2, 3, 4);
+
+        generateAllNPlus1Cycles(1, sigma, sigma, new Stack<>());
+    }
+
+    private static void generateAllNPlus1Cycles(final int depth, final Cycle longCycle, final Permutation sigma,
+            final Stack<Cycle> transpositions) {
+        if (transpositions.size() % 2 == 0) {
+            val factorization = new ArrayList<>(transpositions);
+            Collections.reverse(factorization);
+            System.out.println(factorization.stream().map(Cycle::toString).collect(Collectors.joining()) + longCycle + "=" + sigma);
         }
+
+        int n = sigma.getMaxSymbol();
+
+        if (depth > n + 1 && transpositions.size() % 2 == 0) {
+            return;
+        }
+
+        if (depth % 2 == 1) {
+            for (int i = 0; i < n + 1; i++) {
+                for (int j = i + 1; j < n + 1; j++) {
+                    val a = i;
+                    val b = j;
+                    val _break = Cycle.of(a, b);
+
+                    if (!transpositions.isEmpty() && willBeCancelled(_break, transpositions)) {
+                        continue;
+                    }
+
+                    if (transpositions.toString().contains("(0 1), (0 1)")) {
+                        System.out.println();
+                    }
+
+                    transpositions.push(_break);
+
+                    generateAllNPlus1Cycles(depth + 1, longCycle, _break.times(sigma), transpositions);
+
+                    transpositions.pop();
+                }
+            }
+        } else {
+            final MulticyclePermutation twoCycles = (MulticyclePermutation) sigma;
+            final Object[] cyclesArray = twoCycles.toArray();
+            final Cycle c1 = (Cycle) cyclesArray[0];
+            final Cycle c2 = (Cycle) cyclesArray[1];
+
+            for (List<Integer> pair : Sets.cartesianProduct(
+                    Arrays.stream(c1.getSymbols()).boxed().collect(Collectors.toSet()),
+                    Arrays.stream(c2.getSymbols()).boxed().collect(Collectors.toSet()))) {
+                val a = pair.get(0);
+                val b = pair.get(1);
+
+                val join = Cycle.of(a, b);
+
+                if ((!transpositions.isEmpty() && willBeCancelled(join, transpositions)) || !(transpositions.peek()
+                        .contains(a) || transpositions.peek().contains(b))) {
+                    continue;
+                }
+
+                if (transpositions.toString().startsWith("[(0 1), (0 1)")) {
+                    System.out.println();
+                }
+
+                transpositions.push(join);
+
+                generateAllNPlus1Cycles(depth + 1, longCycle, join.times(sigma), transpositions);
+
+                transpositions.pop();
+            }
+        }
+    }
+
+    private static boolean willBeCancelled(final Cycle transposition, final Stack<Cycle> transpositions) {
+        if (transpositions.isEmpty()) {
+            return false;
+        }
+
+        if (transposition.equals(transpositions.peek())) {
+            return true;
+        }
+
+        val tuple = new ArrayList<>(transpositions);
+        Collections.reverse(tuple);
+
+        for (int i = 0; i <= transpositions.size(); i++) {
+            for (int j = 0; j < transpositions.size() - 1; j++) {
+                val tau1 = tuple.get(j);
+                val tau2 = tuple.get(j + 1);
+
+                val conjugate = tau2.conjugateBy(tau1).asNCycle();
+                tuple.set(j, conjugate);
+                tuple.set(j + 1, tau1);
+
+                if (conjugate.equals(transposition)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }
