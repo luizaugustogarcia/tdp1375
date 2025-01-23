@@ -196,6 +196,19 @@ public class CommonOperations implements Serializable {
         return Collections.emptyList();
     }
 
+    public static Stream<Cycle> generateAllTranspositions(final MulticyclePermutation spi, final Cycle pi) {
+        val ci = cycleIndex(spi, pi);
+        return IntStream.range(0, pi.size() - 2).boxed()
+                .filter(i -> ci[pi.get(i)].size() > 1)
+                .flatMap(i -> IntStream.range(i + 1, pi.size() - 1).boxed()
+                        .filter(j -> ci[pi.get(j)].size() > 1).flatMap(j -> IntStream.range(j + 1, pi.size()).boxed()
+                                .filter(k -> ci[pi.get(k)].size() > 1)
+                                .map(k -> {
+                                    int a = pi.get(i), b = pi.get(j), c = pi.get(k);
+                                    return Cycle.of(a, b, c);
+                                })));
+    }
+
     public static Stream<Pair<Cycle, Integer>> generateAll0And2Moves(final MulticyclePermutation spi, final Cycle pi) {
         val ci = cycleIndex(spi, pi);
         val numberOfEvenCycles = spi.getNumberOfEvenCycles();

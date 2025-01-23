@@ -282,7 +282,7 @@ public class Silvaetal extends AbstractSbtAlgorithm {
 
     public static void main(final String[] args) {
         val silvaetal = new Silvaetal();
-        val permutation = "0," + args[0];
+        val permutation = "0,11,10,9,8,7,6,5,4,3,2,1";
         val moves = silvaetal.sort(permutation);
         var pi = Cycle.of(permutation);
         System.out.println(pi);
