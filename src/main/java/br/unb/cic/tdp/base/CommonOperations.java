@@ -203,8 +203,14 @@ public class CommonOperations implements Serializable {
                 .flatMap(i -> IntStream.range(i + 1, pi.size() - 1).boxed()
                         .filter(j -> ci[pi.get(j)].size() > 1).flatMap(j -> IntStream.range(j + 1, pi.size()).boxed()
                                 .filter(k -> ci[pi.get(k)].size() > 1)
-                                .map(k -> {
+                                .filter(k -> {
                                     int a = pi.get(i), b = pi.get(j), c = pi.get(k);
+                                    val is_2Move = ci[a] != ci[b] && ci[b] != ci[c] && ci[a] != ci[c];
+                                    // skip (-2)-moves
+                                    return !is_2Move;
+                                }).map(k -> {
+                                    int a = pi.get(i), b = pi.get(j), c = pi.get(k);
+
                                     return Cycle.of(a, b, c);
                                 })));
     }
