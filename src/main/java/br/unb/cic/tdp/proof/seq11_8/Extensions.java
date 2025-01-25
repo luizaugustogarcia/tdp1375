@@ -1,16 +1,10 @@
 package br.unb.cic.tdp.proof.seq11_8;
 
-import br.unb.cic.tdp.base.Configuration;
-import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.util.SortOrExtend;
-import br.unb.cic.tdp.util.Pair;
-import cern.colt.list.FloatArrayList;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
-import lombok.SneakyThrows;
-import lombok.val;
-import org.apache.commons.io.FileUtils;
+import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
+import static br.unb.cic.tdp.base.CommonOperations.is11_8;
+import static br.unb.cic.tdp.base.Configuration.ofSignature;
+import static br.unb.cic.tdp.base.Configuration.signature;
+import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -24,13 +18,20 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
-import static br.unb.cic.tdp.base.CommonOperations.is11_8;
-import static br.unb.cic.tdp.base.Configuration.ofSignature;
-import static br.unb.cic.tdp.base.Configuration.signature;
-import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
+import org.apache.commons.io.FileUtils;
+
+import com.google.common.base.Throwables;
+import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.proof.util.SortOrExtend;
+import br.unb.cic.tdp.util.Pair;
+import cern.colt.list.FloatArrayList;
+import lombok.SneakyThrows;
+import lombok.val;
 
 public class Extensions {
 
@@ -48,12 +49,7 @@ public class Extensions {
         // Otherwise, it will wrongly skip cases.
 
         var pool = new ForkJoinPool();
-        // oriented 5-cycle
-        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
-        // interleaving pair
-        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
-        // intersecting pair
-        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
+        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0 2)(1 3)")), outputDir + "/dfs/"));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
@@ -61,7 +57,8 @@ public class Extensions {
         val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
         Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
                 .map(Path::toFile)
-                .forEach(file -> executor.submit(() -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
+                .forEach(file -> executor.submit(
+                        () -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
 
         executor.shutdown();
         // boundless
@@ -171,7 +168,8 @@ public class Extensions {
     }
 
     @SneakyThrows
-    private static void renderExtensions(final List<Pair<String, Configuration>> extensions, final PrintStream out, final String outputDir) {
+    private static void renderExtensions(final List<Pair<String, Configuration>> extensions, final PrintStream out,
+            final String outputDir) {
         for (val extension : extensions) {
             val configuration = extension.getSecond();
             val canonical = extension.getSecond().getCanonical();
@@ -277,6 +275,8 @@ public class Extensions {
      * Type 3 extension.
      */
     private static List<Pair<String, Configuration>> type3Extensions(final Configuration config) {
+        val num2Cycles = getNum2Cycles(config);
+
         val result = new ArrayList<Pair<String, Configuration>>();
 
         val signature = signature(config.getSpi(), config.getPi());
@@ -301,41 +301,39 @@ public class Extensions {
         }
 
         for (int label = 1; label <= config.getSpi().size(); label++) {
-            if (!isOriented(signature, label)) {
-                for (int a = 0; a < signature.length; a++) {
-                    for (int b = a; b < signature.length; b++) {
-                        float[] extendedSignature = unorientedExtension(signature, label, a, b).elements();
+            for (int a = 0; a < signature.length; a++) {
+                float[] extendedSignature = unorientedExtension(signature, label, a).elements();
 
-                        Configuration extension = ofSignature(extendedSignature);
+                Configuration extension = ofSignature(extendedSignature);
 
-                        if (remainsUnoriented(indexesByLabel.get(label), a, b)) {
-                            if (extension.getOpenGates().size() <= 2) {
-                                result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
-                            }
-                        } else if (cyclesSizes.get(label) == 3) {
-                            val extensionPrime = extend(cyclesByLabel, label, signature, a, b);
-                            val fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
-                            for (int i = 0; i < fractions.length; i++) {
-                                fractions[i] += label;
-                            }
-
-                            if (areSymbolsInCyclicOrder(extensionPrime, fractions)) { // otherwise, it accepts a 2-move
-                                result.add(new Pair<>(String.format("a=%d b=%d, extended cycle: %s, turn oriented", a, b,
-                                        cyclesByLabel.get(label)), Configuration.ofSignature(extensionPrime)));
-                            }
-                        }
+                if (remainsUnoriented(indexesByLabel.get(label), a)) {
+                    if (extension.getOpenGates().size() <= 2) {
+                        result.add(new Pair<>(String.format("a=%d, extended cycle: %s", a, cyclesByLabel.get(label)), extension));
                     }
+                } else {
+                    val extensionPrime = extend(cyclesByLabel, label, signature, a);
+                    result.add(new Pair<>(String.format("a=%d, extended cycle: %s, turn oriented", a,
+                            cyclesByLabel.get(label)), Configuration.ofSignature(extensionPrime)));
                 }
             }
         }
 
-        return result;
+        if (num2Cycles > 0) { // the number of 2-cycles must be reduced, if there is any initially
+            return result.stream().filter(r -> getNum2Cycles(r.getSecond()) < num2Cycles).collect(Collectors.toList());
+        }
+
+        return result ;
+    }
+
+    private static long getNum2Cycles(Configuration config) {
+        return config.getSpi().stream().filter(c -> c.size() == 2).count();
     }
 
     public static boolean areSymbolsInCyclicOrder(final float[] elements, final float[] other) {
         int next = 0;
 
-        outer: for (int i = 0; i < elements.length; i++) {
+        outer:
+        for (int i = 0; i < elements.length; i++) {
             if (elements[i] == other[next]) {
                 for (int j = 0; j <= elements.length; j++) {
                     int index = (i + j) % elements.length;
@@ -357,7 +355,7 @@ public class Extensions {
     }
 
     private static float[] extend(final Map<Integer, Cycle> cyclesByLabel, final int label, float[] signature,
-                                  final int a, final int b) {
+            final int a) {
         final Cycle cycle = cyclesByLabel.get(label).startingBy(cyclesByLabel.get(label).getMaxSymbol());
 
         float[] copiedsignature = new float[signature.length];
@@ -368,7 +366,7 @@ public class Extensions {
         }
 
         float next = 0.5f;
-        val positions = new int[]{a, b};
+        val positions = new int[] { a };
         val extension = new FloatArrayList(copiedsignature);
         int inserted = 0;
         for (int position : positions) {
@@ -408,7 +406,6 @@ public class Extensions {
     }
 
     private static FloatArrayList unorientedExtension(final float[] signature, final int label, final int... positions) {
-        Preconditions.checkArgument(1 < positions.length && positions.length <= 3);
         Arrays.sort(positions);
         val extension = new FloatArrayList(signature);
         for (int i = 0; i < positions.length; i++) {
@@ -419,7 +416,7 @@ public class Extensions {
     }
 
     @SneakyThrows
-    private static void makeHtmlNavigation (final Configuration configuration, final String outputDir) {
+    private static void makeHtmlNavigation(final Configuration configuration, final String outputDir) {
         try (val out = new PrintStream(outputDir + "/dfs/" + configuration.getSpi() + ".html")) {
             out.println("<html>\n" +
                     "\t<head>\n" +
@@ -502,9 +499,20 @@ public class Extensions {
 
         @Override
         protected void extend(Configuration canonical) {
-            Stream.concat(Stream.concat(type1Extensions(canonical).stream(), type2Extensions(canonical).stream()), type3Extensions(canonical).stream())
+            extendWithout2Cycles(new Pair<>(canonical.toString(), canonical))
                     .map(extension -> new SortOrExtendExtensions(extension.getSecond(), outputDir)).
                     forEach(ForkJoinTask::fork);
+        }
+
+        private Stream<Pair<String, Configuration>> extendWithout2Cycles(final Pair<String, Configuration> pair) {
+            val canonical = pair.getSecond();
+            if (canonical.getSpi()
+                    .stream()
+                    .anyMatch(cycle -> cycle.size() == 2)) { // if there is any 2-cycle, only type 3 extensions are allowed
+                return type3Extensions(canonical).stream().flatMap(this::extendWithout2Cycles);
+            }
+            return Stream.concat(Stream.concat(type1Extensions(canonical).stream(), type2Extensions(canonical).stream()),
+                    type3Extensions(canonical).stream());
         }
     }
 }

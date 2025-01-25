@@ -1,6 +1,6 @@
 package br.unb.cic.tdp.proof;
 
-import static br.unb.cic.tdp.base.CommonOperations.*;
+import static br.unb.cic.tdp.base.CommonOperations.generateAllTranspositions;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.stream.Collectors.toList;
@@ -23,10 +23,7 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.seq11_8.Combinations;
 import br.unb.cic.tdp.proof.seq11_8.Extensions;
-import br.unb.cic.tdp.proof.util.ListOfCycles;
 import br.unb.cic.tdp.proof.util.MoveTreeNode;
-import br.unb.cic.tdp.proof.util.MovesStack;
-import br.unb.cic.tdp.proof.util.SequenceSearcher;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
 import lombok.SneakyThrows;
@@ -111,10 +108,10 @@ public class ProofGenerator {
 
         var path = Paths.get(ProofGenerator.class.getClassLoader()
                 .getResource("eh-sortings.txt").toURI());
-        loadEhSortings(path);
+        //loadEhSortings(path);
 
         Extensions.generate(args[0]);
-        Combinations.generate(args[0]);
+        //Combinations.generate(args[0]);
     }
 
     @SneakyThrows
@@ -131,9 +128,10 @@ public class ProofGenerator {
         });
     }
 
-    private static boolean isSimple(final Configuration config) {
-        return config.getSpi().stream().allMatch(c -> c.size() == 3);
-    }
+//    public static void main(String[] args) {
+//        Configuration configuration = new Configuration(new MulticyclePermutation("(0 9 6 12 7)(1 11 10 8 3)(2 5 4)"));
+//        System.out.println(searchForSorting(configuration, configuration.getSpi(), configuration.getPi(), new Stack<>()));
+//    }
 
     public static Optional<List<Cycle>> searchForSorting(final Configuration initialConfiguration, final MulticyclePermutation spi,
             final Cycle pi, final Stack<Cycle> stack) {
@@ -144,17 +142,16 @@ public class ProofGenerator {
             fixedSymbols.stream().filter(cycle::contains).findFirst().ifPresent(fixedSymbols::remove);
         }
 
-        var minRate = 1.51;
-
+        var minRate = 1.500000000001;
+        double rate = (fixedSymbols.size()) / (double) stack.size();
         if (!fixedSymbols.isEmpty()) {
-            double rate = (fixedSymbols.size()) / (double) stack.size();
             if (rate >= minRate) {
                 return Optional.of(stack);
             }
         }
 
-        var movedSymbols = spi.stream().filter(c -> c.size() > 1).mapToInt(Cycle::size).sum();
-        var movesLeft = Math.ceil((double) movedSymbols / 3); // each move left can fix at most 3 symbols
+        var symbolsLeft = spi.stream().filter(c -> c.size() > 1).mapToInt(Cycle::size).sum();
+        var movesLeft = Math.ceil((double) symbolsLeft / 3); // each move left can fix at most 3 symbols
         var totalMoves = stack.size() + movesLeft;
         var totalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - initialConfiguration.getSpi().size()) / totalMoves;
         if (totalRate < minRate) {
@@ -177,79 +174,6 @@ public class ProofGenerator {
 
     public static Optional<List<Cycle>> searchForSorting(final Configuration configuration) {
         return searchForSorting(configuration, configuration.getSpi(), configuration.getPi(), new Stack<>());
-
-//        if (isSimple(configuration)) {
-//            var candidates = ehSortings.get(configuration.hashCode());
-//
-//            Optional<Pair<Configuration, List<Cycle>>> pair;
-//            if (candidates.size() == 1) {
-//                pair = candidates.stream().findFirst();
-//            } else {
-//                pair = candidates.stream().filter(p -> p.getFirst().equals(configuration)).findFirst();
-//            }
-//
-//            if (pair.isPresent()) {
-//                return pair.map(p -> configuration.translatedSorting(p.getFirst(), p.getSecond()));
-//            }
-//        }
-//
-//        val _3norm = configuration.getSpi().get3Norm();
-//
-//        List<Cycle> sorting = Collections.emptyList();
-//
-//        String threadName = Thread.currentThread().getName();
-//
-//        if (_3norm >= 3) {
-//            Thread.currentThread().setName(configuration.hashCode() + "-" + configuration.getSpi() + "-4,3");
-//            sorting = searchSorting(configuration, _4_3_SEQS);
-//        }
-//
-//        if (_3norm >= 6 && sorting.isEmpty()) {
-//            Thread.currentThread().setName(configuration.hashCode() + "-" + configuration.getSpi() + "-8,6");
-//            sorting = searchSorting(configuration, _8_6_SEQS);
-//        }
-//
-//        if (_3norm >= 8 && sorting.isEmpty()) {
-//            Thread.currentThread().setName(configuration.hashCode() + "-" + configuration.getSpi() + "-11,8");
-//            sorting = searchSorting(configuration, _11_8_SEQS);
-//        }
-//
-//        Thread.currentThread().setName(threadName);
-//
-//        if (!sorting.isEmpty()) {
-//            return Optional.of(sorting);
-//        }
-//
-//        if (configuration.isFull() && getComponents(configuration.getSpi(), configuration.getPi()).size() == 1) {
-//            System.out.println("Full configuration without (11/8): " + configuration.getCanonical().getSpi());
-//        }
-//
-//        return Optional.empty();
-    }
-
-    public static List<Cycle> searchSorting(final Configuration configuration, final MoveTreeNode rootMove) {
-        val spi = new ListOfCycles();
-        configuration.getSpi().stream().map(Cycle::getSymbols).forEach(spi::add);
-
-        val parity = new boolean[configuration.getPi().size()];
-        int[][] spiIndex = new int[configuration.getPi().size()][];
-        var current = spi.head;
-        while (current != null) {
-            val cycle = current.data;
-            for (int i : cycle) {
-                spiIndex[i] = cycle;
-                parity[i] = (cycle.length & 1) == 1;
-            }
-            current = current.next;
-        }
-
-        val pi = configuration.getPi().getSymbols();
-
-        val stack = new MovesStack(rootMove.getHeight());
-
-        return new SequenceSearcher()
-                .search(spi, parity, spiIndex, spiIndex.length, pi, stack, rootMove)
-                .toList().stream().map(Cycle::of).collect(toList());
     }
 
     public static Cycle removeExtraSymbols(final Set<Integer> symbols, final Cycle pi) {
