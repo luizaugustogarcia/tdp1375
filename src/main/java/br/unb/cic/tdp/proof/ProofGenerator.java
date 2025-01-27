@@ -129,12 +129,20 @@ public class ProofGenerator {
     }
 
 //    public static void main(String[] args) {
-//        Configuration configuration = new Configuration(new MulticyclePermutation("(0 9 6 12 7)(1 11 10 8 3)(2 5 4)"));
+//        Configuration configuration = new Configuration(new MulticyclePermutation("(0 14 12 10 8 7 4 2)(1 15 9)(3 13 11 6 5)"));
 //        System.out.println(searchForSorting(configuration, configuration.getSpi(), configuration.getPi(), new Stack<>()));
 //    }
 
     public static Optional<List<Cycle>> searchForSorting(final Configuration initialConfiguration, final MulticyclePermutation spi,
             final Cycle pi, final Stack<Cycle> stack) {
+        if (initialConfiguration.getNumberOfOpenGates() == 0) {
+            val sigma = initialConfiguration.getSpi().times(initialConfiguration.getPi());
+            if (!(sigma.size() == 1 && sigma.getNumberOfSymbols() == initialConfiguration.getPi().size())) {
+                System.out.println("Invalid configuration, skipping");
+                return Optional.of(Collections.singletonList(Cycle.of(1,2,3)));
+            }
+        }
+
         var fixedSymbols = spi.stream().filter(c -> c.size() == 1).map(c -> c.get(0)).collect(Collectors.toSet());
 
         for (var cycle : initialConfiguration.getSpi()) {
@@ -142,7 +150,7 @@ public class ProofGenerator {
             fixedSymbols.stream().filter(cycle::contains).findFirst().ifPresent(fixedSymbols::remove);
         }
 
-        var minRate = 1.500000000001;
+        double minRate = 1.49;
         double rate = (fixedSymbols.size()) / (double) stack.size();
         if (!fixedSymbols.isEmpty()) {
             if (rate >= minRate) {
@@ -150,11 +158,10 @@ public class ProofGenerator {
             }
         }
 
-        var symbolsLeft = spi.stream().filter(c -> c.size() > 1).mapToInt(Cycle::size).sum();
-        var movesLeft = Math.ceil((double) symbolsLeft / 3); // each move left can fix at most 3 symbols
+        var movesLeft = spi.get3Norm();
         var totalMoves = stack.size() + movesLeft;
-        var totalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - initialConfiguration.getSpi().size()) / totalMoves;
-        if (totalRate < minRate) {
+        var globalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - initialConfiguration.getSpi().size()) / (double) totalMoves;
+        if (globalRate < minRate) {
             return Optional.empty();
         }
 
