@@ -1,9 +1,7 @@
 package br.unb.cic.tdp.proof;
 
-import static br.unb.cic.tdp.base.CommonOperations.generateAllTranspositions;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-import static java.util.stream.Collectors.toList;
 
 import java.io.Writer;
 import java.nio.file.Files;
@@ -21,7 +19,6 @@ import com.google.common.primitives.Ints;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.seq11_8.Combinations;
 import br.unb.cic.tdp.proof.seq11_8.Extensions;
 import br.unb.cic.tdp.proof.util.MoveTreeNode;
 import br.unb.cic.tdp.util.Pair;
@@ -90,6 +87,12 @@ public class ProofGenerator {
         }
     }
 
+//    public static void main(String[] args) {
+//        Configuration configuration = new Configuration(new MulticyclePermutation("(0 16 13 11 9 2)(1 17 15 14 12 10 8 5 3)(4 7 6)"));
+//        System.out.println(searchForSorting(configuration, configuration.getSpi().stream().map(c -> c.get(0)).collect(Collectors.toSet()),
+//                configuration.getSpi(), ArrayUtils.clone(configuration.getPi().getSymbols()), new Stack<>()));
+//    }
+
     // mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.proof.ProofGenerator" -Dexec.args=".\\proof\\"
     public static void main(String[] args) throws Throwable {
         Velocity.setProperty("resource.loader", "class");
@@ -128,29 +131,14 @@ public class ProofGenerator {
         });
     }
 
-//    public static void main(String[] args) {
-//        Configuration configuration = new Configuration(new MulticyclePermutation("(0 14 12 10 8 7 4 2)(1 15 9)(3 13 11 6 5)"));
-//        System.out.println(searchForSorting(configuration, configuration.getSpi(), configuration.getPi(), new Stack<>()));
-//    }
+    public static Optional<List<Cycle>> searchForSorting(final Configuration initialConfiguration, final Set<Integer> notFixableSymbols,
+            final MulticyclePermutation spi, final int[] pi, final Stack<Cycle> stack) {
+        val fixedSymbols = spi.stream()
+                .filter(c -> c.size() == 1 && !notFixableSymbols.contains(c.get(0)))
+                .map(c -> c.get(0))
+                .collect(Collectors.toSet());
 
-    public static Optional<List<Cycle>> searchForSorting(final Configuration initialConfiguration, final MulticyclePermutation spi,
-            final Cycle pi, final Stack<Cycle> stack) {
-        if (initialConfiguration.getNumberOfOpenGates() == 0) {
-            val sigma = initialConfiguration.getSpi().times(initialConfiguration.getPi());
-            if (!(sigma.size() == 1 && sigma.getNumberOfSymbols() == initialConfiguration.getPi().size())) {
-                System.out.println("Invalid configuration, skipping");
-                return Optional.of(Collections.singletonList(Cycle.of(1,2,3)));
-            }
-        }
-
-        var fixedSymbols = spi.stream().filter(c -> c.size() == 1).map(c -> c.get(0)).collect(Collectors.toSet());
-
-        for (var cycle : initialConfiguration.getSpi()) {
-            // each cycle in the configuration should retain at most one fixed symbol
-            fixedSymbols.stream().filter(cycle::contains).findFirst().ifPresent(fixedSymbols::remove);
-        }
-
-        double minRate = 1.49;
+        double minRate = 1.59;
         double rate = (fixedSymbols.size()) / (double) stack.size();
         if (!fixedSymbols.isEmpty()) {
             if (rate >= minRate) {
@@ -166,21 +154,79 @@ public class ProofGenerator {
         }
 
         Optional<List<Cycle>> sorting = Optional.empty();
-        for (var m : generateAllTranspositions(spi, pi).collect(toList())) {
-            stack.push(m);
-            sorting =
-                    searchForSorting(initialConfiguration, spi.times(m.getInverse()), m.times(pi).asNCycle(), stack);
-            if (sorting.isPresent()) {
-                return sorting;
-            }
-            stack.pop();
+        val ci = cyclesIndex(spi, pi);
+        for (int i = 0; i < pi.length - 2; i++) {
+            if (!fixedSymbols.contains(pi[i]))
+                for (int j = i + 1; j < pi.length - 1; j++) {
+                    if (!fixedSymbols.contains(pi[j]))
+                        for (int k = j + 1; k < pi.length; k++) {
+                            if (!fixedSymbols.contains(pi[k])) {
+                                int a = pi[i], b = pi[j], c = pi[k];
+
+                                val is_2Move = ci[a] != ci[b] && ci[b] != ci[c] && ci[a] != ci[c];
+                                if (is_2Move) {
+                                    continue;
+                                }
+
+                                val m = Cycle.of(a, b, c);
+                                stack.push(m);
+                                sorting =
+                                        searchForSorting(initialConfiguration, notFixableSymbols, spi.times(m.getInverse()),
+                                                applyTranspositionOptimized(pi, m.getSymbols()),
+                                                stack);
+                                if (sorting.isPresent()) {
+                                    return sorting;
+                                }
+                                stack.pop();
+                            }
+                        }
+                }
         }
 
         return sorting;
     }
 
+    private static Cycle[] cyclesIndex(final MulticyclePermutation spi, final int[] pi) {
+        val index = new Cycle[pi.length];
+
+        for (val cycle : spi) {
+            for (val symbol : cycle.getSymbols()) {
+                index[symbol] = cycle;
+            }
+        }
+
+        return index;
+    }
+
+    public static int[] applyTranspositionOptimized(final int[] pi, final int[] move) {
+        val a = move[0];
+        val b = move[1];
+        val c = move[2];
+
+        val indexes = new int[3];
+        for (var i = 0; i < pi.length; i++) {
+            if (pi[i] == a)
+                indexes[0] = i;
+            if (pi[i] == b)
+                indexes[1] = i;
+            if (pi[i] == c)
+                indexes[2] = i;
+        }
+
+        Arrays.sort(indexes);
+
+        val result = new int[pi.length];
+        System.arraycopy(pi, 0, result, 0, indexes[0]);
+        System.arraycopy(pi, indexes[1], result, indexes[0], indexes[2] - indexes[1]);
+        System.arraycopy(pi, indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
+        System.arraycopy(pi, indexes[2], result, indexes[2], pi.length - indexes[2]);
+
+        return result;
+    }
+
     public static Optional<List<Cycle>> searchForSorting(final Configuration configuration) {
-        return searchForSorting(configuration, configuration.getSpi(), configuration.getPi(), new Stack<>());
+        return searchForSorting(configuration, configuration.getSpi().stream().map(Cycle::getMinSymbol).collect(Collectors.toSet()),
+                configuration.getSpi(), configuration.getPi().getSymbols(), new Stack<>());
     }
 
     public static Cycle removeExtraSymbols(final Set<Integer> symbols, final Cycle pi) {
