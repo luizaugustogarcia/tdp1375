@@ -131,6 +131,8 @@ public class ProofGenerator {
         });
     }
 
+    private static double lowestRate = 2;
+
     public static Optional<List<Cycle>> searchForSorting(final Configuration initialConfiguration, final Set<Integer> notFixableSymbols,
             final MulticyclePermutation spi, final int[] pi, final Stack<Cycle> stack) {
         val fixedSymbols = spi.stream()
@@ -138,15 +140,20 @@ public class ProofGenerator {
                 .map(c -> c.get(0))
                 .collect(Collectors.toSet());
 
-        double minRate = 1.59;
+        double minRate = 1.51;
         double rate = (fixedSymbols.size()) / (double) stack.size();
         if (!fixedSymbols.isEmpty()) {
             if (rate >= minRate) {
+                if (rate < lowestRate) {
+                    lowestRate = rate;
+                    System.out.println("Lowest rate: " + lowestRate);
+                }
                 return Optional.of(stack);
             }
         }
 
-        var movesLeft = Math.ceil(spi.stream().filter(c -> c.size() > 1).mapToInt(Cycle::size).sum() / 3.0); // each move can add up to 3 bonds
+        var movesLeft =
+                Math.ceil(spi.stream().filter(c -> c.size() > 1).mapToInt(Cycle::size).sum() / 3.0); // each move can add up to 3 bonds
         var totalMoves = stack.size() + movesLeft;
         var globalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - initialConfiguration.getSpi().size()) / (double) totalMoves;
         if (globalRate < minRate) {
@@ -170,6 +177,7 @@ public class ProofGenerator {
 
                                 val m = Cycle.of(a, b, c);
                                 stack.push(m);
+
                                 sorting =
                                         searchForSorting(initialConfiguration, notFixableSymbols, spi.times(m.getInverse()),
                                                 applyTranspositionOptimized(pi, m.getSymbols()),
