@@ -146,7 +146,7 @@ public class ProofGenerator {
             }
         }
 
-        var movesLeft = spi.get3Norm();
+        var movesLeft = Math.ceil(spi.stream().filter(c -> c.size() > 1).mapToInt(Cycle::size).sum() / 3.0); // each move can add up to 3 bonds
         var totalMoves = stack.size() + movesLeft;
         var globalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - initialConfiguration.getSpi().size()) / (double) totalMoves;
         if (globalRate < minRate) {
