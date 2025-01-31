@@ -178,6 +178,8 @@ public class ProofGenerator {
                                 val m = Cycle.of(a, b, c);
                                 stack.push(m);
 
+                                // TODO: a extensão tipo 2 deve também adicionar um ciclo de tamanho 3 orientado, não apenas um ciclo não orientado
+
                                 sorting =
                                         searchForSorting(initialConfiguration, notFixableSymbols, spi.times(m.getInverse()),
                                                 applyTranspositionOptimized(pi, m.getSymbols()),
