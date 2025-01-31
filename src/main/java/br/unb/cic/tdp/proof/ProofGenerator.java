@@ -8,6 +8,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import org.apache.velocity.VelocityContext;
@@ -87,10 +90,22 @@ public class ProofGenerator {
         }
     }
 
-//    public static void main(String[] args) {
-//        Configuration configuration = new Configuration(new MulticyclePermutation("(0 16 13 11 9 2)(1 17 15 14 12 10 8 5 3)(4 7 6)"));
-//        System.out.println(searchForSorting(configuration, configuration.getSpi().stream().map(c -> c.get(0)).collect(Collectors.toSet()),
-//                configuration.getSpi(), ArrayUtils.clone(configuration.getPi().getSymbols()), new Stack<>()));
+//    public static void main(String[] args) throws InterruptedException {
+//        val l = List.of("(0 10 8 2)(1 9 4)(3 11 7 6 5)",
+//                "(0 9 4)(1 6 3)(2 11 10 8 7 5)",
+//                "(0 10 9 8 5 2)(1 7 4)(3 11 6)");
+//
+//        var pool = new ForkJoinPool();
+//        l.stream().forEach(config -> {
+//            pool.submit(() -> {
+//                Configuration configuration = new Configuration(new MulticyclePermutation(config));
+//                System.out.println(configuration.getSpi() + "-" +
+//                        searchForSorting(configuration, configuration.getSpi().stream().map(c -> c.get(0)).collect(Collectors.toSet()),
+//                                configuration.getSpi(), configuration.getPi().getSymbols(), new Stack<>()));
+//            });
+//        });
+//        pool.shutdown();
+//        pool.awaitTermination(1, TimeUnit.HOURS);
 //    }
 
     // mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.proof.ProofGenerator" -Dexec.args=".\\proof\\"
@@ -153,7 +168,7 @@ public class ProofGenerator {
         }
 
         var movesLeft =
-                Math.ceil(spi.stream().filter(c -> c.size() > 1).mapToInt(Cycle::size).sum() / 3.0); // each move can add up to 3 bonds
+                Math.floor(spi.stream().filter(c -> c.size() > 1).mapToInt(Cycle::size).sum() / 3.0); // each move can add up to 3 bonds
         var totalMoves = stack.size() + movesLeft;
         var globalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - initialConfiguration.getSpi().size()) / (double) totalMoves;
         if (globalRate < minRate) {
@@ -177,8 +192,6 @@ public class ProofGenerator {
 
                                 val m = Cycle.of(a, b, c);
                                 stack.push(m);
-
-                                // TODO: a extensão tipo 2 deve também adicionar um ciclo de tamanho 3 orientado, não apenas um ciclo não orientado
 
                                 sorting =
                                         searchForSorting(initialConfiguration, notFixableSymbols, spi.times(m.getInverse()),
@@ -262,9 +275,11 @@ public class ProofGenerator {
                 .collect(Collectors.joining(",")) + "]";
     }
 
-    public static void renderSorting(final Configuration canonicalConfig, final List<Cycle> sorting, final Writer writer) {
+    public static void renderSorting(final Configuration extendedFrom, final Configuration canonicalConfig, final List<Cycle> sorting, final Writer writer) {
         VelocityContext context = new VelocityContext();
 
+        context.put("extendedFrom", extendedFrom.getSpi());
+        context.put("jsExtendedFrom", permutationToJsArray(extendedFrom.getSpi()));
         context.put("spi", canonicalConfig.getSpi());
         context.put("piSize", canonicalConfig.getPi().size());
         context.put("jsSpi", permutationToJsArray(canonicalConfig.getSpi()));

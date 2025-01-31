@@ -15,6 +15,7 @@ import static br.unb.cic.tdp.proof.ProofGenerator.searchForSorting;
 
 @AllArgsConstructor
 public abstract class SortOrExtend extends RecursiveAction {
+    protected final Configuration extendedFrom;
     protected final Configuration configuration;
     protected final String outputDir;
 
@@ -50,7 +51,7 @@ public abstract class SortOrExtend extends RecursiveAction {
                         if (sorting.isPresent()) {
                             try (val file = new RandomAccessFile(outputDir + "/" + canonical.getSpi() + ".html", "rw")) {
                                 try (val writer = new FileWriter(file.getFD())) {
-                                    renderSorting(canonical, sorting.get(), writer);
+                                    renderSorting(extendedFrom, canonical, sorting.get(), writer);
                                     return;
                                 }
                             }

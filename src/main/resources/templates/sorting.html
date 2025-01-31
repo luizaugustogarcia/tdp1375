@@ -8,6 +8,20 @@
     <style>* { font-size: small; }</style>
 </head>
 <body>
+    <div class="modal fade" id="modal" role="dialog">
+        <div class="modal-dialog" style="left: 25px; max-width: unset;">
+            <!-- Modal content-->
+            <div class="modal-content" style="width: fit-content;">
+                <div class="modal-header">
+                    <h6 class="modal-title">--------</h6>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <canvas id="modalCanvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
     <div style="margin-top: 10px; margin-left: 10px;">
         <canvas id="canvas"></canvas>
         <script>
@@ -20,6 +34,7 @@
         updateCanvas('canvas', $jsSpi, $jsPi);
         </script>
         <h6>$spi.toString()</h6>
+        Extended from: <a href="" onclick="updateCanvas('modalCanvas', ${jsExtendedFrom}, ${jsPi}); $('h6.modal-title').text('${extendedFrom.toString()}');$('#modal').modal('show'); return false;">${extendedFrom.toString()}</a><br>
         ALLOWS (11/8)-SEQUENCE
         #foreach($rho in $sorting)
             <div style="margin-top: 10px; ">
