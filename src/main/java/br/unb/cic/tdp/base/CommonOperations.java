@@ -337,6 +337,7 @@ public class CommonOperations implements Serializable {
         return components;
     }
 
+    @Deprecated
     public static Set<Integer> getOpenGates(final Collection<Cycle> spi, final Cycle pi) {
         val openGates = new HashSet<Integer>();
 

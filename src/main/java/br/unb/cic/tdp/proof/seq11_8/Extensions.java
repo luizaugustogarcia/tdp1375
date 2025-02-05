@@ -1,10 +1,8 @@
 package br.unb.cic.tdp.proof.seq11_8;
 
-import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
 import static br.unb.cic.tdp.base.CommonOperations.is11_8;
-import static br.unb.cic.tdp.base.Configuration.ofSignature;
-import static br.unb.cic.tdp.base.Configuration.signature;
 import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
+import static br.unb.cic.tdp.proof.seq11_8.SortOrExtendExtensions.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -13,12 +11,11 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.io.FileUtils;
@@ -27,9 +24,7 @@ import com.google.common.base.Throwables;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.util.SortOrExtend;
 import br.unb.cic.tdp.util.Pair;
-import cern.colt.list.FloatArrayList;
 import lombok.SneakyThrows;
 import lombok.val;
 
@@ -49,8 +44,15 @@ public class Extensions {
         // Otherwise, it will wrongly skip cases.
 
         var pool = new ForkJoinPool();
-        pool.execute(new SortOrExtendExtensions(Configuration.ofSignature(new float[] {1F}),
-                Configuration.ofSignature(new float[] { 1.001F, 2.001F, 1.002F, 2.002F }), outputDir + "/dfs/"));
+        // oriented 5-cycle
+        pool.execute(new SortOrExtendExtensions(Configuration.ofSignature(new float[] { 1F }),
+                new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
+        // interleaving pair
+        pool.execute(new SortOrExtendExtensions(Configuration.ofSignature(new float[] { 1F }),
+                new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
+        // intersecting pair
+        pool.execute(new SortOrExtendExtensions(Configuration.ofSignature(new float[] { 1F }),
+                new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
@@ -218,231 +220,6 @@ public class Extensions {
             throw new RuntimeException("ERROR: working files not deleted, cannot continue.");
     }
 
-    /*
-     * Type 1 extension.
-     */
-    private static List<Pair<String, Configuration>> type1Extensions(final Configuration config) {
-        val result = new ArrayList<Pair<String, Configuration>>();
-
-        val newCycleLabel = config.getSpi().size() + 1;
-
-        val signature = signature(config.getSpi(), config.getPi());
-
-        for (int i = 0; i < signature.length; i++) {
-            if (config.getOpenGates().contains(i)) {
-                for (int b = 0; b < signature.length; b++) {
-                    for (int c = b; c < signature.length; c++) {
-                        if (!(i == b && b == c)) {
-                            result.add(new Pair<>(String.format("a=%d b=%d c=%d", i, b, c),
-                                    ofSignature(unorientedExtension(signature, newCycleLabel, i, b, c).elements())));
-                        }
-                    }
-                }
-            }
-        }
-
-        return result;
-    }
-
-    /*
-     * Type 2 extension. Adds a new 2-cycle to the signature.
-     */
-    private static List<Pair<String, Configuration>> type2Extensions(final Configuration config) {
-        if (!config.isFull()) {
-            return Collections.emptyList();
-        }
-
-        val result = new ArrayList<Pair<String, Configuration>>();
-
-        val newCycleLabel = config.getSpi().size() + 1;
-
-        val signature = signature(config.getSpi(), config.getPi());
-
-        for (int a = 0; a < signature.length; a++) {
-            for (int b = a; b < signature.length; b++) {
-                if (a != b) {
-                    Configuration configuration = ofSignature(unorientedExtension(signature, newCycleLabel, a, b).elements());
-                    if (configuration.getSpi().toString().equals("(0 1 4 8)(2 9 6)(3 5 7)")) {
-                        System.out.println("a=" + a + " b=" + b);
-                    }
-                    result.add(new Pair<>(String.format("a=%d b=%d", a, b),
-                            configuration));
-                }
-            }
-        }
-
-        return result;
-    }
-
-    /*
-     * Type 3 extension. Increases the size of a cycle by 1.
-     */
-    private static List<Pair<String, Configuration>> type3Extensions(final Configuration config) {
-        val num2Cycles = getNum2Cycles(config);
-
-        val result = new ArrayList<Pair<String, Configuration>>();
-
-        val signature = signature(config.getSpi(), config.getPi());
-        val cyclesSizes = new HashMap<Integer, Integer>();
-        val indexesByLabel = new HashMap<Integer, List<Integer>>();
-        for (int i = 0; i < signature.length; i++) {
-            cyclesSizes.putIfAbsent((int) Math.floor(signature[i]), 0);
-            cyclesSizes.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> v + 1);
-            indexesByLabel.computeIfAbsent((int) Math.floor(signature[i]), s -> new ArrayList<>());
-            int finalI = i;
-            indexesByLabel.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> {
-                v.add(finalI);
-                return v;
-            });
-        }
-
-        val cycleIndex = cycleIndex(config.getSpi(), config.getPi());
-        val cyclesByLabel = new HashMap<Integer, Cycle>();
-        for (int i = 0; i < signature.length; i++) {
-            final int _i = i;
-            cyclesByLabel.computeIfAbsent((int) Math.floor(signature[i]), k -> cycleIndex[config.getPi().get(_i)]);
-        }
-
-        for (int label = 1; label <= config.getSpi().size(); label++) {
-            var nextLabel = label + 0.01F;
-            val firstIndex = indexesByLabel.get(label).get(0);
-            if (Math.floor(signature[firstIndex]) == signature[firstIndex]) {
-                // unoriented cycle
-                val indexes = indexesByLabel.get(label);
-                for (int i = 0; i < indexes.size(); i++) {
-                    signature[indexes.get(i)] += 0.01F * (i + 1);
-                    if (signature[indexes.get(i)] + 0.01 > nextLabel) {
-                        nextLabel = signature[indexes.get(i)] + 0.01F;
-                    }
-                }
-            } else {
-                // oriented
-                nextLabel = (indexesByLabel.get(label).size() + 1) * 0.01F + label;
-            }
-
-            for (int a = 0; a < signature.length; a++) {
-                float[] extendedSignature = insertAtPosition(signature, nextLabel, a);
-                val extension = ofSignature(extendedSignature);
-                if (extension.getSpi().toString().equals("(0 1 4 8)(2 9 6)(3 5 7)")) {
-                    System.out.println();
-                }
-                result.add(new Pair<>(String.format("a=%d, extended cycle: %s", a, cyclesByLabel.get(label)), extension));
-            }
-        }
-
-        if (num2Cycles > 0) { // the number of 2-cycles must be reduced, if there is any initially
-            return result.stream().filter(r -> getNum2Cycles(r.getSecond()) < num2Cycles).collect(Collectors.toList());
-        }
-
-        return result;
-    }
-
-    public static float[] insertAtPosition(float[] array, float value, int index) {
-        // Create a new array with extra space for the new element
-        float[] newArray = new float[array.length + 1];
-
-        // Copy elements before the insertion index
-        System.arraycopy(array, 0, newArray, 0, index);
-
-        // Insert the new value
-        newArray[index] = value;
-
-        // Copy remaining elements after the inserted value
-        System.arraycopy(array, index, newArray, index + 1, array.length - index);
-
-        return newArray;
-    }
-
-    private static long getNum2Cycles(Configuration config) {
-        return config.getSpi().stream().filter(c -> c.size() == 2).count();
-    }
-
-    public static boolean areSymbolsInCyclicOrder(final float[] elements, final float[] other) {
-        int next = 0;
-
-        outer:
-        for (int i = 0; i < elements.length; i++) {
-            if (elements[i] == other[next]) {
-                for (int j = 0; j <= elements.length; j++) {
-                    int index = (i + j) % elements.length;
-                    if (Math.floor(elements[index]) == Math.floor(other[next % other.length])) {
-                        if (elements[index] == other[next % other.length]) {
-                            next++;
-                            if (next > other.length) {
-                                break outer;
-                            }
-                        } else {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-
-        return true;
-    }
-
-    private static float[] extend(final Map<Integer, Cycle> cyclesByLabel, final int label, float[] signature,
-            final int a) {
-        final Cycle cycle = cyclesByLabel.get(label).startingBy(cyclesByLabel.get(label).getMaxSymbol());
-
-        float[] copiedsignature = new float[signature.length];
-        System.arraycopy(signature, 0, copiedsignature, 0, signature.length);
-
-        for (int i = cycle.getSymbols().length - 1; i >= 0; i--) {
-            copiedsignature[cycle.getSymbols()[i]] += 0.1 * (i + 1);
-        }
-
-        float next = 0.5f;
-        val positions = new int[] { a };
-        val extension = new FloatArrayList(copiedsignature);
-        int inserted = 0;
-        for (int position : positions) {
-            extension.beforeInsert(position + inserted, label + next);
-            next -= 0.1f;
-            inserted++;
-        }
-        extension.trimToSize();
-
-        return extension.elements();
-    }
-
-    private static boolean remainsUnoriented(final List<Integer> indexes, final int... newIndices) {
-        val intervals = new HashSet<Pair<Integer, Integer>>();
-
-        for (val index : newIndices) {
-            for (int i = 0; i < indexes.size(); i++) {
-                int left = indexes.get(i);
-                int right = indexes.get((i + 1) % indexes.size());
-                if ((left < index && index <= right) ||
-                        (right < left && (left < index || index <= right))) {
-                    intervals.add(new Pair<>(left, right));
-                }
-            }
-        }
-
-        return intervals.size() == 1;
-    }
-
-    private static boolean isOriented(float[] signature, int label) {
-        for (float s : signature) {
-            if (s % 1 > 0 && Math.floor(s) == label) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static FloatArrayList unorientedExtension(final float[] signature, final int label, final int... positions) {
-        Arrays.sort(positions);
-        val extension = new FloatArrayList(signature);
-        for (int i = 0; i < positions.length; i++) {
-            extension.beforeInsert(positions[i] + i, label);
-        }
-        extension.trimToSize();
-        return extension;
-    }
-
     @SneakyThrows
     private static void makeHtmlNavigation(final Configuration configuration, final String outputDir) {
         try (val out = new PrintStream(outputDir + "/dfs/" + configuration.getSpi() + ".html")) {
@@ -519,27 +296,4 @@ public class Extensions {
         }
     }
 
-    static class SortOrExtendExtensions extends SortOrExtend {
-
-        public SortOrExtendExtensions(final Configuration extendedFrom, final Configuration configuration, final String outputDir) {
-            super(extendedFrom, configuration, outputDir);
-        }
-
-        @Override
-        protected void extend(final Configuration canonical) {
-            extendWithout2Cycles(new Pair<>(canonical.toString(), canonical))
-                    .map(extension -> new SortOrExtendExtensions(canonical, extension.getSecond(), outputDir)).
-                    forEach(ForkJoinTask::fork);
-        }
-
-        private Stream<Pair<String, Configuration>> extendWithout2Cycles(final Pair<String, Configuration> pair) {
-            val canonical = pair.getSecond();
-            if (canonical.getSpi()
-                    .stream()
-                    .anyMatch(cycle -> cycle.size() == 2)) { // if there is any 2-cycle, only type 3 extensions are allowed
-                return type3Extensions(canonical).stream().flatMap(this::extendWithout2Cycles);
-            }
-            return Stream.concat(type2Extensions(canonical).stream(), type3Extensions(canonical).stream());
-        }
-    }
 }

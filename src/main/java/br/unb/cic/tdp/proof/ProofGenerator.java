@@ -1,24 +1,5 @@
 package br.unb.cic.tdp.proof;
 
-import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
-
-import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.app.Velocity;
-
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.primitives.Ints;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
@@ -26,36 +7,52 @@ import br.unb.cic.tdp.proof.seq11_8.Extensions;
 import br.unb.cic.tdp.proof.util.MoveTreeNode;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.IntArrayList;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.primitives.Ints;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.Velocity;
+
+import java.io.Writer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static java.util.function.Predicate.not;
 
 public class ProofGenerator {
 
     static final Multimap<Integer, Pair<Configuration, List<Cycle>>> ehSortings = HashMultimap.create();
 
-    static final int[][] _4_3 = new int[][] { { 0, 2, 2, 2 } };
+    static final int[][] _4_3 = new int[][]{{0, 2, 2, 2}};
 
-    static final int[][] _8_6 = new int[][] {
-            { 0, 2, 2, 0, 2, 2, 2, 2 },
-            { 0, 2, 0, 2, 2, 2, 2, 2 },
-            { 0, 0, 2, 2, 2, 2, 2, 2 } };
+    static final int[][] _8_6 = new int[][]{
+            {0, 2, 2, 0, 2, 2, 2, 2},
+            {0, 2, 0, 2, 2, 2, 2, 2},
+            {0, 0, 2, 2, 2, 2, 2, 2}};
 
-    static final int[][] _11_8 = new int[][] {
-            { 0, 2, 2, 0, 2, 2, 2, 0, 2, 2, 2 },
-            { 0, 2, 2, 0, 2, 2, 0, 2, 2, 2, 2 },
-            { 0, 2, 2, 0, 2, 0, 2, 2, 2, 2, 2 },
-            { 0, 2, 2, 0, 0, 2, 2, 2, 2, 2, 2 },
-            { 0, 2, 0, 2, 2, 2, 2, 0, 2, 2, 2 },
-            { 0, 2, 0, 2, 2, 2, 0, 2, 2, 2, 2 },
-            { 0, 2, 0, 2, 2, 0, 2, 2, 2, 2, 2 },
-            { 0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 2 },
-            { 0, 2, 0, 0, 2, 2, 2, 2, 2, 2, 2 },
-            { 0, 0, 2, 2, 2, 2, 2, 0, 2, 2, 2 },
-            { 0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 2 },
-            { 0, 0, 2, 2, 2, 0, 2, 2, 2, 2, 2 },
-            { 0, 0, 2, 2, 0, 2, 2, 2, 2, 2, 2 },
-            { 0, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2 },
-            { 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2 }
+    static final int[][] _11_8 = new int[][]{
+            {0, 2, 2, 0, 2, 2, 2, 0, 2, 2, 2},
+            {0, 2, 2, 0, 2, 2, 0, 2, 2, 2, 2},
+            {0, 2, 2, 0, 2, 0, 2, 2, 2, 2, 2},
+            {0, 2, 2, 0, 0, 2, 2, 2, 2, 2, 2},
+            {0, 2, 0, 2, 2, 2, 2, 0, 2, 2, 2},
+            {0, 2, 0, 2, 2, 2, 0, 2, 2, 2, 2},
+            {0, 2, 0, 2, 2, 0, 2, 2, 2, 2, 2},
+            {0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 2},
+            {0, 2, 0, 0, 2, 2, 2, 2, 2, 2, 2},
+            {0, 0, 2, 2, 2, 2, 2, 0, 2, 2, 2},
+            {0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 2},
+            {0, 0, 2, 2, 2, 0, 2, 2, 2, 2, 2},
+            {0, 0, 2, 2, 0, 2, 2, 2, 2, 2, 2},
+            {0, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2},
+            {0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2}
     };
 
     static final MoveTreeNode _4_3_SEQS = new MoveTreeNode(0, new MoveTreeNode[0], null);
@@ -91,9 +88,7 @@ public class ProofGenerator {
     }
 
 //    public static void main(String[] args) throws InterruptedException {
-//        val l = List.of("(0 10 8 2)(1 9 4)(3 11 7 6 5)",
-//                "(0 9 4)(1 6 3)(2 11 10 8 7 5)",
-//                "(0 10 9 8 5 2)(1 7 4)(3 11 6)");
+//        val l = List.of("(0 2 4)(1 9 7 12)(3 11 6)(5 10 8)");
 //
 //        var pool = new ForkJoinPool();
 //        l.stream().forEach(config -> {
@@ -149,13 +144,13 @@ public class ProofGenerator {
     private static double lowestRate = 2;
 
     public static Optional<List<Cycle>> searchForSorting(final Configuration initialConfiguration, final Set<Integer> notFixableSymbols,
-            final MulticyclePermutation spi, final int[] pi, final Stack<Cycle> stack) {
+                                                         final MulticyclePermutation spi, final int[] pi, final Stack<Cycle> stack) {
         val fixedSymbols = spi.stream()
                 .filter(c -> c.size() == 1 && !notFixableSymbols.contains(c.get(0)))
                 .map(c -> c.get(0))
                 .collect(Collectors.toSet());
 
-        double minRate = 1.51;
+        double minRate = 1.77;
         double rate = (fixedSymbols.size()) / (double) stack.size();
         if (!fixedSymbols.isEmpty()) {
             if (rate >= minRate) {
@@ -248,6 +243,11 @@ public class ProofGenerator {
     }
 
     public static Optional<List<Cycle>> searchForSorting(final Configuration configuration) {
+        if (configuration.isFull() && configuration.getSpi().times(configuration.getPi()).size() > 1) {
+            System.out.println("bad extension -> " + configuration);
+            return Optional.of(List.of(Cycle.of(1, 2, 3))); // bad extension
+        }
+
         return searchForSorting(configuration, configuration.getSpi().stream().map(Cycle::getMinSymbol).collect(Collectors.toSet()),
                 configuration.getSpi(), configuration.getPi().getSymbols(), new Stack<>());
     }

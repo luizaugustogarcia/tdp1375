@@ -1,0 +1,171 @@
+package br.unb.cic.tdp.proof.seq11_8;
+
+import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
+import static br.unb.cic.tdp.base.Configuration.ofSignature;
+import static br.unb.cic.tdp.base.Configuration.signature;
+import static java.util.function.Predicate.not;
+
+import java.util.*;
+import java.util.concurrent.ForkJoinTask;
+import java.util.stream.Stream;
+
+import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.proof.util.SortOrExtend;
+import br.unb.cic.tdp.util.Pair;
+import cern.colt.list.FloatArrayList;
+import lombok.val;
+
+class SortOrExtendExtensions extends SortOrExtend {
+
+    public SortOrExtendExtensions(final Configuration extendedFrom, final Configuration configuration, final String outputDir) {
+        super(extendedFrom, configuration, outputDir);
+    }
+
+    /*
+     * Type 1 extension.
+     */
+    static List<Pair<String, Configuration>> type1Extensions(final Configuration config) {
+        val result = new ArrayList<Pair<String, Configuration>>();
+
+        val newCycleLabel = config.getSpi().size() + 1;
+
+        val signature = signature(config.getSpi(), config.getPi());
+
+        for (int i = 0; i < signature.length; i++) {
+            if (config.getOpenGates().contains(i)) {
+                for (int b = 0; b < signature.length; b++) {
+                    for (int c = b; c < signature.length; c++) {
+                        if (!(i == b && b == c)) {
+                            result.add(new Pair<>(String.format("a=%d b=%d c=%d", i, b, c),
+                                    ofSignature(unorientedExtension(signature, newCycleLabel, i, b, c).elements())));
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /*
+     * Type 2 extension.
+     */
+    static List<Pair<String, Configuration>> type2Extensions(final Configuration config) {
+        if (!config.isFull()) {
+            return Collections.emptyList();
+        }
+
+        val result = new ArrayList<Pair<String, Configuration>>();
+
+        val newCycleLabel = config.getSpi().size() + 1;
+
+        val signature = signature(config.getSpi(), config.getPi());
+
+        for (int a = 0; a < signature.length; a++) {
+            for (int b = a; b < signature.length; b++) {
+                for (int c = b; c < signature.length; c++) {
+                    if (!(a == b && b == c)) {
+                        result.add(new Pair<>(String.format("a=%d b=%d c=%d", a, b, c),
+                                ofSignature(unorientedExtension(signature, newCycleLabel, a, b, c).elements())));
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    /*
+     * Type 3 extension.
+     */
+    static List<Pair<String, Configuration>> type3Extensions(final Configuration config) {
+        val result = new ArrayList<Pair<String, Configuration>>();
+
+        val signature = signature(config.getSpi(), config.getPi());
+        val cyclesSizes = new HashMap<Integer, Integer>();
+        val indexesByLabel = new HashMap<Integer, List<Integer>>();
+        for (int i = 0; i < signature.length; i++) {
+            cyclesSizes.putIfAbsent((int) Math.floor(signature[i]), 0);
+            cyclesSizes.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> v + 1);
+            indexesByLabel.computeIfAbsent((int) Math.floor(signature[i]), s -> new ArrayList<>());
+            int finalI = i;
+            indexesByLabel.computeIfPresent((int) Math.floor(signature[i]), (k, v) -> {
+                v.add(finalI);
+                return v;
+            });
+        }
+
+        val cycleIndex = cycleIndex(config.getSpi(), config.getPi());
+        val cyclesByLabel = new HashMap<Integer, Cycle>();
+        for (int i = 0; i < signature.length; i++) {
+            final int _i = i;
+            cyclesByLabel.computeIfAbsent((int) Math.floor(signature[i]), k -> cycleIndex[config.getPi().get(_i)]);
+        }
+
+        for (int label = 1; label <= config.getSpi().size(); label++) {
+            var nextLabel = label + 0.01F;
+            val firstIndex = indexesByLabel.get(label).get(0);
+            if (Math.floor(signature[firstIndex]) == signature[firstIndex]) {
+                // unoriented cycle
+                val indexes = indexesByLabel.get(label);
+                for (int i = 0; i < indexes.size(); i++) {
+                    signature[indexes.get(i)] += 0.01F * (indexes.size() - i);
+                    if (signature[indexes.get(i)] + 0.01 > nextLabel) {
+                        nextLabel = signature[indexes.get(i)] + 0.01F;
+                    }
+                }
+            } else {
+                // oriented
+                nextLabel = (indexesByLabel.get(label).size() + 1) * 0.01F + label;
+            }
+
+            for (int a = 0; a < signature.length; a++) {
+                for (int b = 0; b < signature.length; b++) {
+                    if (a != b) {
+                        var extendedSignature = insertAtPosition(signature, nextLabel, a);
+                        extendedSignature = insertAtPosition(signature, nextLabel + 0.01F, b);
+                        val extension = ofSignature(extendedSignature);
+                        result.add(new Pair<>(String.format("a=%d, b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+    public static float[] insertAtPosition(float[] array, float value, int index) {
+        // Create a new array with extra space for the new element
+        float[] newArray = new float[array.length + 1];
+
+        // Copy elements before the insertion index
+        System.arraycopy(array, 0, newArray, 0, index);
+
+        // Insert the new value
+        newArray[index] = value;
+
+        // Copy remaining elements after the inserted value
+        System.arraycopy(array, index, newArray, index + 1, array.length - index);
+
+        return newArray;
+    }
+
+    @Override
+    protected void extend(final Configuration canonical) {
+        Stream.concat(Stream.concat(type1Extensions(canonical).stream(), type2Extensions(canonical).stream()),
+                        type3Extensions(canonical).stream())
+                .map(extension -> new SortOrExtendExtensions(canonical, extension.getSecond(), outputDir)).
+                forEach(ForkJoinTask::fork);
+    }
+
+    private static FloatArrayList unorientedExtension(final float[] signature, final int label, final int... positions) {
+        Arrays.sort(positions);
+        val extension = new FloatArrayList(signature);
+        for (int i = 0; i < positions.length; i++) {
+            extension.beforeInsert(positions[i] + i, label);
+        }
+        extension.trimToSize();
+        return extension;
+    }
+}

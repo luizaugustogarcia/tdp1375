@@ -37,12 +37,16 @@ public class Configuration {
     private final Signature signature;
 
     @ToString.Exclude
+    private final Cycle[] cycleIndex;
+
+    @ToString.Exclude
     private Configuration canonical;
 
     public Configuration(final MulticyclePermutation spi, final Cycle pi) {
         this.spi = spi;
         this.pi = pi;
-        this.signature = new Signature(pi, signature(spi, pi), false);
+        this.cycleIndex = cycleIndex(spi, pi);
+        this.signature = new Signature(pi, signature(spi, pi, cycleIndex), false);
     }
 
     public Configuration(final MulticyclePermutation spi) {
@@ -54,8 +58,11 @@ public class Configuration {
     }
 
     public static float[] signature(final Collection<Cycle> spi, final Cycle pi) {
+        return signature(spi, pi, cycleIndex(spi, pi));
+    }
+
+    private static float[] signature(final Collection<Cycle> spi, final Cycle pi, final Cycle[] cycleIndex) {
         val labelByCycle = new HashMap<Cycle, Float>();
-        val cycleIndex = cycleIndex(spi, pi);
         val orientedCycles = spi.stream().filter(c -> !areSymbolsInCyclicOrder(pi.getInverse(), c.getSymbols()))
                 .collect(Collectors.toSet());
         val symbolIndexByOrientedCycle = new HashMap<Cycle, int[]>();
@@ -196,7 +203,7 @@ public class Configuration {
 
     @ToString.Include
     public boolean isFull() {
-        return getNumberOfOpenGates() == 0;
+        return openGates().findAny().isEmpty();
     }
 
     @ToString.Include
@@ -231,8 +238,40 @@ public class Configuration {
         return getCanonical().signature.equals(other.getCanonical().signature);
     }
 
+    @ToString.Include
     public Set<Integer> getOpenGates() {
-        return CommonOperations.getOpenGates(spi, pi);
+        return openGates().collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    public Stream<Integer> openGates() {
+        val n = signature.getContent().length;
+
+        return IntStream.range(0, n)
+                .boxed()
+                .flatMap(i -> {
+                    val current = signature.getContent()[i];
+                    val next = signature.getContent()[(i + 1) % n];
+
+                    if (current == next) {
+                        // open gate from unoriented cycle
+                        return Stream.of(i);
+                    } else {
+                        val currentLabel = Math.floor(current);
+                        val nextLabel = Math.floor(next);
+                        if (currentLabel == nextLabel) {
+                            val orientedCycle = cycleIndex[i];
+                            int currentIndex = (int) Math.round(current * 100F - currentLabel * 100);
+                            int nextIndex = (int) Math.round(next * 100F - nextLabel * 100F);
+                            if (currentIndex % orientedCycle.size() == (nextIndex + 1) % orientedCycle.size()) {
+                                // open gate from oriented cycle
+                                return Stream.of(i);
+                            }
+                        }
+                    }
+
+                    return Stream.empty();
+                })
+                .map(og -> (og + 1) % n);
     }
 
     public static class Signature {
@@ -292,17 +331,6 @@ public class Configuration {
     }
 
     public static void main(String[] args) {
-        var spi = new MulticyclePermutation("(0 11 1)(2 13 9)(3 8 6)(4 14 12)(5 10 7)");
-        var pi = CANONICAL_PI[15];
-        var sigma = spi.times(pi);
-
-        System.out.println(new Configuration(spi, pi));
-
-        for (int i = 1; i < pi.size() - 1; i++) {
-            System.out.print(i + "-");
-            pi = pi.conjugateBy(sigma).asNCycle();
-            spi = sigma.times(pi.getInverse());
-            System.out.println(new Configuration(spi, pi));
-        }
+        System.out.println(new Configuration("(0 7 3)(1 6 2 8 5 4)"));
     }
 }
