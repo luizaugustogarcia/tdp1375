@@ -3,7 +3,6 @@ package br.unb.cic.tdp.proof.seq11_8;
 import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
 import static br.unb.cic.tdp.base.Configuration.ofSignature;
 import static br.unb.cic.tdp.base.Configuration.signature;
-import static java.util.function.Predicate.not;
 
 import java.util.*;
 import java.util.concurrent.ForkJoinTask;
@@ -80,6 +79,8 @@ class SortOrExtendExtensions extends SortOrExtend {
      * Type 3 extension.
      */
     static List<Pair<String, Configuration>> type3Extensions(final Configuration config) {
+        val openGates = config.getOpenGates().size();
+
         val result = new ArrayList<Pair<String, Configuration>>();
 
         val signature = signature(config.getSpi(), config.getPi());
@@ -121,11 +122,11 @@ class SortOrExtendExtensions extends SortOrExtend {
             }
 
             for (int a = 0; a < signature.length; a++) {
-                for (int b = 0; b < signature.length; b++) {
-                    if (a != b) {
-                        var extendedSignature = insertAtPosition(signature, nextLabel, a);
-                        extendedSignature = insertAtPosition(signature, nextLabel + 0.01F, b);
-                        val extension = ofSignature(extendedSignature);
+                val extendedSignature = insertAtPosition(signature, nextLabel, a);
+                for (int b = 0; b < extendedSignature.length; b++) {
+                    val extendedSignaturePrime = insertAtPosition(extendedSignature, nextLabel + 0.01F, b);
+                    val extension = ofSignature(extendedSignaturePrime);
+                    if (closesOneOpenGate(openGates, extension) || extension.getOpenGates().size() <= 2) {
                         result.add(new Pair<>(String.format("a=%d, b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
                     }
                 }
@@ -133,6 +134,10 @@ class SortOrExtendExtensions extends SortOrExtend {
         }
 
         return result;
+    }
+
+    private static boolean closesOneOpenGate(final int openGates, final Configuration extension) {
+        return openGates > 0 && extension.getOpenGates().size() == openGates - 1;
     }
 
     public static float[] insertAtPosition(float[] array, float value, int index) {
@@ -155,6 +160,7 @@ class SortOrExtendExtensions extends SortOrExtend {
     protected void extend(final Configuration canonical) {
         Stream.concat(Stream.concat(type1Extensions(canonical).stream(), type2Extensions(canonical).stream()),
                         type3Extensions(canonical).stream())
+                .filter(pair -> pair.getSecond().getOpenGates().size() <= 2)
                 .map(extension -> new SortOrExtendExtensions(canonical, extension.getSecond(), outputDir)).
                 forEach(ForkJoinTask::fork);
     }
