@@ -1,24 +1,28 @@
 package br.unb.cic.tdp.proof.seq11_8;
 
-import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
-import static br.unb.cic.tdp.base.Configuration.ofSignature;
-import static br.unb.cic.tdp.base.Configuration.signature;
-
-import java.util.*;
-import java.util.concurrent.ForkJoinTask;
-import java.util.stream.Stream;
-
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.proof.util.SortOrExtend;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.FloatArrayList;
 import lombok.val;
 
+import java.util.*;
+import java.util.concurrent.ForkJoinTask;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+
+import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
+import static br.unb.cic.tdp.base.Configuration.ofSignature;
+import static br.unb.cic.tdp.base.Configuration.signature;
+
 class SortOrExtendExtensions extends SortOrExtend {
 
-    public SortOrExtendExtensions(final Configuration extendedFrom, final Configuration configuration, final String outputDir) {
-        super(extendedFrom, configuration, outputDir);
+    public SortOrExtendExtensions(final Configuration extendedFrom,
+                                  final Configuration configuration,
+                                  final Predicate<Configuration> shouldStop,
+                                  final Predicate<Configuration> isValidExtension,
+                                  final ProofStorage storage) {
+        super(extendedFrom, configuration, shouldStop, isValidExtension, storage);
     }
 
     /*
@@ -141,18 +145,10 @@ class SortOrExtendExtensions extends SortOrExtend {
     }
 
     public static float[] insertAtPosition(float[] array, float value, int index) {
-        // Create a new array with extra space for the new element
-        float[] newArray = new float[array.length + 1];
-
-        // Copy elements before the insertion index
+        val newArray = new float[array.length + 1];
         System.arraycopy(array, 0, newArray, 0, index);
-
-        // Insert the new value
         newArray[index] = value;
-
-        // Copy remaining elements after the inserted value
         System.arraycopy(array, index, newArray, index + 1, array.length - index);
-
         return newArray;
     }
 
@@ -161,7 +157,7 @@ class SortOrExtendExtensions extends SortOrExtend {
         Stream.concat(Stream.concat(type1Extensions(canonical).stream(), type2Extensions(canonical).stream()),
                         type3Extensions(canonical).stream())
                 .filter(pair -> pair.getSecond().getOpenGates().size() <= 2)
-                .map(extension -> new SortOrExtendExtensions(canonical, extension.getSecond(), outputDir)).
+                .map(extension -> new SortOrExtendExtensions(canonical, extension.getSecond(), shouldStop, isValidExtension, storage)).
                 forEach(ForkJoinTask::fork);
     }
 

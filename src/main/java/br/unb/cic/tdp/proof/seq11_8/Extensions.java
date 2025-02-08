@@ -1,8 +1,13 @@
 package br.unb.cic.tdp.proof.seq11_8;
 
-import static br.unb.cic.tdp.base.CommonOperations.is11_8;
-import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
-import static br.unb.cic.tdp.proof.seq11_8.SortOrExtendExtensions.*;
+import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.util.Pair;
+import com.google.common.base.Throwables;
+import lombok.SneakyThrows;
+import lombok.val;
+import org.apache.commons.io.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,43 +21,51 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import org.apache.commons.io.FileUtils;
-
-import com.google.common.base.Throwables;
-import br.unb.cic.tdp.base.Configuration;
-import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.util.Pair;
-import lombok.SneakyThrows;
-import lombok.val;
+import static br.unb.cic.tdp.base.CommonOperations.is11_8;
+import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
+import static br.unb.cic.tdp.proof.seq11_8.SortOrExtendExtensions.*;
 
 public class Extensions {
 
     @SneakyThrows
     public static void generate(final String outputDir) {
-        Files.createDirectories(Paths.get(outputDir + "/dfs/"));
-        Files.createDirectories(Paths.get(outputDir + "/dfs/working/"));
-        Files.createDirectories(Paths.get(outputDir + "/dfs/bad-cases/"));
+        val dfsDir = outputDir + "/dfs/";
 
-        cleanUpIncompleteCases(outputDir + "/dfs/");
+        Files.createDirectories(Paths.get(dfsDir));
+        Files.createDirectories(Paths.get(dfsDir + "/working/"));
+        Files.createDirectories(Paths.get(dfsDir + "/bad-cases/"));
 
-        cleanUpBadExtensionAndInvalidFiles(outputDir + "/dfs/");
+        cleanUpIncompleteCases(dfsDir);
+
+        cleanUpBadExtensionAndInvalidFiles(dfsDir);
 
         // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the dfs directory.
         // Otherwise, it will wrongly skip cases.
 
-        var pool = new ForkJoinPool();
+        val storage = new DefaultProofStorage(dfsDir);
+        val root = Configuration.ofSignature(new float[]{1F});
+
+        final Predicate<Configuration> shouldStop = configuration -> Boolean.FALSE;
+        final Predicate<Configuration> isValidExtension = configuration -> {
+            val isFull = configuration.isFull();
+
+            if (isFull && configuration.getSpi().times(configuration.getPi()).size() > 1) {
+                System.out.println("invalid full configuration -> " + configuration.getSpi());
+                return false;
+            }
+            return true;
+        };
+
+        val pool = new ForkJoinPool();
         // oriented 5-cycle
-        pool.execute(new SortOrExtendExtensions(Configuration.ofSignature(new float[] { 1F }),
-                new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
+        pool.execute(new SortOrExtendExtensions(root, new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), shouldStop, isValidExtension, storage));
         // interleaving pair
-        pool.execute(new SortOrExtendExtensions(Configuration.ofSignature(new float[] { 1F }),
-                new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
+        pool.execute(new SortOrExtendExtensions(root, new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), shouldStop, isValidExtension, storage));
         // intersecting pair
-        pool.execute(new SortOrExtendExtensions(Configuration.ofSignature(new float[] { 1F }),
-                new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
+        pool.execute(new SortOrExtendExtensions(root, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), shouldStop, isValidExtension, storage));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
@@ -64,8 +77,7 @@ public class Extensions {
                         () -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
 
         executor.shutdown();
-        // boundless
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
     }
 
     @SneakyThrows
@@ -172,7 +184,7 @@ public class Extensions {
 
     @SneakyThrows
     private static void renderExtensions(final List<Pair<String, Configuration>> extensions, final PrintStream out,
-            final String outputDir) {
+                                         final String outputDir) {
         for (val extension : extensions) {
             val configuration = extension.getSecond();
             val canonical = extension.getSecond().getCanonical();

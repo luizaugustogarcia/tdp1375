@@ -1,7 +1,19 @@
 package br.unb.cic.tdp.proof;
 
-import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.proof.seq11_8.Extensions;
+import br.unb.cic.tdp.proof.util.MoveTreeNode;
+import br.unb.cic.tdp.util.Pair;
+import cern.colt.list.IntArrayList;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.primitives.Ints;
+import lombok.SneakyThrows;
+import lombok.val;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.Velocity;
 
 import java.io.Writer;
 import java.nio.file.Files;
@@ -10,49 +22,36 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.app.Velocity;
-
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
-import com.google.common.primitives.Ints;
-import br.unb.cic.tdp.base.Configuration;
-import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.seq11_8.Extensions;
-import br.unb.cic.tdp.proof.util.MoveTreeNode;
-import br.unb.cic.tdp.util.Pair;
-import cern.colt.list.IntArrayList;
-import lombok.SneakyThrows;
-import lombok.val;
+import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class ProofGenerator {
 
     static final Multimap<Integer, Pair<Configuration, List<Cycle>>> ehSortings = HashMultimap.create();
 
-    static final int[][] _4_3 = new int[][] { { 0, 2, 2, 2 } };
+    static final int[][] _4_3 = new int[][]{{0, 2, 2, 2}};
 
-    static final int[][] _8_6 = new int[][] {
-            { 0, 2, 2, 0, 2, 2, 2, 2 },
-            { 0, 2, 0, 2, 2, 2, 2, 2 },
-            { 0, 0, 2, 2, 2, 2, 2, 2 } };
+    static final int[][] _8_6 = new int[][]{
+            {0, 2, 2, 0, 2, 2, 2, 2},
+            {0, 2, 0, 2, 2, 2, 2, 2},
+            {0, 0, 2, 2, 2, 2, 2, 2}};
 
-    static final int[][] _11_8 = new int[][] {
-            { 0, 2, 2, 0, 2, 2, 2, 0, 2, 2, 2 },
-            { 0, 2, 2, 0, 2, 2, 0, 2, 2, 2, 2 },
-            { 0, 2, 2, 0, 2, 0, 2, 2, 2, 2, 2 },
-            { 0, 2, 2, 0, 0, 2, 2, 2, 2, 2, 2 },
-            { 0, 2, 0, 2, 2, 2, 2, 0, 2, 2, 2 },
-            { 0, 2, 0, 2, 2, 2, 0, 2, 2, 2, 2 },
-            { 0, 2, 0, 2, 2, 0, 2, 2, 2, 2, 2 },
-            { 0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 2 },
-            { 0, 2, 0, 0, 2, 2, 2, 2, 2, 2, 2 },
-            { 0, 0, 2, 2, 2, 2, 2, 0, 2, 2, 2 },
-            { 0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 2 },
-            { 0, 0, 2, 2, 2, 0, 2, 2, 2, 2, 2 },
-            { 0, 0, 2, 2, 0, 2, 2, 2, 2, 2, 2 },
-            { 0, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2 },
-            { 0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2 }
+    static final int[][] _11_8 = new int[][]{
+            {0, 2, 2, 0, 2, 2, 2, 0, 2, 2, 2},
+            {0, 2, 2, 0, 2, 2, 0, 2, 2, 2, 2},
+            {0, 2, 2, 0, 2, 0, 2, 2, 2, 2, 2},
+            {0, 2, 2, 0, 0, 2, 2, 2, 2, 2, 2},
+            {0, 2, 0, 2, 2, 2, 2, 0, 2, 2, 2},
+            {0, 2, 0, 2, 2, 2, 0, 2, 2, 2, 2},
+            {0, 2, 0, 2, 2, 0, 2, 2, 2, 2, 2},
+            {0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 2},
+            {0, 2, 0, 0, 2, 2, 2, 2, 2, 2, 2},
+            {0, 0, 2, 2, 2, 2, 2, 0, 2, 2, 2},
+            {0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 2},
+            {0, 0, 2, 2, 2, 0, 2, 2, 2, 2, 2},
+            {0, 0, 2, 2, 0, 2, 2, 2, 2, 2, 2},
+            {0, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2},
+            {0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2}
     };
 
     static final MoveTreeNode _4_3_SEQS = new MoveTreeNode(0, new MoveTreeNode[0], null);
@@ -144,7 +143,7 @@ public class ProofGenerator {
     private static double lowestRate = 2;
 
     public static Optional<List<int[]>> searchForSorting(final Configuration initialConfiguration, final Set<Integer> notFixableSymbols,
-            final int[] spi, final int[] pi, final Stack<int[]> stack) {
+                                                         final int[] spi, final int[] pi, final Stack<int[]> stack) {
         val nonFixedSymbols = new HashSet<>();
         val fixedSymbols = new HashSet<>();
         for (int i = 0; i < spi.length; i++) {
@@ -157,7 +156,7 @@ public class ProofGenerator {
             }
         }
 
-        double minRate = 1.57;
+        double minRate = 1.6;
         double rate = (fixedSymbols.size()) / (double) stack.size();
         if (!fixedSymbols.isEmpty()) {
             if (rate >= minRate) {
@@ -185,7 +184,7 @@ public class ProofGenerator {
                             if (!fixedSymbols.contains(pi[k])) {
                                 int a = pi[i], b = pi[j], c = pi[k];
 
-                                int[] m = { a, b, c };
+                                int[] m = {a, b, c};
                                 stack.push(m);
 
                                 sorting =
@@ -245,19 +244,12 @@ public class ProofGenerator {
     }
 
     public static Optional<List<Cycle>> searchForSorting(final Configuration configuration) {
-        val isFull = configuration.isFull();
-
-        if (isFull && configuration.getSpi().times(configuration.getPi()).size() > 1) {
-            System.out.println("invalid full configuration -> " + configuration.getSpi());
-            return Optional.of(List.of(Cycle.of(1, 2, 3))); // invalid extension
-        }
-
         val sorting =
                 searchForSorting(configuration, configuration.getSpi().stream().map(Cycle::getMinSymbol).collect(Collectors.toSet()),
                         twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>())
                         .map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
 
-        if (isFull && sorting.isEmpty()) {
+        if (sorting.isEmpty() && configuration.isFull()) {
             System.out.println("bad component -> " + configuration.getSpi());
         }
 
@@ -296,7 +288,7 @@ public class ProofGenerator {
     }
 
     public static void renderSorting(final Configuration extendedFrom, final Configuration canonicalConfig, final List<Cycle> sorting,
-            final Writer writer) {
+                                     final Writer writer) {
         VelocityContext context = new VelocityContext();
 
         context.put("extendedFrom", extendedFrom.getSpi());

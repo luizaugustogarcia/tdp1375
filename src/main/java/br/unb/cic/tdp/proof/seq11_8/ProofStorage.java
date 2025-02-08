@@ -1,0 +1,21 @@
+package br.unb.cic.tdp.proof.seq11_8;
+
+import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
+
+import java.util.List;
+
+public interface ProofStorage {
+
+    boolean isAlreadySorted(Configuration configuration);
+
+    boolean isBadCase(Configuration configuration);
+
+    boolean tryLock(Configuration configuration);
+
+    void unlock(Configuration configuration);
+
+    void markBadCase(Configuration configuration);
+
+    void saveSorting(Configuration extendedFrom, Configuration configuration, List<Cycle> sorting);
+}

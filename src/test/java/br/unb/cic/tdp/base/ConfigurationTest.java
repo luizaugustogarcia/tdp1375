@@ -1,11 +1,7 @@
 package br.unb.cic.tdp.base;
 
-import br.unb.cic.tdp.permutation.Cycle;
-import lombok.val;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,6 +19,4 @@ public class ConfigurationTest {
         assertTrue(new Configuration("(0 1 10)(2 9 5)(3 11 7)(4 8 6)").isFull());
         assertFalse(new Configuration("(0 7 3)(1 6 2 8 5 4)").isFull());
     }
-
-
 }
