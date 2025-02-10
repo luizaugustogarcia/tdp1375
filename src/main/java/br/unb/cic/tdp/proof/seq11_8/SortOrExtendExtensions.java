@@ -20,9 +20,8 @@ class SortOrExtendExtensions extends SortOrExtend {
     public SortOrExtendExtensions(final Configuration extendedFrom,
                                   final Configuration configuration,
                                   final Predicate<Configuration> shouldStop,
-                                  final Predicate<Configuration> isValidExtension,
                                   final ProofStorage storage) {
-        super(extendedFrom, configuration, shouldStop, isValidExtension, storage);
+        super(extendedFrom, configuration, shouldStop, storage);
     }
 
     /*
@@ -157,7 +156,7 @@ class SortOrExtendExtensions extends SortOrExtend {
         Stream.concat(Stream.concat(type1Extensions(canonical).stream(), type2Extensions(canonical).stream()),
                         type3Extensions(canonical).stream())
                 .filter(pair -> pair.getSecond().getOpenGates().size() <= 2)
-                .map(extension -> new SortOrExtendExtensions(canonical, extension.getSecond(), shouldStop, isValidExtension, storage)).
+                .map(extension -> new SortOrExtendExtensions(canonical, extension.getSecond(), shouldStop, storage)).
                 forEach(ForkJoinTask::fork);
     }
 

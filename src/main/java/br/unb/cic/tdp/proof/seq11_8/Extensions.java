@@ -52,13 +52,13 @@ public class Extensions {
             return true;
         };
 
-        val pool = new ForkJoinPool();
+        val pool = new ForkJoinPool(Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism", Runtime.getRuntime().availableProcessors() + "")));
         // oriented 5-cycle
-        pool.execute(new SortOrExtendExtensions(root, new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), shouldStop, isValidExtension, storage));
+        pool.execute(new SortOrExtendExtensions(root, new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), shouldStop, storage));
         // interleaving pair
-        pool.execute(new SortOrExtendExtensions(root, new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), shouldStop, isValidExtension, storage));
+        pool.execute(new SortOrExtendExtensions(root, new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), shouldStop, storage));
         // intersecting pair
-        pool.execute(new SortOrExtendExtensions(root, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), shouldStop, isValidExtension, storage));
+        pool.execute(new SortOrExtendExtensions(root, new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), shouldStop, storage));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);

@@ -14,14 +14,13 @@ public abstract class SortOrExtend extends RecursiveAction {
     final Configuration extendedFrom;
     final Configuration configuration;
     final Predicate<Configuration> shouldStop;
-    final Predicate<Configuration> isValidExtension;
     final ProofStorage storage;
 
     @Override
     protected void compute() {
         val canonical = configuration.getCanonical();
 
-        if (!isValidExtension.test(canonical) || storage.isAlreadySorted(canonical)) {
+        if (storage.isAlreadySorted(canonical)) {
             return;
         }
 
