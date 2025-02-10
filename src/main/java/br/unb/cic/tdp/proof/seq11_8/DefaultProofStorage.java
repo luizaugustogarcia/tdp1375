@@ -18,24 +18,18 @@ import static br.unb.cic.tdp.proof.ProofGenerator.renderSorting;
 @RequiredArgsConstructor
 public class DefaultProofStorage implements ProofStorage {
     private final Map<Configuration, Boolean> working = new ConcurrentHashMap<>();
-    private final LRUMap sortedCache = new LRUMap(10_000);
-    private final LRUMap badCasesCache = new LRUMap(10_000);
+    private final Map<Configuration, Boolean> sortedCache = new LRUMap(10_000);
+    private final Map<Configuration, Boolean> badCasesCache = new LRUMap(10_000);
     private final String outputDir;
 
     @Override
     public boolean isAlreadySorted(final Configuration configuration) {
-        if (!sortedCache.containsKey(configuration)) {
-            return new File(outputDir + "/working/" + configuration.getSpi()).exists();
-        }
-        return true;
+        return sortedCache.computeIfAbsent(configuration, c -> new File(outputDir + "/" + configuration.getSpi() + ".html").exists());
     }
 
     @Override
     public boolean isBadCase(final Configuration configuration) {
-        if (!badCasesCache.containsKey(configuration)) {
-            return new File(outputDir + "/bad-cases/" + configuration.getSpi()).exists();
-        }
-        return true;
+        return badCasesCache.computeIfAbsent(configuration, c -> new File(outputDir + "/bad-cases/" + configuration.getSpi()).exists());
     }
 
     @SneakyThrows
@@ -51,15 +45,15 @@ public class DefaultProofStorage implements ProofStorage {
     @SneakyThrows
     @Override
     public void unlock(final Configuration configuration) {
-        working.remove(configuration);
         new File(outputDir + "/working/" + configuration.getSpi()).delete();
+        working.remove(configuration);
     }
 
     @SneakyThrows
     @Override
     public void markBadCase(final Configuration configuration) {
-        badCasesCache.put(configuration, Boolean.TRUE);
         new File(outputDir + "/bad-cases/" + configuration.getSpi()).createNewFile();
+        badCasesCache.put(configuration, Boolean.TRUE);
     }
 
     @SneakyThrows
@@ -67,11 +61,10 @@ public class DefaultProofStorage implements ProofStorage {
     public void saveSorting(final Configuration extendedFrom,
                             final Configuration configuration,
                             final List<Cycle> sorting) {
-        sortedCache.put(configuration, Boolean.TRUE);
-
         val file = new File(outputDir + "/" + configuration.getSpi() + ".html");
         try (val writer = new FileWriter(file)) {
             renderSorting(extendedFrom, configuration, sorting, writer);
         }
+        sortedCache.put(configuration, Boolean.TRUE);
     }
 }

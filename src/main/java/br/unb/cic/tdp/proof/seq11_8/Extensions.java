@@ -38,13 +38,6 @@ public class Extensions {
         Files.createDirectories(Paths.get(dfsDir + "/working/"));
         Files.createDirectories(Paths.get(dfsDir + "/bad-cases/"));
 
-        cleanUpIncompleteCases(dfsDir);
-
-        cleanUpBadExtensionAndInvalidFiles(dfsDir);
-
-        // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the dfs directory.
-        // Otherwise, it will wrongly skip cases.
-
         val storage = new DefaultProofStorage(dfsDir);
         val root = Configuration.ofSignature(new float[]{1F});
 

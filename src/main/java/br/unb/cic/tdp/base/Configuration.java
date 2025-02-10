@@ -331,6 +331,6 @@ public class Configuration {
     }
 
     public static void main(String[] args) {
-        System.out.println(new Configuration("(0 7 3)(1 6 2 8 5 4)"));
+        System.out.println(new Configuration("(0 4 2)(1 6 3)(5 7)"));
     }
 }

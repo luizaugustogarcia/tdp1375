@@ -19,28 +19,30 @@ public abstract class SortOrExtend extends RecursiveAction {
 
     @Override
     protected void compute() {
-        if (!isValidExtension.test(configuration) || storage.isAlreadySorted(configuration)) {
+        val canonical = configuration.getCanonical();
+
+        if (!isValidExtension.test(canonical) || storage.isAlreadySorted(canonical)) {
             return;
         }
 
-        if (!storage.isBadCase(configuration)) {
-            if (storage.tryLock(configuration)) {
+        if (!storage.isBadCase(canonical)) {
+            if (storage.tryLock(canonical)) {
                 try {
-                    val sorting = searchForSorting(configuration);
+                    val sorting = searchForSorting(canonical);
                     if (sorting.isPresent()) {
-                        storage.saveSorting(extendedFrom, configuration, sorting.get());
+                        storage.saveSorting(extendedFrom, canonical, sorting.get());
                         return;
                     } else {
-                        storage.markBadCase(configuration);
+                        storage.markBadCase(canonical);
                     }
                 } finally {
-                    storage.unlock(configuration);
+                    storage.unlock(canonical);
                 }
             }
         }
 
-        if (!shouldStop.test(configuration)) {
-            extend(configuration);
+        if (!shouldStop.test(canonical)) {
+            extend(canonical);
         }
     }
 
