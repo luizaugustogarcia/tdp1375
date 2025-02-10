@@ -1,13 +1,8 @@
 package br.unb.cic.tdp.proof.seq11_8;
 
-import br.unb.cic.tdp.base.Configuration;
-import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.util.Pair;
-import com.google.common.base.Throwables;
-import lombok.SneakyThrows;
-import lombok.val;
-import org.apache.commons.io.FileUtils;
+import static br.unb.cic.tdp.base.CommonOperations.is11_8;
+import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
+import static br.unb.cic.tdp.proof.seq11_8.SortOrExtendExtensions.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -18,15 +13,20 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static br.unb.cic.tdp.base.CommonOperations.is11_8;
-import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
-import static br.unb.cic.tdp.proof.seq11_8.SortOrExtendExtensions.*;
+import org.apache.commons.io.FileUtils;
+
+import com.google.common.base.Throwables;
+import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.util.Pair;
+import lombok.SneakyThrows;
+import lombok.val;
 
 public class Extensions {
 
@@ -38,21 +38,15 @@ public class Extensions {
         Files.createDirectories(Paths.get(dfsDir + "/working/"));
         Files.createDirectories(Paths.get(dfsDir + "/bad-cases/"));
 
+        // TODO delete bad-cases and working files before starting
+
         val storage = new DefaultProofStorage(dfsDir);
-        val root = Configuration.ofSignature(new float[]{1F});
+        val root = Configuration.ofSignature(new float[] { 1F });
 
         final Predicate<Configuration> shouldStop = configuration -> Boolean.FALSE;
-        final Predicate<Configuration> isValidExtension = configuration -> {
-            val isFull = configuration.isFull();
 
-            if (isFull && configuration.getSpi().times(configuration.getPi()).size() > 1) {
-                System.out.println("invalid full configuration -> " + configuration.getSpi());
-                return false;
-            }
-            return true;
-        };
-
-        val pool = new ForkJoinPool(Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism", Runtime.getRuntime().availableProcessors() + "")));
+        val pool = new ForkJoinPool(Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
+                Runtime.getRuntime().availableProcessors() + "")));
         // oriented 5-cycle
         pool.execute(new SortOrExtendExtensions(root, new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), shouldStop, storage));
         // interleaving pair
@@ -63,14 +57,14 @@ public class Extensions {
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 
-        val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
-                .map(Path::toFile)
-                .forEach(file -> executor.submit(
-                        () -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
-
-        executor.shutdown();
-        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+//        val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+//        Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
+//                .map(Path::toFile)
+//                .forEach(file -> executor.submit(
+//                        () -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
+//
+//        executor.shutdown();
+//        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
     }
 
     @SneakyThrows
@@ -177,7 +171,7 @@ public class Extensions {
 
     @SneakyThrows
     private static void renderExtensions(final List<Pair<String, Configuration>> extensions, final PrintStream out,
-                                         final String outputDir) {
+            final String outputDir) {
         for (val extension : extensions) {
             val configuration = extension.getSecond();
             val canonical = extension.getSecond().getCanonical();
