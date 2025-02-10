@@ -1,13 +1,13 @@
 package br.unb.cic.tdp.proof.seq11_8;
 
-import br.unb.cic.tdp.base.Configuration;
-import lombok.AllArgsConstructor;
-import lombok.val;
+import static br.unb.cic.tdp.proof.ProofGenerator.searchForSorting;
 
 import java.util.concurrent.RecursiveAction;
 import java.util.function.Predicate;
 
-import static br.unb.cic.tdp.proof.ProofGenerator.searchForSorting;
+import br.unb.cic.tdp.base.Configuration;
+import lombok.AllArgsConstructor;
+import lombok.val;
 
 @AllArgsConstructor
 public abstract class SortOrExtend extends RecursiveAction {
@@ -37,11 +37,10 @@ public abstract class SortOrExtend extends RecursiveAction {
                 } finally {
                     storage.unlock(canonical);
                 }
-            }
-        }
-
-        if (!shouldStop.test(canonical)) {
-            extend(canonical);
+                if (!shouldStop.test(canonical)) {
+                    extend(canonical);
+                }
+            } // else: another thread is already working on this configuration
         }
     }
 
