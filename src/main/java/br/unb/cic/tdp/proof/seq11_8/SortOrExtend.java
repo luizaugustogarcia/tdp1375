@@ -34,11 +34,11 @@ public abstract class SortOrExtend extends RecursiveAction {
                     } else {
                         storage.markBadCase(canonical);
                     }
+                    if (!shouldStop.test(canonical)) {
+                        extend(canonical);
+                    }
                 } finally {
                     storage.unlock(canonical);
-                }
-                if (!shouldStop.test(canonical)) {
-                    extend(canonical);
                 }
             } // else: another thread is already working on this configuration
         }
