@@ -129,7 +129,7 @@ class SortOrExtendExtensions extends SortOrExtend {
                 for (int b = 0; b < extendedSignature.length; b++) {
                     val extendedSignaturePrime = insertAtPosition(extendedSignature, nextLabel + 0.01F, b);
                     val extension = ofSignature(extendedSignaturePrime);
-                    if (closesOneOpenGate(openGates, extension) || extension.getOpenGates().size() <= 2) {
+                    if (closesOneOpenGate(openGates, extension) || (openGates == 0 && extension.getOpenGates().size() <= 2)) {
                         result.add(new Pair<>(String.format("a=%d, b=%d, extended cycle: %s", a, b, cyclesByLabel.get(label)), extension));
                     }
                 }
