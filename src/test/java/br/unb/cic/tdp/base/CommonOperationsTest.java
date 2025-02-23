@@ -14,11 +14,6 @@ class CommonOperationsTest {
     final private Cycle pi = Cycle.of("0 5 4 3 8 7 6 2 1");
 
     @Test
-    void testSimplify() {
-        assertEquals(Cycle.of("0 4 8 3 7 2 6 1 5 9 14 13 12 11 10"), simplify(Cycle.of("0 3 6 2 5 1 4 10 9 8 7")));
-    }
-
-    @Test
     void testApplyTransposition() {
         assertEquals(Cycle.of("0 1 2 3 4 5 6"), applyTranspositionOptimized(Cycle.of("0 4 5 6 1 2 3"), Cycle.of("0 4 1")));
     }

@@ -3,23 +3,16 @@ package br.unb.cic.tdp.proof;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.seq11_8.Extensions;
-import br.unb.cic.tdp.proof.util.MoveTreeNode;
-import br.unb.cic.tdp.util.Pair;
-import cern.colt.list.IntArrayList;
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.primitives.Ints;
-import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 
 import java.io.Writer;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
@@ -27,250 +20,24 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class ProofGenerator {
 
-    static final Multimap<Integer, Pair<Configuration, List<Cycle>>> ehSortings = HashMultimap.create();
-
-    static final int[][] _4_3 = new int[][]{{0, 2, 2, 2}};
-
-    static final int[][] _8_6 = new int[][]{
-            {0, 2, 2, 0, 2, 2, 2, 2},
-            {0, 2, 0, 2, 2, 2, 2, 2},
-            {0, 0, 2, 2, 2, 2, 2, 2}};
-
-    static final int[][] _11_8 = new int[][]{
-            {0, 2, 2, 0, 2, 2, 2, 0, 2, 2, 2},
-            {0, 2, 2, 0, 2, 2, 0, 2, 2, 2, 2},
-            {0, 2, 2, 0, 2, 0, 2, 2, 2, 2, 2},
-            {0, 2, 2, 0, 0, 2, 2, 2, 2, 2, 2},
-            {0, 2, 0, 2, 2, 2, 2, 0, 2, 2, 2},
-            {0, 2, 0, 2, 2, 2, 0, 2, 2, 2, 2},
-            {0, 2, 0, 2, 2, 0, 2, 2, 2, 2, 2},
-            {0, 2, 0, 2, 0, 2, 2, 2, 2, 2, 2},
-            {0, 2, 0, 0, 2, 2, 2, 2, 2, 2, 2},
-            {0, 0, 2, 2, 2, 2, 2, 0, 2, 2, 2},
-            {0, 0, 2, 2, 2, 2, 0, 2, 2, 2, 2},
-            {0, 0, 2, 2, 2, 0, 2, 2, 2, 2, 2},
-            {0, 0, 2, 2, 0, 2, 2, 2, 2, 2, 2},
-            {0, 0, 2, 0, 2, 2, 2, 2, 2, 2, 2},
-            {0, 0, 0, 2, 2, 2, 2, 2, 2, 2, 2}
-    };
-
-    static final MoveTreeNode _4_3_SEQS = new MoveTreeNode(0, new MoveTreeNode[0], null);
-    static final MoveTreeNode _8_6_SEQS = new MoveTreeNode(0, new MoveTreeNode[0], null);
-    public static final MoveTreeNode _11_8_SEQS = new MoveTreeNode(0, new MoveTreeNode[0], null);
-
-    static {
-        toTrie(_4_3, _4_3_SEQS);
-        toTrie(_8_6, _8_6_SEQS);
-        toTrie(_11_8, _11_8_SEQS);
-    }
-
-    public static void toTrie(final int[][] seqs, MoveTreeNode root) {
-        val rootPrime = root;
-        for (int[] seq : seqs) {
-            root = rootPrime;
-            for (int j = 1; j < seq.length; j++) {
-                val move = seq[j];
-                if (Arrays.stream(root.children).noneMatch(m -> m.mu == move)) {
-                    if (root.children.length == 0) {
-                        root.children = new MoveTreeNode[1];
-                        root.children[0] = new MoveTreeNode(move, new MoveTreeNode[0], root);
-                    } else {
-                        val children = new MoveTreeNode[2];
-                        children[0] = root.children[0];
-                        children[1] = new MoveTreeNode(move, new MoveTreeNode[0], root);
-                        root.children = children;
-                    }
-                }
-                root = Arrays.stream(root.children).filter(m -> m.mu == move).findFirst().get();
-            }
-        }
-    }
-
-//    public static void main(String[] args) throws InterruptedException {
-//        val l = List.of("(0 2 4)(1 9 7 12)(3 11 6)(5 10 8)");
-//
-//        var pool = new ForkJoinPool();
-//        l.stream().forEach(config -> {
-//            pool.submit(() -> {
-//                Configuration configuration = new Configuration(new MulticyclePermutation(config));
-//                System.out.println(configuration.getSpi() + "-" +
-//                        searchForSorting(configuration, configuration.getSpi().stream().map(c -> c.get(0)).collect(Collectors.toSet()),
-//                                configuration.getSpi(), configuration.getPi().getSymbols(), new Stack<>()));
-//            });
-//        });
-//        pool.shutdown();
-//        pool.awaitTermination(1, TimeUnit.HOURS);
-//    }
-
-    // mvn exec:java -Dexec.mainClass="br.unb.cic.tdp.proof.ProofGenerator" -Dexec.args=".\\proof\\"
     public static void main(String[] args) throws Throwable {
         Velocity.setProperty("resource.loader", "class");
         Velocity.setProperty("parser.pool.size", Runtime.getRuntime().availableProcessors());
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
         Velocity.init();
 
-        Files.createDirectories(Paths.get(args[0]));
+        val outputDir = args[0];
+        Files.createDirectories(Paths.get(outputDir));
 
         Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("index.html"),
-                Paths.get(args[0] + "/index.html"), REPLACE_EXISTING);
+                Paths.get(outputDir + "/index.html"), REPLACE_EXISTING);
         Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("explain.html"),
-                Paths.get(args[0] + "/explain.html"), REPLACE_EXISTING);
+                Paths.get(outputDir + "/explain.html"), REPLACE_EXISTING);
         Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("draw-config.js"),
-                Paths.get(args[0] + "/draw-config.js"), REPLACE_EXISTING);
+                Paths.get(outputDir + "/draw-config.js"), REPLACE_EXISTING);
 
-        var path = Paths.get(ProofGenerator.class.getClassLoader()
-                .getResource("eh-sortings.txt").toURI());
-        //loadEhSortings(path);
-
-        Extensions.generate(args[0]);
-        //Combinations.generate(args[0]);
-    }
-
-    @SneakyThrows
-    private static void loadEhSortings(final Path file) {
-        Files.lines(file).forEach(line -> {
-            val lineSplit = line.trim().split("->");
-            if (lineSplit.length > 1) {
-                val spi = new MulticyclePermutation(lineSplit[0].split("#")[1].replace(" ", ","));
-                val config = new Configuration(spi);
-                ehSortings.put(config.hashCode(),
-                        new Pair<>(config, Arrays.stream(lineSplit[1].split(";"))
-                                .map(s -> s.replace(" ", ",")).map(Cycle::of).collect(Collectors.toList())));
-            }
-        });
-    }
-
-    private static double lowestRate = 2;
-
-    public static Optional<List<int[]>> searchForSorting(final Configuration initialConfiguration, final Set<Integer> notFixableSymbols,
-                                                         final int[] spi, final int[] pi, final Stack<int[]> stack) {
-        val nonFixedSymbols = new HashSet<>();
-        val fixedSymbols = new HashSet<>();
-        for (int i = 0; i < spi.length; i++) {
-            if (i == spi[i]) {
-                if (!notFixableSymbols.contains(i)) {
-                    fixedSymbols.add(i);
-                }
-            } else {
-                nonFixedSymbols.add(i);
-            }
-        }
-
-        double minRate = 1.6;
-        double rate = (fixedSymbols.size()) / (double) stack.size();
-        if (!fixedSymbols.isEmpty()) {
-            if (rate >= minRate) {
-                if (rate < lowestRate) {
-                    lowestRate = rate;
-                    System.out.println("Lowest rate: " + lowestRate);
-                }
-                return Optional.of(stack);
-            }
-        }
-
-        var movesLeft = Math.floor(nonFixedSymbols.size() / 3.0); // each move can add up to 3 bonds
-        var totalMoves = stack.size() + movesLeft;
-        var globalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - initialConfiguration.getSpi().size()) / (double) totalMoves;
-        if (globalRate < minRate) {
-            return Optional.empty();
-        }
-
-        Optional<List<int[]>> sorting = Optional.empty();
-        for (int i = 0; i < pi.length - 2; i++) {
-            if (!fixedSymbols.contains(pi[i]))
-                for (int j = i + 1; j < pi.length - 1; j++) {
-                    if (!fixedSymbols.contains(pi[j]))
-                        for (int k = j + 1; k < pi.length; k++) {
-                            if (!fixedSymbols.contains(pi[k])) {
-                                int a = pi[i], b = pi[j], c = pi[k];
-
-                                int[] m = {a, b, c};
-                                stack.push(m);
-
-                                sorting =
-                                        searchForSorting(initialConfiguration, notFixableSymbols, times(spi, m[0], m[1], m[2]),
-                                                applyTranspositionOptimized(pi, m), stack);
-                                if (sorting.isPresent()) {
-                                    return sorting;
-                                }
-                                stack.pop();
-                            }
-                        }
-                }
-        }
-
-        return sorting;
-    }
-
-    private static int[] times(final int[] spi, final int a, final int b, final int c) {
-        int[] result = new int[spi.length];
-        for (int i = 0; i < result.length; i++) {
-            int newIndex = i;
-            if (i == a)
-                newIndex = c;
-            else if (i == b)
-                newIndex = a;
-            else if (i == c)
-                newIndex = b;
-            result[i] = spi[newIndex];
-        }
-        return result;
-    }
-
-    public static int[] applyTranspositionOptimized(final int[] pi, final int[] move) {
-        val a = move[0];
-        val b = move[1];
-        val c = move[2];
-
-        val indexes = new int[3];
-        for (var i = 0; i < pi.length; i++) {
-            if (pi[i] == a)
-                indexes[0] = i;
-            if (pi[i] == b)
-                indexes[1] = i;
-            if (pi[i] == c)
-                indexes[2] = i;
-        }
-
-        Arrays.sort(indexes);
-
-        val result = new int[pi.length];
-        System.arraycopy(pi, 0, result, 0, indexes[0]);
-        System.arraycopy(pi, indexes[1], result, indexes[0], indexes[2] - indexes[1]);
-        System.arraycopy(pi, indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
-        System.arraycopy(pi, indexes[2], result, indexes[2], pi.length - indexes[2]);
-
-        return result;
-    }
-
-    public static Optional<List<Cycle>> searchForSorting(final Configuration configuration) {
-        val sorting =
-                searchForSorting(configuration, configuration.getSpi().stream().map(Cycle::getMinSymbol).collect(Collectors.toSet()),
-                        twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>())
-                        .map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
-
-        if (sorting.isEmpty() && configuration.isFull()) {
-            System.out.println("bad component -> " + configuration.getSpi());
-        }
-
-        return sorting;
-    }
-
-    private static int[] twoLinesNotation(final MulticyclePermutation spi) {
-        val result = new int[spi.getNumberOfSymbols()];
-        for (int i = 0; i < result.length; i++) {
-            result[i] = spi.image(i);
-        }
-        return result;
-    }
-
-    public static Cycle removeExtraSymbols(final Set<Integer> symbols, final Cycle pi) {
-        val newPi = new IntArrayList(symbols.size());
-        for (val symbol : pi.getSymbols()) {
-            if (symbols.contains(symbol))
-                newPi.add(symbol);
-        }
-        return Cycle.of(newPi);
+        val minRate = Double.parseDouble(args[1]);
+        Extensions.generate(outputDir, minRate);
     }
 
     public static String permutationToJsArray(final MulticyclePermutation permutation) {
@@ -287,7 +54,9 @@ public class ProofGenerator {
                 .collect(Collectors.joining(",")) + "]";
     }
 
-    public static void renderSorting(final Configuration extendedFrom, final Configuration canonicalConfig, final List<Cycle> sorting,
+    public static void renderSorting(final Configuration extendedFrom,
+                                     final Configuration canonicalConfig,
+                                     final List<Cycle> sorting,
                                      final Writer writer) {
         VelocityContext context = new VelocityContext();
 
@@ -304,7 +73,7 @@ public class ProofGenerator {
         val jsPis = new ArrayList<String>();
         var spi = canonicalConfig.getSpi();
         var pi = canonicalConfig.getPi();
-        for (final Cycle move : sorting) {
+        for (val move : sorting) {
             spis.add(spi = computeProduct(spi, move.getInverse()));
             jsSpis.add(permutationToJsArray(spi));
             jsPis.add(cycleToJsArray(pi = computeProduct(move, pi).asNCycle()));

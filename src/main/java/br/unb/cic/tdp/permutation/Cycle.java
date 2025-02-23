@@ -41,11 +41,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return new Cycle(symbols);
     }
 
-    public void update(final int... symbols) {
-        this.symbols = symbols;
-        updateInternalState();
-    }
-
     public int[] getSymbols() {
         return symbols;
     }
