@@ -9,6 +9,7 @@ import org.apache.commons.collections.map.LRUMap;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,8 +19,8 @@ import static br.unb.cic.tdp.proof.ProofGenerator.renderSorting;
 @RequiredArgsConstructor
 public class DefaultProofStorage implements ProofStorage {
     private final Map<Configuration, Boolean> working = new ConcurrentHashMap<>();
-    private final Map<Configuration, Boolean> sortedCache = new LRUMap(10_000);
-    private final Map<Configuration, Boolean> badCasesCache = new LRUMap(10_000);
+    private final Map<Configuration, Boolean> sortedCache = Collections.synchronizedMap(new LRUMap(10_000));
+    private final Map<Configuration, Boolean> badCasesCache = Collections.synchronizedMap(new LRUMap(10_000));
     private final String outputDir;
 
     @Override

@@ -123,6 +123,10 @@ public class CommonOperations implements Serializable {
         val rate = (fixedSymbols.size()) / (double) stack.size();
         if (!fixedSymbols.isEmpty()) {
             if (rate >= minRate) {
+                if (rate < bestRate) {
+                    System.out.println("Best rate: " + rate);
+                    bestRate = rate;
+                }
                 return Optional.of(stack);
             }
         }
@@ -202,7 +206,22 @@ public class CommonOperations implements Serializable {
         return result;
     }
 
+    private static double bestRate = Double.MAX_VALUE;
+
     public static Optional<List<Cycle>> searchForSorting(final Configuration configuration, final double minRate) {
+        // eagerly look for an oriented 3-segment
+        for (val cycle : configuration.getSpi()) {
+            for (val b : cycle.getSymbols()) {
+                val move = Cycle.of(cycle.pow(b, -1), b, cycle.image(b));
+                if (isOriented(configuration.getPi(), move)) {
+                    val spiPrime = configuration.getSpi().times(move.getInverse());
+                    if (spiPrime.stream().filter(c -> c.size() == 1 && c.get(0) != cycle.get(0)).count() == 2) {
+                        return Optional.of(List.of(move));
+                    }
+                }
+            }
+        }
+
         val sorting = searchForSorting(configuration, configuration.getSpi().stream().map(Cycle::getMinSymbol).collect(Collectors.toSet()),
                 twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
                 .map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));

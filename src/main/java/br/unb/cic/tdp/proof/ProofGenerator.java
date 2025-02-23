@@ -37,6 +37,7 @@ public class ProofGenerator {
                 Paths.get(outputDir + "/draw-config.js"), REPLACE_EXISTING);
 
         val minRate = Double.parseDouble(args[1]);
+        System.out.println("Min rate: " + minRate);
         Extensions.generate(outputDir, minRate);
     }
 
