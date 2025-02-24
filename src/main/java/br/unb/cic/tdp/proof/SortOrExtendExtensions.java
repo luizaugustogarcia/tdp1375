@@ -121,10 +121,6 @@ class SortOrExtendExtensions extends SortOrExtend {
             } else {
                 // oriented
                 newLabel = (indexesByLabel.get(label).size() + 1) * 0.01F + label;
-                if (Float.toString(newLabel).length() > 4) {
-                    System.err.println("Fatal");
-                    System.exit(1);
-                }
             }
 
             for (var a = 0; a < signature.length; a++) {
