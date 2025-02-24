@@ -10,7 +10,7 @@ import static br.unb.cic.tdp.base.CommonOperations.searchForSorting;
 import static br.unb.cic.tdp.base.CommonOperations.twoLinesNotation;
 import static br.unb.cic.tdp.base.Configuration.ofSignature;
 import static br.unb.cic.tdp.base.Configuration.signature;
-import static br.unb.cic.tdp.proof.SortOrExtendExtensions.unorientedExtension;
+import static br.unb.cic.tdp.proof.SortOrExtend.unorientedExtension;
 
 public class TwoCycles {
 

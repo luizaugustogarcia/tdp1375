@@ -17,7 +17,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
-import static br.unb.cic.tdp.proof.SortOrExtendExtensions.*;
+import static br.unb.cic.tdp.proof.SortOrExtend.*;
 
 public class Extensions {
 
@@ -34,7 +34,7 @@ public class Extensions {
 
         val pool = new ForkJoinPool(Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 Runtime.getRuntime().availableProcessors() + "")));
-        pool.execute(new SortOrExtendExtensions(root, new Configuration("(0 2 1)"), storage, minRate));
+        pool.execute(new SortOrExtend(root, new Configuration("(0 2 1)"), storage, minRate));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
