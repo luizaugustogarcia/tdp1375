@@ -94,14 +94,10 @@ public class ProofGenerator {
                 .collect(Collectors.joining(",")) + "]";
     }
 
-    public static void renderSorting(final Configuration extendedFrom,
-                                     final Configuration canonicalConfig,
+    public static void renderSorting(final Configuration canonicalConfig,
                                      final List<Cycle> sorting,
                                      final Writer writer) {
-        VelocityContext context = new VelocityContext();
-
-        context.put("extendedFrom", extendedFrom.getSpi());
-        context.put("jsExtendedFrom", permutationToJsArray(extendedFrom.getSpi()));
+        val context = new VelocityContext();
         context.put("spi", canonicalConfig.getSpi());
         context.put("piSize", canonicalConfig.getPi().size());
         context.put("jsSpi", permutationToJsArray(canonicalConfig.getSpi()));

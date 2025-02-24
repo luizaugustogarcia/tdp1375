@@ -17,5 +17,5 @@ public interface ProofStorage {
 
     void markBadCase(Configuration configuration);
 
-    void saveSorting(Configuration extendedFrom, Configuration configuration, List<Cycle> sorting);
+    void saveSorting(Configuration configuration, List<Cycle> sorting);
 }

@@ -30,11 +30,10 @@ public class Extensions {
         Files.createDirectories(Paths.get(dfsDir + "/bad-cases/"));
 
         val storage = new DefaultProofStorage(dfsDir);
-        val root = Configuration.ofSignature(new float[]{1F});
 
         val pool = new ForkJoinPool(Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 Runtime.getRuntime().availableProcessors() + "")));
-        pool.execute(new SortOrExtend(root, new Configuration("(0 2 1)"), storage, minRate));
+        pool.execute(new SortOrExtend(new Configuration("(0 2 1)"), storage, minRate));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);

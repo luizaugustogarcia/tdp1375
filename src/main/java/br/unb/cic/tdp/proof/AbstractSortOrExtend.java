@@ -10,7 +10,6 @@ import static br.unb.cic.tdp.base.CommonOperations.searchForSorting;
 
 @AllArgsConstructor
 public abstract class AbstractSortOrExtend extends RecursiveAction {
-    final Configuration extendedFrom;
     final Configuration configuration;
     final ProofStorage storage;
     final double minRate;
@@ -28,7 +27,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                 try {
                     val sorting = searchForSorting(canonical, minRate);
                     if (sorting.isPresent()) {
-                        storage.saveSorting(extendedFrom, canonical, sorting.get());
+                        storage.saveSorting(canonical, sorting.get());
                         return;
                     } else {
                         storage.markBadCase(canonical);

@@ -59,12 +59,11 @@ public class DefaultProofStorage implements ProofStorage {
 
     @SneakyThrows
     @Override
-    public void saveSorting(final Configuration extendedFrom,
-                            final Configuration configuration,
+    public void saveSorting(final Configuration configuration,
                             final List<Cycle> sorting) {
         val file = new File(outputDir + "/" + configuration.getSpi() + ".html");
         try (val writer = new FileWriter(file)) {
-            renderSorting(extendedFrom, configuration, sorting, writer);
+            renderSorting(configuration, sorting, writer);
         }
         sortedCache.put(configuration, Boolean.TRUE);
     }

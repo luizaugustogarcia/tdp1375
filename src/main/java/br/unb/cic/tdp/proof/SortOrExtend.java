@@ -16,11 +16,10 @@ import static java.util.stream.Stream.concat;
 
 class SortOrExtend extends AbstractSortOrExtend {
 
-    public SortOrExtend(final Configuration extendedFrom,
-                        final Configuration configuration,
+    public SortOrExtend(final Configuration configuration,
                         final ProofStorage storage,
                         final double minRate) {
-        super(extendedFrom, configuration, storage, minRate);
+        super(configuration, storage, minRate);
     }
 
     /*
@@ -151,7 +150,7 @@ class SortOrExtend extends AbstractSortOrExtend {
     protected void extend(final Configuration canonical) {
         concat(concat(type1Extensions(canonical).stream(), type2Extensions(canonical).stream()), type3Extensions(canonical).stream())
                 .filter(pair -> pair.getSecond().getOpenGates().size() <= 2)
-                .map(extension -> new SortOrExtend(canonical, extension.getSecond(), storage, minRate)).
+                .map(extension -> new SortOrExtend(extension.getSecond(), storage, minRate)).
                 forEach(ForkJoinTask::fork);
     }
 
