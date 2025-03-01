@@ -125,7 +125,7 @@ class SortOrExtend extends AbstractSortOrExtend {
             for (var a = 0; a < signature.length; a++) {
                 val extendedSignature = insertAtPosition(signature, newLabel, a);
                 val extension = ofSignature(extendedSignature);
-                if (closesOneOpenGate(openGates, extension) || (openGates == 0 && extension.getOpenGates().size() <= 2)) {
+                if (closesOneOpenGate(openGates, extension) || (openGates == 0 && extension.getOpenGates().size() <= 1)) {
                     result.add(new Pair<>(String.format("a=%d, extended cycle: %s", a, cyclesByLabel.get(label)), extension));
                 }
             }
@@ -135,7 +135,7 @@ class SortOrExtend extends AbstractSortOrExtend {
     }
 
     private static boolean closesOneOpenGate(final int openGates, final Configuration extension) {
-        return openGates > 0 && extension.getOpenGates().size() == openGates - 1;
+        return openGates > 0 && extension.getOpenGates().size() < openGates;
     }
 
     public static float[] insertAtPosition(float[] array, float value, int index) {

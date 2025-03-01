@@ -5,6 +5,7 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import lombok.val;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.searchForSorting;
 import static br.unb.cic.tdp.base.CommonOperations.twoLinesNotation;
@@ -19,14 +20,16 @@ public class TwoCycles {
 
         // one 2-cycle intersecting another 2-cycle
         val configuration = new Configuration(new MulticyclePermutation("(0 2)(1 3)"));
-        System.out.println(configuration.getSpi() + "-" + searchForSorting(configuration, new HashSet<>(), twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate));
+        System.out.println(configuration.getSpi() + "-" + searchForSorting(configuration, new HashSet<>(), twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
+                .map(s -> s.stream().map(Arrays::toString).collect(Collectors.joining(", "))).stream().findFirst());
 
         // one 2-cycle intersecting one 3-segment
         extensions(new Configuration(new MulticyclePermutation("(0 2)(1 4 3)"))).stream().distinct().forEach(extension -> {
             val spi = extension.getSpi();
             val threeCycle = spi.stream().filter(c -> c.size() == 3).findFirst().get();
             val twoCycle = spi.stream().filter(c -> c.size() == 2).findFirst().get();
-            System.out.println(spi + "-" + searchForSorting(extension, Set.of(twoCycle.get(0), threeCycle.get(0)), twoLinesNotation(spi), extension.getPi().getSymbols(), new Stack<>(), minRate));
+            System.out.println(spi + "-" + searchForSorting(extension, Set.of(twoCycle.get(0), threeCycle.get(0)), twoLinesNotation(spi), extension.getPi().getSymbols(), new Stack<>(), minRate)
+                    .map(s -> s.stream().map(Arrays::toString).collect(Collectors.joining(", "))).stream().findFirst());
         });
 
         // one 2-cycle intersecting one 4-segment
@@ -34,7 +37,8 @@ public class TwoCycles {
             val spi = extension.getSpi();
             val fourCycle = spi.stream().filter(c -> c.size() == 4).findFirst().get();
             val twoCycle = spi.stream().filter(c -> c.size() == 2).findFirst().get();
-            System.out.println(spi + "-" + searchForSorting(extension, Set.of(twoCycle.get(0), fourCycle.get(0)), twoLinesNotation(spi), extension.getPi().getSymbols(), new Stack<>(), minRate));
+            System.out.println(spi + "-" + searchForSorting(extension, Set.of(twoCycle.get(0), fourCycle.get(0)), twoLinesNotation(spi), extension.getPi().getSymbols(), new Stack<>(), minRate)
+                    .map(s -> s.stream().map(Arrays::toString).collect(Collectors.joining(", "))).stream().findFirst());
         });
     }
 
