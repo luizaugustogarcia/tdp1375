@@ -227,7 +227,12 @@ public class CommonOperations implements Serializable {
                 .map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
 
         if (sorting.isEmpty() && configuration.isFull()) {
-            System.out.println("bad component -> " + configuration.getSpi());
+            val sigma = configuration.getSpi().times(configuration.getPi().getInverse());
+            if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size() && searchForSorting(configuration, Set.of(),
+                    twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
+                    .map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList())).isEmpty()) {
+                System.out.println("bad component -> " + configuration);
+            }
         }
 
         return sorting;
