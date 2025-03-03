@@ -53,7 +53,7 @@ public class TwoCycles {
             if (configuration.getOpenGates().contains(a)) {
                 for (int b = 0; b < signature.length; b++) {
                     if (a != b) {
-                        result.add(ofSignature(unorientedExtension(signature, newLabel, a, b).elements()));
+                       // result.add(ofSignature(unorientedExtension(signature, newLabel, a, b).elements()));
                     }
                 }
             }

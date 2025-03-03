@@ -38,14 +38,14 @@ public class Extensions {
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 
-        val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
-                .map(Path::toFile)
-                .forEach(file -> executor.submit(
-                        () -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
-
-        executor.shutdown();
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+//        val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+//        Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
+//                .map(Path::toFile)
+//                .forEach(file -> executor.submit(
+//                        () -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
+//
+//        executor.shutdown();
+//        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
     }
 
     @SneakyThrows

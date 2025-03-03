@@ -209,20 +209,9 @@ public class CommonOperations implements Serializable {
     private static double bestRate = Double.MAX_VALUE;
 
     public static Optional<List<Cycle>> searchForSorting(final Configuration configuration, final double minRate) {
-        // eagerly look for an oriented 3-segment
-        for (val cycle : configuration.getSpi()) {
-            for (val b : cycle.getSymbols()) {
-                val move = Cycle.of(cycle.pow(b, -1), b, cycle.image(b));
-                if (isOriented(configuration.getPi(), move)) {
-                    val spiPrime = configuration.getSpi().times(move.getInverse());
-                    if (spiPrime.stream().filter(c -> c.size() == 1 && c.get(0) != cycle.get(0)).count() == 2) {
-                        return Optional.of(List.of(move));
-                    }
-                }
-            }
-        }
+        val links = configuration.getSpi().stream().map(Cycle::getMinSymbol).collect(Collectors.toSet());
 
-        val sorting = searchForSorting(configuration, configuration.getSpi().stream().map(Cycle::getMinSymbol).collect(Collectors.toSet()),
+        val sorting = searchForSorting(configuration, links,
                 twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
                 .map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
 
@@ -236,6 +225,26 @@ public class CommonOperations implements Serializable {
         }
 
         return sorting;
+    }
+
+    private static Optional<List<Cycle>> allows2Move(final Configuration configuration, final Set<Integer> links) {
+        val pi = configuration.getPi().getSymbols();
+
+        for (var i = 0; i < pi.length - 2; i++) {
+            for (var j = i + 1; j < pi.length - 1; j++) {
+                for (var k = j + 1; k < pi.length; k++) {
+                    int a = pi[i], b = pi[j], c = pi[k];
+
+                    val move = Cycle.of(a, b, c);
+                    val spi = configuration.getSpi().times(move.getInverse());
+                    if (spi.stream().filter(cycle -> cycle.size() == 1 && !links.contains(cycle.get(0))).count() == 2) {
+                        return Optional.of(List.of(move));
+                    }
+                }
+            }
+        }
+
+        return Optional.empty();
     }
 
     public static int[] twoLinesNotation(final MulticyclePermutation spi) {
