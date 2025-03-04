@@ -57,6 +57,10 @@ public class Configuration {
         this(new MulticyclePermutation(spi));
     }
 
+    public Configuration(final String spi, final String pi) {
+        this(new MulticyclePermutation(spi), Cycle.of(pi));
+    }
+
     public static float[] signature(final Collection<Cycle> spi, final Cycle pi) {
         return signature(spi, pi, cycleIndex(spi, pi));
     }

@@ -5,6 +5,7 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.primitives.Ints;
 import lombok.val;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 
@@ -13,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
@@ -75,9 +77,12 @@ public class ProofGenerator {
         Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("draw-config.js"),
                 Paths.get(outputDir + "/draw-config.js"), REPLACE_EXISTING);
 
+        val stopWatch = StopWatch.createStarted();
         val minRate = Double.parseDouble(args[1]);
         System.out.println("Min rate: " + minRate);
         Extensions.generate(outputDir, minRate);
+        stopWatch.stop();
+        System.out.println(stopWatch.getTime(TimeUnit.MINUTES));
     }
 
     public static String permutationToJsArray(final MulticyclePermutation permutation) {

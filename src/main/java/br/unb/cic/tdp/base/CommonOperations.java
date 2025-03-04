@@ -2,6 +2,7 @@ package br.unb.cic.tdp.base;
 
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import com.google.common.collect.Sets;
 import lombok.val;
 
 import java.io.Serializable;
@@ -209,13 +210,27 @@ public class CommonOperations implements Serializable {
     private static double bestRate = Double.MAX_VALUE;
 
     public static Optional<List<Cycle>> searchForSorting(final Configuration configuration, final double minRate) {
-        val links = configuration.getSpi().stream().map(Cycle::getMinSymbol).collect(Collectors.toSet());
+        val linkSet = configuration.getSpi().stream()
+                .map(cycle -> isOriented(configuration.getPi(), cycle) ? Arrays.stream(cycle.getSymbols()).boxed().collect(Collectors.toSet()) : Set.of(cycle.getMinSymbol()))
+                .collect(Collectors.toList());
 
-        val sorting = searchForSorting(configuration, links,
-                twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
-                .map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
+        if (configuration.hashCode() == -1714099413) {
+            System.out.println();
+        }
 
-        if (sorting.isEmpty() && configuration.isFull()) {
+        val sortings = Sets.cartesianProduct(linkSet).stream()
+                .map(symbols -> {
+                    val link = new HashSet<>(symbols);
+                    if (get2Move(configuration, link).isPresent()) {
+                        return Optional.of(List.of(Cycle.of(1, 2, 3)));
+                    }
+                    return searchForSorting(configuration, link,
+                            twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
+                            .map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
+                });
+
+        boolean anyEmpty = sortings.anyMatch(Optional::isEmpty);
+        if (anyEmpty && configuration.isFull()) {
             val sigma = configuration.getSpi().times(configuration.getPi().getInverse());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size() && searchForSorting(configuration, Set.of(),
                     twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
@@ -224,10 +239,18 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        return sorting;
+        return anyEmpty ? Optional.empty() : Optional.of(List.of(Cycle.of(1, 2, 3)));
     }
 
-    private static Optional<List<Cycle>> allows2Move(final Configuration configuration, final Set<Integer> links) {
+    public static int[] twoLinesNotation(final MulticyclePermutation spi) {
+        val result = new int[spi.getNumberOfSymbols()];
+        for (var i = 0; i < result.length; i++) {
+            result[i] = spi.image(i);
+        }
+        return result;
+    }
+
+    private static Optional<List<Cycle>> get2Move(final Configuration configuration, final Set<Integer> links) {
         val pi = configuration.getPi().getSymbols();
 
         for (var i = 0; i < pi.length - 2; i++) {
@@ -245,13 +268,5 @@ public class CommonOperations implements Serializable {
         }
 
         return Optional.empty();
-    }
-
-    public static int[] twoLinesNotation(final MulticyclePermutation spi) {
-        val result = new int[spi.getNumberOfSymbols()];
-        for (var i = 0; i < result.length; i++) {
-            result[i] = spi.image(i);
-        }
-        return result;
     }
 }

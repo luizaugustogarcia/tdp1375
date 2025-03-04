@@ -34,7 +34,7 @@ public class DefaultProofStorage implements ProofStorage {
     }
 
     private static String getId(final Configuration configuration) {
-        return configuration.getSpi() + "#" + configuration.getPi();
+        return configuration.getCanonical().getSpi().toString();
     }
 
     @SneakyThrows
