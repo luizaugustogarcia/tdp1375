@@ -104,20 +104,20 @@ public class CommonOperations implements Serializable {
     }
 
     public static Optional<List<int[]>> searchForSorting(final Configuration initialConfiguration,
-                                                         final Set<Integer> notFixableSymbols,
+                                                         final Set<Integer> links,
                                                          final int[] spi,
                                                          final int[] pi,
                                                          final Stack<int[]> stack,
                                                          final double minRate) {
-        val nonFixedSymbols = new HashSet<>();
+        val movedSymbols = new HashSet<>();
         val fixedSymbols = new HashSet<>();
         for (int i = 0; i < spi.length; i++) {
             if (i == spi[i]) {
-                if (!notFixableSymbols.contains(i)) {
+                if (!links.contains(i)) {
                     fixedSymbols.add(i);
                 }
             } else {
-                nonFixedSymbols.add(i);
+                movedSymbols.add(i);
             }
         }
 
@@ -132,9 +132,9 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        var movesLeft = Math.floor(nonFixedSymbols.size() / 3.0); // each move can add up to 3 bonds
+        var movesLeft = movedSymbols.size() / 3.0; // each move can add up to 3 bonds
         var totalMoves = stack.size() + movesLeft;
-        var globalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - notFixableSymbols.size()) / totalMoves;
+        var globalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - links.size()) / totalMoves;
         if (globalRate < minRate) {
             return Optional.empty();
         }
@@ -152,7 +152,7 @@ public class CommonOperations implements Serializable {
                                 stack.push(m);
 
                                 sorting =
-                                        searchForSorting(initialConfiguration, notFixableSymbols, times(spi, m[0], m[1], m[2]),
+                                        searchForSorting(initialConfiguration, links, times(spi, m[0], m[1], m[2]),
                                                 applyTranspositionOptimized(pi, m), stack, minRate);
                                 if (sorting.isPresent()) {
                                     return sorting;
@@ -214,17 +214,13 @@ public class CommonOperations implements Serializable {
                 .map(cycle -> isOriented(configuration.getPi(), cycle) ? Arrays.stream(cycle.getSymbols()).boxed().collect(Collectors.toSet()) : Set.of(cycle.getMinSymbol()))
                 .collect(Collectors.toList());
 
-        if (configuration.hashCode() == -1714099413) {
-            System.out.println();
-        }
-
         val sortings = Sets.cartesianProduct(linkSet).stream()
                 .map(symbols -> {
-                    val link = new HashSet<>(symbols);
-                    if (get2Move(configuration, link).isPresent()) {
+                    val links = new HashSet<>(symbols);
+                    if (get2Move(configuration, links).isPresent()) {
                         return Optional.of(List.of(Cycle.of(1, 2, 3)));
                     }
-                    return searchForSorting(configuration, link,
+                    return searchForSorting(configuration, links,
                             twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
                             .map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
                 });

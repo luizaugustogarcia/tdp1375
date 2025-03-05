@@ -71,4 +71,15 @@ public class DefaultProofStorage implements ProofStorage {
         }
         sortedCache.put(getId(configuration), Boolean.TRUE);
     }
+
+    @Override
+    public boolean hasNoSorting(final Configuration configuration) {
+        return new File(outputDir + "/no-sortings/" + getId(configuration)).exists();
+    }
+
+    @SneakyThrows
+    @Override
+    public void noSorting(Configuration configuration) {
+        new File(outputDir + "/no-sortings/" + getId(configuration)).createNewFile();
+    }
 }

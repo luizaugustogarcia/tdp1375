@@ -28,6 +28,7 @@ public class Extensions {
         Files.createDirectories(Paths.get(dfsDir));
         Files.createDirectories(Paths.get(dfsDir + "/working/"));
         Files.createDirectories(Paths.get(dfsDir + "/bad-cases/"));
+        Files.createDirectories(Paths.get(dfsDir + "/no-sortings/"));
 
         val storage = new DefaultProofStorage(dfsDir);
 

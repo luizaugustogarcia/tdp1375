@@ -1,9 +1,12 @@
 package br.unb.cic.tdp.proof;
 
 import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
 import lombok.AllArgsConstructor;
 import lombok.val;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.RecursiveAction;
 
 import static br.unb.cic.tdp.base.CommonOperations.searchForSorting;
@@ -23,11 +26,12 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
         if (!storage.isBadCase(configuration)) {
             if (storage.tryLock(configuration)) {
                 try {
-                    val sorting = searchForSorting(configuration, minRate);
+                    val sorting = getSorting();
                     if (sorting.isPresent()) {
                         storage.saveSorting(configuration, sorting.get());
                         return;
                     } else {
+                        storage.noSorting(configuration);
                         storage.markBadCase(configuration);
                     }
                     extend(configuration);
@@ -36,6 +40,13 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                 }
             } // else: another thread is already working on this configuration
         }
+    }
+
+    private Optional<List<Cycle>> getSorting() {
+        if (storage.hasNoSorting(configuration)) {
+            return Optional.empty();
+        }
+        return searchForSorting(configuration, minRate);
     }
 
     protected abstract void extend(Configuration configuration);
