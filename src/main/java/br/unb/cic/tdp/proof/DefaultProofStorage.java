@@ -2,26 +2,36 @@ package br.unb.cic.tdp.proof;
 
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
-import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.commons.collections.map.LRUMap;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static br.unb.cic.tdp.proof.ProofGenerator.renderSorting;
-
-@RequiredArgsConstructor
 public class DefaultProofStorage implements ProofStorage {
     private final Map<String, Boolean> working = new ConcurrentHashMap<>();
     private final Map<String, Boolean> sortedCache = Collections.synchronizedMap(new LRUMap(10_000));
     private final Map<String, Boolean> badCasesCache = Collections.synchronizedMap(new LRUMap(10_000));
     private final String outputDir;
+
+    @SneakyThrows
+    public DefaultProofStorage(final String outputDir) {
+        this.outputDir = outputDir;
+
+        val dfsDir = outputDir + "/dfs/";
+
+        Files.createDirectories(Paths.get(dfsDir));
+        Files.createDirectories(Paths.get(dfsDir + "/working/"));
+        Files.createDirectories(Paths.get(dfsDir + "/bad-cases/"));
+    }
+
 
     @Override
     public boolean isAlreadySorted(final Configuration configuration) {
@@ -34,7 +44,7 @@ public class DefaultProofStorage implements ProofStorage {
     }
 
     private static String getId(final Configuration configuration) {
-        return configuration.getCanonical().getSpi().toString();
+        return configuration.getSpi() + "#" + configuration.getPi();
     }
 
     @SneakyThrows
@@ -65,21 +75,20 @@ public class DefaultProofStorage implements ProofStorage {
     @Override
     public void saveSorting(final Configuration configuration,
                             final List<Cycle> sorting) {
-        val file = new File(outputDir + "/" + getId(configuration) + ".html");
+        val file = new File(outputDir + "/" + getId(configuration));
         try (val writer = new FileWriter(file)) {
-            renderSorting(configuration, sorting, writer);
+            writer.write(sorting.toString());
         }
         sortedCache.put(getId(configuration), Boolean.TRUE);
     }
 
     @Override
-    public boolean hasNoSorting(final Configuration configuration) {
-        return new File(outputDir + "/no-sortings/" + getId(configuration)).exists();
+    public void noSorting(Configuration configuration) {
+
     }
 
-    @SneakyThrows
     @Override
-    public void noSorting(Configuration configuration) {
-        new File(outputDir + "/no-sortings/" + getId(configuration)).createNewFile();
+    public boolean hasNoSorting(Configuration configuration) {
+        return false;
     }
 }

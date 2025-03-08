@@ -23,14 +23,7 @@ public class Extensions {
 
     @SneakyThrows
     public static void generate(final String outputDir, final double minRate) {
-        val dfsDir = outputDir + "/dfs/";
-
-        Files.createDirectories(Paths.get(dfsDir));
-        Files.createDirectories(Paths.get(dfsDir + "/working/"));
-        Files.createDirectories(Paths.get(dfsDir + "/bad-cases/"));
-        Files.createDirectories(Paths.get(dfsDir + "/no-sortings/"));
-
-        val storage = new DefaultProofStorage(dfsDir);
+        val storage = new H2ProofStorage(outputDir);
 
         val pool = new ForkJoinPool(Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 Runtime.getRuntime().availableProcessors() + "")));

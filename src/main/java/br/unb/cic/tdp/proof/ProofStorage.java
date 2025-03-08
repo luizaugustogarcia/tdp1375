@@ -19,7 +19,7 @@ public interface ProofStorage {
 
     void saveSorting(Configuration configuration, List<Cycle> sorting);
 
-    boolean hasNoSorting(Configuration configuration);
-
     void noSorting(Configuration configuration);
+
+    boolean hasNoSorting(Configuration configuration);
 }
