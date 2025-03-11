@@ -1,13 +1,13 @@
 package br.unb.cic.tdp.base;
 
-import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import com.google.common.collect.Sets;
-import lombok.val;
-
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.Sets;
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import lombok.val;
 
 public class CommonOperations implements Serializable {
 
@@ -104,11 +104,11 @@ public class CommonOperations implements Serializable {
     }
 
     public static Optional<List<int[]>> searchForSorting(final Configuration initialConfiguration,
-                                                         final Set<Integer> links,
-                                                         final int[] spi,
-                                                         final int[] pi,
-                                                         final Stack<int[]> stack,
-                                                         final double minRate) {
+            final Set<Integer> links,
+            final int[] spi,
+            final int[] pi,
+            final Stack<int[]> stack,
+            final double minRate) {
         val movedSymbols = new HashSet<>();
         val fixedSymbols = new HashSet<>();
         for (int i = 0; i < spi.length; i++) {
@@ -148,7 +148,7 @@ public class CommonOperations implements Serializable {
                             if (!fixedSymbols.contains(pi[k])) {
                                 int a = pi[i], b = pi[j], c = pi[k];
 
-                                int[] m = {a, b, c};
+                                int[] m = { a, b, c };
                                 stack.push(m);
 
                                 sorting =
@@ -210,18 +210,23 @@ public class CommonOperations implements Serializable {
     private static double bestRate = Double.MAX_VALUE;
 
     public static Optional<List<Cycle>> searchForSorting(final Configuration configuration, final double minRate) {
-        val links = configuration.getSpi().stream().map(Cycle::getMinSymbol).collect(Collectors.toSet());
+        val linkSet = configuration.getSpi().stream()
+                .map(cycle -> isOriented(configuration.getPi(), cycle) ? Arrays.stream(cycle.getSymbols()).boxed().collect(Collectors.toSet()) : Set.of(cycle.getMinSymbol()))
+                .collect(Collectors.toList());
 
-        val _2Move = lookFor2Move(configuration, links);
-        if (_2Move.isPresent()) {
-            return _2Move;
-        }
+        val sortings = Sets.cartesianProduct(linkSet).stream()
+                .map(symbols -> {
+                    val links = new HashSet<>(symbols);
+                    if (lookFor2Move(configuration, links).isPresent()) {
+                        return Optional.of(List.of(Cycle.of(1, 2, 3)));
+                    }
+                    return searchForSorting(configuration, links,
+                            twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
+                            .map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
+                });
 
-        val sorting = searchForSorting(configuration, links,
-                twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
-                .map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
-
-        if (sorting.isEmpty() && configuration.isFull()) {
+        boolean anyEmpty = sortings.anyMatch(Optional::isEmpty);
+        if (anyEmpty && configuration.isFull()) {
             val sigma = configuration.getSpi().times(configuration.getPi().getInverse());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size() && searchForSorting(configuration, Set.of(),
                     twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
@@ -230,7 +235,7 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        return sorting;
+        return anyEmpty ? Optional.empty() : Optional.of(List.of(Cycle.of(1, 2, 3)));
     }
 
     private static Optional<List<Cycle>> lookFor2Move(final Configuration configuration, final Set<Integer> links) {
@@ -259,5 +264,9 @@ public class CommonOperations implements Serializable {
             result[i] = spi.image(i);
         }
         return result;
+    }
+
+    public static void main(String[] args) {
+        System.out.println(searchForSorting(new Configuration("(0 13 1 11 9)(2 12 8)(3 7 4)(5 6 14 10)"), 1.6));
     }
 }
