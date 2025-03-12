@@ -1,13 +1,13 @@
 package br.unb.cic.tdp.base;
 
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import com.google.common.collect.Sets;
+import lombok.val;
+
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import com.google.common.collect.Sets;
-import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import lombok.val;
 
 public class CommonOperations implements Serializable {
 
@@ -104,11 +104,11 @@ public class CommonOperations implements Serializable {
     }
 
     public static Optional<List<int[]>> searchForSorting(final Configuration initialConfiguration,
-            final Set<Integer> links,
-            final int[] spi,
-            final int[] pi,
-            final Stack<int[]> stack,
-            final double minRate) {
+                                                         final Set<Integer> links,
+                                                         final int[] spi,
+                                                         final int[] pi,
+                                                         final Stack<int[]> stack,
+                                                         final double minRate) {
         val movedSymbols = new HashSet<>();
         val fixedSymbols = new HashSet<>();
         for (int i = 0; i < spi.length; i++) {
@@ -148,7 +148,7 @@ public class CommonOperations implements Serializable {
                             if (!fixedSymbols.contains(pi[k])) {
                                 int a = pi[i], b = pi[j], c = pi[k];
 
-                                int[] m = { a, b, c };
+                                int[] m = {a, b, c};
                                 stack.push(m);
 
                                 sorting =
@@ -264,9 +264,5 @@ public class CommonOperations implements Serializable {
             result[i] = spi.image(i);
         }
         return result;
-    }
-
-    public static void main(String[] args) {
-        System.out.println(searchForSorting(new Configuration("(0 13 1 11 9)(2 12 8)(3 7 4)(5 6 14 10)"), 1.6));
     }
 }

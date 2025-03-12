@@ -17,13 +17,11 @@ public class OrientedFourCycles {
         SortOrExtend.type3Extensions(config)
                 .stream()
                 .map(Pair::getSecond)
+                .map(Configuration::getCanonical)
                 .forEach(c -> {
                     System.out.println(c + "-" +
-                            searchForSorting(c, Set.of(0), twoLinesNotation(c.getSpi()), c.getPi().getSymbols(), new Stack<>(), 1.5));
+                            searchForSorting(c, 1.5));
                 });
-
-        SortOrExtend.type3Extensions(config.getCanonical())
-                .stream().map(Pair::getSecond).forEach(System.out::println);
 
     }
 }

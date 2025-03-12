@@ -34,8 +34,6 @@ public class H2ProofStorage implements ProofStorage {
 
         new QueryRunner(dataSource).update("TRUNCATE TABLE working;");
         new QueryRunner(dataSource).update("TRUNCATE TABLE bad_case;");
-
-        Executors.newScheduledThreadPool(1).scheduleAtFixedRate(this::report, 0, 1, TimeUnit.HOURS);
     }
 
     @SneakyThrows
@@ -47,7 +45,7 @@ public class H2ProofStorage implements ProofStorage {
     }
 
     private static String getId(final Configuration configuration) {
-        return configuration.getSpi() + "#" + configuration.getPi();
+        return configuration.getSpi().toString();
     }
 
     @SneakyThrows

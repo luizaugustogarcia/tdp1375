@@ -19,6 +19,8 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
 
     @Override
     protected void compute() {
+        val configuration = this.configuration.getCanonical();
+
         if (storage.isAlreadySorted(configuration)) {
             return;
         }
@@ -26,7 +28,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
         if (!storage.isBadCase(configuration)) {
             if (storage.tryLock(configuration)) {
                 try {
-                    val sorting = getSorting();
+                    val sorting = getSorting(configuration);
                     if (sorting.isPresent()) {
                         storage.saveSorting(configuration, sorting.get());
                         return;
@@ -42,7 +44,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
         }
     }
 
-    private Optional<List<Cycle>> getSorting() {
+    private Optional<List<Cycle>> getSorting(final Configuration configuration) {
         if (storage.hasNoSorting(configuration)) {
             return Optional.empty();
         }
