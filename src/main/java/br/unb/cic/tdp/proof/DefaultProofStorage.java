@@ -5,14 +5,16 @@ import br.unb.cic.tdp.permutation.Cycle;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.commons.collections.map.LRUMap;
+import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DefaultProofStorage implements ProofStorage {
@@ -71,24 +73,33 @@ public class DefaultProofStorage implements ProofStorage {
         badCasesCache.put(getId(configuration), Boolean.TRUE);
     }
 
-    @SneakyThrows
     @Override
-    public void saveSorting(final Configuration configuration,
-                            final List<Cycle> sorting) {
-        val file = new File(outputDir + "/" + getId(configuration));
-        try (val writer = new FileWriter(file)) {
-            writer.write(sorting.toString());
-        }
-        sortedCache.put(getId(configuration), Boolean.TRUE);
+    public void saveSorting(final Configuration configuration, final Set<Integer> pivots, final List<Cycle> sorting) {
+        throw new NotImplementedException();
     }
 
     @Override
     public void noSorting(Configuration configuration) {
-
+        throw new NotImplementedException();
     }
 
     @Override
     public boolean hasNoSorting(Configuration configuration) {
-        return false;
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySortingsByHashCode(int hasCode) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void saveComponentSorting(Configuration configuration, List<Cycle> cycles) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public List<Cycle> findByCompSortingByHashCode(int hashCode) {
+        throw new NotImplementedException();
     }
 }
