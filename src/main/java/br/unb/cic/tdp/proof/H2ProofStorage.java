@@ -6,13 +6,11 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.handlers.ArrayListHandler;
 import org.apache.commons.dbutils.handlers.MapHandler;
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -48,7 +46,7 @@ public class H2ProofStorage implements ProofStorage {
     }
 
     private static String getId(final Configuration configuration) {
-        return configuration.getSpi().toString();
+        return configuration.getSignature().toString();
     }
 
     @SneakyThrows

@@ -1,15 +1,14 @@
 package br.unb.cic.tdp.base;
 
+import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.proof.ProofStorage;
+import lombok.val;
+import org.apache.commons.lang3.tuple.Pair;
+
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
-
-import br.unb.cic.tdp.proof.ProofStorage;
-import com.google.common.collect.Sets;
-import br.unb.cic.tdp.permutation.Cycle;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import lombok.val;
-import org.apache.commons.lang3.tuple.Pair;
 
 public class CommonOperations implements Serializable {
 
@@ -192,36 +191,36 @@ public class CommonOperations implements Serializable {
 
     private static double bestRate = Double.MAX_VALUE;
 
-    public static Optional<List<Pair<Set<Integer>, List<Cycle>>>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate) {
-        val pivotSet = configuration.getSpi().stream().map(cycle -> isOriented(configuration.getPi(), cycle) ? Arrays.stream(cycle.getSymbols()).boxed().collect(Collectors.toSet()) : Set.of(cycle.getMinSymbol())).collect(Collectors.toList());
+    public static Optional<List<Cycle>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate) {
+        val pivots = configuration.getSpi().stream()
+                .filter(c -> c.size() == 3)
+                .map(cycle -> Arrays.stream(cycle.getSymbols())
+                        .boxed()
+                        .map(s -> Pair.of(s, configuration.getPi().indexOf(s)))
+                        .min(Comparator.comparing(Pair::getRight)).get().getLeft())
+                .collect(Collectors.toSet());
 
-        val sortingList = new ArrayList<Pair<Set<Integer>, List<Cycle>>>();
-        val sortingStream = Sets.cartesianProduct(pivotSet).stream().map(symbols -> {
-            val pivots = new TreeSet<>(symbols);
-            val _2Move = lookFor2Move(configuration, pivots);
-            if (_2Move.isPresent()) {
-                // if there is a 2-move directly, do not record it
-                return _2Move;
-            }
-            val sorting = searchForSorting(configuration, pivots, twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate).map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
-            sortingList.add(Pair.of(pivots, sorting.orElse(null)));
-            return sorting;
-        });
+        val _2move = lookFor2Move(configuration, pivots);
+        if (_2move.isPresent()) {
+            return _2move;
+        }
 
-        boolean anyEmpty = sortingStream.anyMatch(Optional::isEmpty);
-        if (anyEmpty && configuration.isFull()) {
+        var sorting = searchForSorting(configuration, pivots, twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate).map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
+
+        if (sorting.isEmpty() && configuration.isFull()) {
             val sigma = configuration.getSpi().times(configuration.getPi());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
-                val sorting = searchForSorting(configuration, Set.of(), twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate).map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
+                sorting = searchForSorting(configuration, Set.of(), twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate).map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
                 if (sorting.isEmpty()) {
                     System.out.println("bad component -> " + configuration);
                 } else if (proofStorage != null) {
                     proofStorage.saveComponentSorting(configuration, sorting.get());
+                    System.exit(1); // TODO
                 }
             }
         }
 
-        return anyEmpty ? Optional.empty() : Optional.of(sortingList);
+        return sorting;
     }
 
     private static Optional<List<Cycle>> lookFor2Move(final Configuration configuration, final Set<Integer> pivots) {
@@ -250,9 +249,5 @@ public class CommonOperations implements Serializable {
             result[i] = spi.image(i);
         }
         return result;
-    }
-
-    public static void main(String[] args) {
-        System.out.println(searchForSorting(null, new Configuration("(0 1 7 4)(2 8 5 3 6)"), 1.5));
     }
 }

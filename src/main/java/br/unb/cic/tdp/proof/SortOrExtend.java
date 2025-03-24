@@ -80,6 +80,9 @@ class SortOrExtend extends AbstractSortOrExtend {
      * Type 3 extension.
      */
     static List<Pair<String, Configuration>> type3Extensions(final Configuration config) {
+//        if (true) {
+//            return List.of();
+//        }
         val openGates = config.getOpenGates().size();
 
         val result = new ArrayList<Pair<String, Configuration>>();
@@ -97,13 +100,15 @@ class SortOrExtend extends AbstractSortOrExtend {
 
         for (var label = 1; label <= config.getSpi().size(); label++) {
             val cycle = cyclesByLabel.get(label);
-            val extendedSpi = config.getSpi().toString().replace(cycle.toString(), cycle.toString().replace(")", " " + n + ")"));
+            if (cycle.size() == 3) { // only 3-cycles are extended
+                val extendedSpi = config.getSpi().toString().replace(cycle.toString(), cycle.toString().replace(")", " " + n + ")"));
 
-            for (var a = 0; a < n; a++) {
-                val extendedPi = insertAtPosition(config.getPi().getSymbols(), n, a);
-                val extension = new Configuration(new MulticyclePermutation(extendedSpi), Cycle.of(extendedPi));
-                if (closesOneOpenGate(openGates, extension) || (openGates == 0 && extension.getOpenGates().size() <= 1)) {
-                    result.add(new Pair<>(String.format("a=%d, extended cycle: %s", a, cycle), extension));
+                for (var a = 0; a <= n; a++) {
+                    val extendedPi = insertAtPosition(config.getPi().getSymbols(), n, a);
+                    val extension = new Configuration(new MulticyclePermutation(extendedSpi), Cycle.of(extendedPi));
+                    if (closesOneOpenGate(openGates, extension) || (openGates == 0 && extension.getOpenGates().size() <= 1)) {
+                        result.add(new Pair<>(String.format("a=%d, extended cycle: %s", a, cycle), extension));
+                    }
                 }
             }
         }

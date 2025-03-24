@@ -34,6 +34,9 @@ public class Configuration {
     private final Cycle pi;
 
     @Getter
+    private final MulticyclePermutation sigma;
+
+    @Getter
     private final Signature signature;
 
     @ToString.Exclude
@@ -47,6 +50,7 @@ public class Configuration {
         this.pi = pi;
         this.cycleIndex = cycleIndex(spi, pi);
         this.signature = new Signature(pi, signature(spi, pi, cycleIndex), false);
+        this.sigma = spi.times(pi);
     }
 
     public Configuration(final MulticyclePermutation spi) {
@@ -177,47 +181,9 @@ public class Configuration {
         return new Signature(pi, signature(mirroredSpi, pi), true);
     }
 
-    public List<Cycle> translatedSorting(final Configuration config, final List<Cycle> sorting) {
-        val matchedSignature = this.getEquivalentSignatures()
-                .filter(c -> Arrays.equals(c.getContent(), config.getSignature().getContent()))
-                .findFirst().get();
-
-        val translatedSorting = new ArrayList<Cycle>();
-        var pi = config.getPi();
-        var signaturePi = matchedSignature.pi;
-
-        for (val move : sorting) {
-            if (matchedSignature.isMirror()) {
-                translatedSorting.add(Cycle.of(
-                        signaturePi.get(Math.abs(pi.indexOf(move.get(0)) - pi.size()) - 1),
-                        signaturePi.get(Math.abs(pi.indexOf(move.get(1)) - pi.size()) - 1),
-                        signaturePi.get(Math.abs(pi.indexOf(move.get(2)) - pi.size()) - 1)).getInverse());
-            } else {
-                translatedSorting.add(Cycle.of(
-                        signaturePi.get(pi.indexOf(move.get(0))),
-                        signaturePi.get(pi.indexOf(move.get(1))),
-                        signaturePi.get(pi.indexOf(move.get(2)))));
-            }
-            pi = applyTranspositionOptimized(pi, move);
-            signaturePi = applyTranspositionOptimized(signaturePi, translatedSorting.get(translatedSorting.size() - 1));
-        }
-
-        return translatedSorting;
-    }
-
     @ToString.Include
     public boolean isFull() {
         return openGates().findAny().isEmpty();
-    }
-
-    @ToString.Include
-    public int get3Norm() {
-        return this.spi.get3Norm();
-    }
-
-    @ToString.Include
-    public int getNumberOfOpenGates() {
-        return getOpenGates().size();
     }
 
     @Override

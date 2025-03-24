@@ -4,13 +4,11 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import lombok.AllArgsConstructor;
 import lombok.val;
-import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.RecursiveAction;
 
+import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
 import static br.unb.cic.tdp.base.CommonOperations.searchForSorting;
 
 @AllArgsConstructor
@@ -21,8 +19,8 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
 
     @Override
     protected void compute() {
-        val configuration = this.configuration.getCanonical();
-   
+        val configuration = this.configuration;
+
         if (storage.isAlreadySorted(configuration)) {
             return;
         }
@@ -30,11 +28,9 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
         if (!storage.isBadCase(configuration)) {
             if (storage.tryLock(configuration)) {
                 try {
-                    val sorting = getSorting(configuration);
+                    val sorting = searchForSorting(storage, configuration, minRate);
                     if (sorting.isPresent()) {
-                        sorting.get().forEach(pair -> {
-                            storage.saveSorting(configuration, pair.getKey(), pair.getValue());
-                        });
+                        storage.saveSorting(configuration, Set.of(), sorting.get());
                         return;
                     } else {
                         storage.noSorting(configuration);
@@ -46,13 +42,6 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                 }
             } // else: another thread is already working on this configuration
         }
-    }
-
-    private Optional<List<Pair<Set<Integer>, List<Cycle>>>> getSorting(final Configuration configuration) {
-        if (storage.hasNoSorting(configuration)) {
-            return Optional.empty();
-        }
-        return searchForSorting(storage, configuration, minRate);
     }
 
     protected abstract void extend(Configuration configuration);
