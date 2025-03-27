@@ -80,9 +80,6 @@ class SortOrExtend extends AbstractSortOrExtend {
      * Type 3 extension.
      */
     static List<Pair<String, Configuration>> type3Extensions(final Configuration config) {
-//        if (true) {
-//            return List.of();
-//        }
         val openGates = config.getOpenGates().size();
 
         val result = new ArrayList<Pair<String, Configuration>>();

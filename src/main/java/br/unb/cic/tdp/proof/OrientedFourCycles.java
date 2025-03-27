@@ -12,6 +12,7 @@ public class OrientedFourCycles {
         SortOrExtend.type3Extensions(config)
                 .stream()
                 .map(Pair::getSecond)
+                .map(Configuration::getCanonical)
                 .forEach(c -> {
                     System.out.println(c + "-" +
                             searchForSorting(null, c, 1.6));

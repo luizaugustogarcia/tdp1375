@@ -193,7 +193,6 @@ public class CommonOperations implements Serializable {
 
     public static Optional<List<Cycle>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate) {
         val pivots = configuration.getSpi().stream()
-                .filter(c -> c.size() == 3)
                 .map(cycle -> Arrays.stream(cycle.getSymbols())
                         .boxed()
                         .map(s -> Pair.of(s, configuration.getPi().indexOf(s)))
