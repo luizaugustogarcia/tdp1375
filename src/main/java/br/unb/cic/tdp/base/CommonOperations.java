@@ -192,6 +192,7 @@ public class CommonOperations implements Serializable {
     private static double bestRate = Double.MAX_VALUE;
 
     public static Optional<List<Cycle>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate) {
+        // pivots are the leftmost symbols of each cycle
         val pivots = configuration.getSpi().stream()
                 .map(cycle -> Arrays.stream(cycle.getSymbols())
                         .boxed()
@@ -214,7 +215,6 @@ public class CommonOperations implements Serializable {
                     System.out.println("bad component -> " + configuration);
                 } else if (proofStorage != null) {
                     proofStorage.saveComponentSorting(configuration, sorting.get());
-                    System.exit(1); // TODO
                 }
             }
         }

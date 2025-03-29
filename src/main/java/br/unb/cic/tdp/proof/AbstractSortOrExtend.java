@@ -19,7 +19,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
 
     @Override
     protected void compute() {
-        val configuration = this.configuration;
+        val configuration = Configuration.ofSignature(this.configuration.getSignature().getContent());
 
         if (storage.isAlreadySorted(configuration)) {
             return;
