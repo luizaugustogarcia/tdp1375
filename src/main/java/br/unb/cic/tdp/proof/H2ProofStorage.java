@@ -1,6 +1,5 @@
 package br.unb.cic.tdp.proof;
 
-import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import lombok.SneakyThrows;
@@ -35,7 +34,7 @@ public class H2ProofStorage implements ProofStorage {
         new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS bad_case_win (config VARCHAR(255) primary key);");
 
         new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS sorting (config VARCHAR(255), hash_code INTEGER, pivots VARCHAR(255), sorting VARCHAR(255), PRIMARY KEY (config, pivots));");
-       // new QueryRunner(dataSource).update("CREATE INDEX idx_sorting ON sorting (hash_code);");
+        // new QueryRunner(dataSource).update("CREATE INDEX idx_sorting ON sorting (hash_code);");
 
         new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS no_sorting (config VARCHAR(255) primary key);");
 

@@ -14,7 +14,7 @@ import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
 import static br.unb.cic.tdp.base.Configuration.signature;
 import static java.util.stream.Stream.concat;
 
-class SortOrExtend extends AbstractSortOrExtend {
+public class SortOrExtend extends AbstractSortOrExtend {
 
     public SortOrExtend(final Configuration configuration,
                         final ProofStorage storage,

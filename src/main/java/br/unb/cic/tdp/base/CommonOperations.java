@@ -192,12 +192,9 @@ public class CommonOperations implements Serializable {
     private static double bestRate = Double.MAX_VALUE;
 
     public static Optional<List<Cycle>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate) {
-        // pivots are the leftmost symbols of each cycle
+        // pivots are the leftmost symbols of each cycle, i.e. min if pi is canonical
         val pivots = configuration.getSpi().stream()
-                .map(cycle -> Arrays.stream(cycle.getSymbols())
-                        .boxed()
-                        .map(s -> Pair.of(s, configuration.getPi().indexOf(s)))
-                        .min(Comparator.comparing(Pair::getRight)).get().getLeft())
+                .map(Cycle::getMinSymbol)
                 .collect(Collectors.toSet());
 
         val _2move = lookFor2Move(configuration, pivots);

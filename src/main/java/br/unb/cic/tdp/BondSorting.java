@@ -3,7 +3,6 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.H2ProofStorage;
 import br.unb.cic.tdp.proof.ProofStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -14,6 +13,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
+import static br.unb.cic.tdp.proof.SortOrExtend.insertAtPosition;
 
 @RequiredArgsConstructor
 public class BondSorting {
@@ -26,6 +26,9 @@ public class BondSorting {
 
         loop:
         while (!spi.isIdentity()) {
+            var simplification = simplify(spi, pi); // remove the inserted symbols and re-enumerate the symbols to restore original permutation
+
+
             val _2move = get2Move(spi, pi);
             if (_2move.isPresent()) {
                 pi = _2move.get().times(pi).asNCycle();
@@ -53,6 +56,60 @@ public class BondSorting {
                 }
             }
         }
+    }
+
+    public static void main(String[] args) {
+        val pi = Cycle.of(0,30,11,4,19,18,22,6,10,20,2,25,28,21,17,16,13,9,8,23,1,24,29,27,5,26,14,15,3,7,12);
+        val spi = CANONICAL_PI[pi.size()].times(pi.getInverse());
+        System.out.println(simplify(spi, pi));
+    }
+
+    private static Pair<Pair<MulticyclePermutation, Set<Integer>>, Cycle> simplify(final MulticyclePermutation spi, Cycle pi) {
+        val newSpi = new ArrayList<Cycle>();
+        Set<Integer> insertedSymbols = new HashSet<>();
+
+        val queue = new LinkedList<>(spi);
+        while (!queue.isEmpty()) {
+            var breakingCycle = startingFromLeftMostSymbol(queue.poll(), pi);
+            if (breakingCycle.size() <= 4) {
+                newSpi.add(breakingCycle);
+            } else {
+                val segment = Cycle.of(breakingCycle.get(0), breakingCycle.get(1), breakingCycle.get(2));
+                newSpi.add(segment);
+
+                val pivot = segment.get(2) + 1;
+                insertedSymbols = insertedSymbols.stream().map(s -> s > pivot? s + 1: s).collect(Collectors.toSet());
+
+                insertedSymbols.add(pivot);
+
+                val newBreakingCycle = new int[breakingCycle.size() - 2];
+                newBreakingCycle[0] = pivot;
+                for (int i = 1; i < newBreakingCycle.length; i++) {
+                    val currentSymbol = breakingCycle.getSymbols()[i + 2];
+                    newBreakingCycle[i] = currentSymbol >= pivot ? currentSymbol + 1 : currentSymbol;
+                }
+
+                val newPi = insertAtPosition(pi.getSymbols(), -1, pi.indexOf(breakingCycle.get(0)) + 1);
+                for (int i = 0; i < newPi.length; i++) {
+                    val currentSymbol = newPi[i];
+                    newPi[i] = currentSymbol >= pivot ? currentSymbol + 1 : currentSymbol;
+                    newPi[i] = currentSymbol == -1 ? pivot : newPi[i];
+                }
+
+                pi = Cycle.of(newPi);
+
+                queue.offer(Cycle.of(newBreakingCycle));
+            }
+        }
+
+        return Pair.of(Pair.of(new MulticyclePermutation(newSpi), insertedSymbols), pi);
+    }
+
+    private static Cycle startingFromLeftMostSymbol(final Cycle cycle, Cycle pi) {
+        return cycle.startingBy(Arrays.stream(cycle.getSymbols())
+                .boxed()
+                .map(s -> Pair.of(s, pi.indexOf(s)))
+                .min(Comparator.comparing(Pair::getRight)).get().getLeft());
     }
 
     private Optional<Cycle> get2Move(final MulticyclePermutation spi, final Cycle pi) {
@@ -95,11 +152,6 @@ public class BondSorting {
                 newPi.add(symbol);
         }
         return Cycle.of(newPi.stream().map(Object::toString).collect(Collectors.joining(" ")));
-    }
-
-    public static void main(String[] args) {
-        val bondSorting = new BondSorting(new H2ProofStorage("/Users/I556732/Temp/proof"));
-        bondSorting.sort(Cycle.of("(0,30,11,4,19,18,22,6,10,20,2,25,28,21,17,16,13,9,8,23,1,24,29,27,5,26,14,15,3,7,12)"));
     }
 
     public static List<Cycle> extend(final List<Cycle> config, final MulticyclePermutation spi, final Cycle pi) {
@@ -164,8 +216,6 @@ public class BondSorting {
                 }
             }
         }
-
-        // TODO eliminate type 3 - configuration from segments of any number of cycles (one cycles could contribute with more than one segment
 
         // Type 3 extension
         for (var cycle : config) {
