@@ -28,6 +28,7 @@ public class BondSorting {
         while (!spi.isIdentity()) {
             var simplification = simplify(spi, pi); // remove the inserted symbols and re-enumerate the symbols to restore original permutation
 
+            // TODO 2-cycles
 
             val _2move = get2Move(spi, pi);
             if (_2move.isPresent()) {
@@ -36,20 +37,19 @@ public class BondSorting {
                 continue;
             }
 
-            // TODO 2-cycles
-
             List<Cycle> configuration = new ArrayList<>();
             val gamma = spi.stream().filter(c -> c.size() > 1).findFirst().get();
             configuration.add(Cycle.of(gamma.get(0), gamma.get(1), gamma.get(2)));
             while (true) {
                 val extension = extend(configuration, spi, pi);
                 if (extension == configuration) {
+                    // TODO should always find a sorting at this point
                     // reached a maximal configuration (i.e. component)
-                    val sorting = findByCompSortingByHashCode(configuration, pi, proofStorage);
+                    val sorting = findBySorting(configuration, pi, proofStorage);
                     System.out.println(sorting);
                 }
                 configuration = extension;
-                val sortings = findBySortingByHashCode(configuration, pi, proofStorage);
+                val sortings = findBySorting(configuration, pi, proofStorage);
                 if (!sortings.isEmpty()) {
                     System.out.println(sortings);
                     break;
@@ -133,16 +133,10 @@ public class BondSorting {
         return Optional.empty();
     }
 
-    private List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySortingByHashCode(final List<Cycle> configuration, final Cycle pi, final ProofStorage proofStorage) {
+    private List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySorting(final List<Cycle> configuration, final Cycle pi, final ProofStorage proofStorage) {
         val spi = new MulticyclePermutation(configuration);
         val config = new Configuration(spi, removeExtraSymbols(spi.getSymbols(), pi));
-        return proofStorage.findBySortingsByHashCode(config.hashCode());
-    }
-
-    private List<Cycle> findByCompSortingByHashCode(final List<Cycle> configuration, final Cycle pi, final ProofStorage proofStorage) {
-        val spi = new MulticyclePermutation(configuration);
-        val config = new Configuration(spi, removeExtraSymbols(spi.getSymbols(), pi));
-        return proofStorage.findByCompSortingByHashCode(config.hashCode());
+        return proofStorage.findBySorting(Configuration.ofSignature(config.getSignature().getContent()).getSpi().toString());
     }
 
     public static Cycle removeExtraSymbols(final Set<Integer> symbols, final Cycle pi) {

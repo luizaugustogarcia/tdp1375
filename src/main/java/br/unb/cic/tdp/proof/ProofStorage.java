@@ -21,13 +21,11 @@ public interface ProofStorage {
 
     void saveSorting(final Configuration configuration, Set<Integer> pivots, List<Cycle> sorting);
 
-    void noSorting(Configuration configuration);
+    void markNoSorting(Configuration configuration);
 
     boolean hasNoSorting(Configuration configuration);
 
-    List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySortingsByHashCode(int hashCode);
-
     void saveComponentSorting(Configuration configuration, List<Cycle> cycles);
 
-    List<Cycle> findByCompSortingByHashCode(int hashCode);
+    List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySorting(String spi);
 }

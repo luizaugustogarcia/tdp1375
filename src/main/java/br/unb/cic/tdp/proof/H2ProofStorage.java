@@ -6,15 +6,12 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbutils.QueryRunner;
-import org.apache.commons.dbutils.handlers.MapHandler;
-import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class H2ProofStorage implements ProofStorage {
 
@@ -89,7 +86,7 @@ public class H2ProofStorage implements ProofStorage {
 
     @SneakyThrows
     @Override
-    public void noSorting(final Configuration configuration) {
+    public void markNoSorting(final Configuration configuration) {
         new QueryRunner(dataSource).update("INSERT IGNORE INTO no_sorting(config) VALUES (?);", getId(configuration));
     }
 
@@ -101,41 +98,12 @@ public class H2ProofStorage implements ProofStorage {
 
     @SneakyThrows
     @Override
-    public List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySortingsByHashCode(final int hashCode) {
-        val sortings = new QueryRunner(dataSource).query("SELECT * FROM sorting WHERE hash_code = ?", new MapListHandler(), hashCode);
-        return sortings.stream().map(map -> {
-            val config = new Configuration(map.get("config").toString());
-            val pivots = Arrays.stream(map.get("pivots").toString()
-                            .replace("[", "")
-                            .replace("]", "")
-                            .split(", "))
-                    .map(Integer::parseInt)
-                    .collect(Collectors.toSet());
-            val sorting = Arrays.stream(map.get("sorting").toString()
-                            .replace("[", "")
-                            .replace("]", "")
-                            .split(", "))
-                    .map(Cycle::of)
-                    .collect(Collectors.toList());
-            return Pair.of(config, Pair.of(pivots, sorting));
-        }).collect(Collectors.toList());
-    }
-
-    @SneakyThrows
-    @Override
     public void saveComponentSorting(final Configuration configuration, final List<Cycle> sorting) {
         new QueryRunner(dataSource).update("INSERT INTO comp_sorting(config, hash_code, sorting) VALUES (?, ?)", getId(configuration), configuration.hashCode(), sorting.toString());
     }
 
-    @SneakyThrows
     @Override
-    public List<Cycle> findByCompSortingByHashCode(int hashCode) {
-        val map = new QueryRunner(dataSource).query("SELECT * FROM comp_sorting WHERE hash_code = ?", new MapHandler(), hashCode);
-        return Arrays.stream(map.get("sorting").toString()
-                        .replace("[", "")
-                        .replace("]", "")
-                        .split(", "))
-                .map(Cycle::of)
-                .collect(Collectors.toList());
+    public List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySorting(final String spi) {
+        throw new NotImplementedException();
     }
 }

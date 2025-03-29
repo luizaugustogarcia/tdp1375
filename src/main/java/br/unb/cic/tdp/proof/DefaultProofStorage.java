@@ -79,7 +79,7 @@ public class DefaultProofStorage implements ProofStorage {
     }
 
     @Override
-    public void noSorting(Configuration configuration) {
+    public void markNoSorting(Configuration configuration) {
         throw new NotImplementedException();
     }
 
@@ -89,17 +89,12 @@ public class DefaultProofStorage implements ProofStorage {
     }
 
     @Override
-    public List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySortingsByHashCode(int hasCode) {
-        throw new NotImplementedException();
-    }
-
-    @Override
     public void saveComponentSorting(Configuration configuration, List<Cycle> cycles) {
         throw new NotImplementedException();
     }
 
     @Override
-    public List<Cycle> findByCompSortingByHashCode(int hashCode) {
+    public List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySorting(String spi) {
         throw new NotImplementedException();
     }
 }
