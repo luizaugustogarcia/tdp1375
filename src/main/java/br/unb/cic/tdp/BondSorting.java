@@ -3,6 +3,7 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.proof.H2ProofStorage;
 import br.unb.cic.tdp.proof.ProofStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -18,67 +19,85 @@ import static br.unb.cic.tdp.proof.SortOrExtend.insertAtPosition;
 @RequiredArgsConstructor
 public class BondSorting {
 
-    private final ProofStorage proofStorage;
-
-    public void sort(Cycle pi) {
+    public static void sort(Cycle pi, final ProofStorage proofStorage) {
         val sigma = CANONICAL_PI[pi.size()];
         var spi = sigma.times(pi.getInverse());
 
         loop:
         while (!spi.isIdentity()) {
+            // TODO handle 2-cycles
+
             var simplification = simplify(spi, pi); // remove the inserted symbols and re-enumerate the symbols to restore original permutation
+            var spiPrime = simplification.getLeft().getLeft();
+            var piPrime = simplification.getRight();
 
-            // TODO 2-cycles
+            // TODO is zero pivot or 4, I think it's 4
+            var pivots = getPivots(spiPrime, piPrime);
 
-            val _2move = get2Move(spi, pi);
+            val _2move = get2Move(spiPrime, piPrime, pivots);
             if (_2move.isPresent()) {
-                pi = _2move.get().times(pi).asNCycle();
-                spi = spi.times(_2move.get().getInverse());
-                continue;
+                piPrime = _2move.get().times(piPrime).asNCycle();
+                spiPrime = spiPrime.times(_2move.get().getInverse());
+            } else {
+                List<Cycle> configuration = new ArrayList<>();
+                val gamma = spiPrime.stream().filter(c -> c.size() > 1).findFirst().get();
+                configuration.add(Cycle.of(gamma.get(0), gamma.get(1), gamma.get(2)));
+
+                while (true) {
+                    val extension = extend(configuration, spiPrime, piPrime);
+                    if (extension == configuration) {
+                        // TODO should always find a sorting at this point
+                        // reached a maximal configuration (i.e. component)
+                        val sorting = findBySorting(configuration, piPrime, proofStorage);
+                        System.out.println(sorting);
+                    }
+                    configuration = extension;
+                    val sortings = findBySorting(configuration, piPrime, proofStorage);
+                    if (!sortings.isEmpty()) {
+                        System.out.println(sortings);
+                        break;
+                    }
+                }
             }
 
-            List<Cycle> configuration = new ArrayList<>();
-            val gamma = spi.stream().filter(c -> c.size() > 1).findFirst().get();
-            configuration.add(Cycle.of(gamma.get(0), gamma.get(1), gamma.get(2)));
-            while (true) {
-                val extension = extend(configuration, spi, pi);
-                if (extension == configuration) {
-                    // TODO should always find a sorting at this point
-                    // reached a maximal configuration (i.e. component)
-                    val sorting = findBySorting(configuration, pi, proofStorage);
-                    System.out.println(sorting);
-                }
-                configuration = extension;
-                val sortings = findBySorting(configuration, pi, proofStorage);
-                if (!sortings.isEmpty()) {
-                    System.out.println(sortings);
-                    break;
-                }
-            }
+            // TODO desimplify
         }
     }
 
-    public static void main(String[] args) {
-        val pi = Cycle.of(0,30,11,4,19,18,22,6,10,20,2,25,28,21,17,16,13,9,8,23,1,24,29,27,5,26,14,15,3,7,12);
-        val spi = CANONICAL_PI[pi.size()].times(pi.getInverse());
-        System.out.println(simplify(spi, pi));
+    private static Set<Integer> getPivots(final MulticyclePermutation spiPrime, final Cycle piPrime) {
+        return spiPrime.stream().map(cycle -> leftMostSymbol(cycle, piPrime)).collect(Collectors.toSet());
     }
 
-    private static Pair<Pair<MulticyclePermutation, Set<Integer>>, Cycle> simplify(final MulticyclePermutation spi, Cycle pi) {
-        val newSpi = new ArrayList<Cycle>();
+    public static void main(String[] args) {
+        val storage = new H2ProofStorage(null);
+        sort(Cycle.of(0, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1), storage);
+    }
+
+    private static Pair<Pair<MulticyclePermutation, Set<Integer>>, Cycle> simplify(MulticyclePermutation spi, Cycle pi) {
+        val segments = new ArrayList<Cycle>();
         Set<Integer> insertedSymbols = new HashSet<>();
 
         val queue = new LinkedList<>(spi);
         while (!queue.isEmpty()) {
             var breakingCycle = startingFromLeftMostSymbol(queue.poll(), pi);
             if (breakingCycle.size() <= 4) {
-                newSpi.add(breakingCycle);
+                segments.add(breakingCycle);
             } else {
                 val segment = Cycle.of(breakingCycle.get(0), breakingCycle.get(1), breakingCycle.get(2));
-                newSpi.add(segment);
+                segments.add(segment);
 
                 val pivot = segment.get(2) + 1;
-                insertedSymbols = insertedSymbols.stream().map(s -> s > pivot? s + 1: s).collect(Collectors.toSet());
+                // relabel inserted symbols
+                insertedSymbols = insertedSymbols.stream().map(s -> s > pivot ? s + 1 : s).collect(Collectors.toSet());
+                // relabel segments symbols
+                segments.forEach(s -> {
+                    val symbols = s.getSymbols();
+                    for (int i = 0; i < symbols.length; i++) {
+                        val currentSymbol = symbols[i];
+                        symbols[i] = currentSymbol >= pivot ? currentSymbol + 1 : currentSymbol;
+                    }
+                    s.update(symbols);
+                });
 
                 insertedSymbols.add(pivot);
 
@@ -90,6 +109,7 @@ public class BondSorting {
                 }
 
                 val newPi = insertAtPosition(pi.getSymbols(), -1, pi.indexOf(breakingCycle.get(0)) + 1);
+                // relabel pi symbols
                 for (int i = 0; i < newPi.length; i++) {
                     val currentSymbol = newPi[i];
                     newPi[i] = currentSymbol >= pivot ? currentSymbol + 1 : currentSymbol;
@@ -98,11 +118,29 @@ public class BondSorting {
 
                 pi = Cycle.of(newPi);
 
-                queue.offer(Cycle.of(newBreakingCycle));
+                // relabel symbols
+                queue.forEach(cycle -> {
+                    val symbols = cycle.getSymbols();
+                    for (int i = 0; i < symbols.length; i++) {
+                        val currentSymbol = symbols[i];
+                        symbols[i] = currentSymbol >= pivot ? currentSymbol + 1 : currentSymbol;
+                    }
+                    cycle.toString();
+                    cycle.update(symbols);
+                });
+
+                queue.offerFirst(Cycle.of(newBreakingCycle));
             }
         }
 
-        return Pair.of(Pair.of(new MulticyclePermutation(newSpi), insertedSymbols), pi);
+        return Pair.of(Pair.of(new MulticyclePermutation(segments).conjugateBy(CANONICAL_PI[pi.size()]), insertedSymbols), pi);
+    }
+
+    private static Integer leftMostSymbol(final Cycle cycle, Cycle pi) {
+        return Arrays.stream(cycle.getSymbols())
+                .boxed()
+                .map(s -> Pair.of(s, pi.indexOf(s)))
+                .min(Comparator.comparing(Pair::getRight)).get().getLeft();
     }
 
     private static Cycle startingFromLeftMostSymbol(final Cycle cycle, Cycle pi) {
@@ -112,7 +150,7 @@ public class BondSorting {
                 .min(Comparator.comparing(Pair::getRight)).get().getLeft());
     }
 
-    private Optional<Cycle> get2Move(final MulticyclePermutation spi, final Cycle pi) {
+    private static Optional<Cycle> get2Move(final MulticyclePermutation spi, final Cycle pi, final Set<Integer> pivots) {
         val piSymbols = pi.getSymbols();
 
         for (var i = 0; i < piSymbols.length - 2; i++) {
@@ -122,8 +160,8 @@ public class BondSorting {
 
                     val move = Cycle.of(a, b, c);
                     val spiPrime = spi.times(move.getInverse());
-                    final Predicate<Cycle> trivial = cycle -> cycle.size() == 1;
-                    if (spiPrime.stream().filter(trivial).count() >= spi.stream().filter(trivial).count() + 2) {
+                    final Predicate<Cycle> trivialNonPivot = cycle -> cycle.size() == 1 && !pivots.contains(cycle.get(0));
+                    if (spiPrime.stream().filter(trivialNonPivot).count() >= spi.stream().filter(trivialNonPivot).count() + 2) {
                         return Optional.of(move);
                     }
                 }
@@ -133,7 +171,7 @@ public class BondSorting {
         return Optional.empty();
     }
 
-    private List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySorting(final List<Cycle> configuration, final Cycle pi, final ProofStorage proofStorage) {
+    private static Optional<List<Cycle>> findBySorting(final List<Cycle> configuration, final Cycle pi, final ProofStorage proofStorage) {
         val spi = new MulticyclePermutation(configuration);
         val config = new Configuration(spi, removeExtraSymbols(spi.getSymbols(), pi));
         return proofStorage.findBySorting(Configuration.ofSignature(config.getSignature().getContent()).getSpi().toString());

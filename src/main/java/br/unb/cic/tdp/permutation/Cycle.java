@@ -1,6 +1,7 @@
 package br.unb.cic.tdp.permutation;
 
 import cern.colt.list.IntArrayList;
+import lombok.Getter;
 import lombok.val;
 import org.apache.commons.lang.ArrayUtils;
 
@@ -9,9 +10,13 @@ import java.util.Arrays;
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
+    @Getter
     private int[] symbols;
+    @Getter
     private int[] symbolIndexes;
+    @Getter
     private int minSymbol = -1;
+    @Getter
     private int maxSymbol = -1;
     private Cycle inverse;
     private Integer hashCode;
@@ -41,11 +46,9 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return new Cycle(symbols);
     }
 
-    public int[] getSymbols() {
-        return symbols;
-    }
-
     private void updateInternalState() {
+        minSymbol = Integer.MAX_VALUE;
+        maxSymbol = Integer.MIN_VALUE;
         for (val symbol : symbols) {
             if (minSymbol == -1 || symbol < minSymbol) {
                 minSymbol = symbol;
@@ -62,14 +65,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         for (var i = 0; i < symbols.length; i++) {
             symbolIndexes[symbols[i]] = i;
         }
-    }
-
-    public int getMaxSymbol() {
-        return maxSymbol;
-    }
-
-    public int getMinSymbol() {
-        return minSymbol;
     }
 
     @Override
@@ -212,7 +207,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return this.size() > 3;
     }
 
-    public int[] getSymbolIndexes() {
-        return symbolIndexes;
+    public void update(final int... symbols) {
+        this.symbols = symbols;
+        updateInternalState();
     }
 }

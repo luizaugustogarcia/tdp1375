@@ -6,12 +6,14 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.apache.commons.lang3.NotImplementedException;
-import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class H2ProofStorage implements ProofStorage {
 
@@ -28,18 +30,16 @@ public class H2ProofStorage implements ProofStorage {
 
         new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS working (config VARCHAR(255) primary key);");
 
-        new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS bad_case_win (config VARCHAR(255) primary key);");
+        new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS bad_case (config VARCHAR(255) primary key);");
 
         new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS sorting (config VARCHAR(255), hash_code INTEGER, pivots VARCHAR(255), sorting VARCHAR(255), PRIMARY KEY (config, pivots));");
-        // new QueryRunner(dataSource).update("CREATE INDEX idx_sorting ON sorting (hash_code);");
 
         new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS no_sorting (config VARCHAR(255) primary key);");
 
         new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS comp_sorting (config VARCHAR(255) primary key, hash_code INTEGER, sorting VARCHAR(255));");
-        //new QueryRunner(dataSource).update("CREATE INDEX idx_comp_sorting ON comp_sorting (hash_code);");
 
         new QueryRunner(dataSource).update("TRUNCATE TABLE working;");
-        new QueryRunner(dataSource).update("TRUNCATE TABLE bad_case_win;");
+        new QueryRunner(dataSource).update("TRUNCATE TABLE bad_case;");
     }
 
     private static String getId(final Configuration configuration) {
@@ -55,7 +55,7 @@ public class H2ProofStorage implements ProofStorage {
     @SneakyThrows
     @Override
     public boolean isBadCase(final Configuration configuration) {
-        return new QueryRunner(dataSource).query("SELECT 1 FROM bad_case_win WHERE config = '" + getId(configuration) + "'", new ScalarHandler<String>(1)) != null;
+        return new QueryRunner(dataSource).query("SELECT 1 FROM bad_case WHERE config = '" + getId(configuration) + "'", new ScalarHandler<String>(1)) != null;
     }
 
     @SneakyThrows
@@ -75,7 +75,7 @@ public class H2ProofStorage implements ProofStorage {
     @SneakyThrows
     @Override
     public void markBadCase(final Configuration configuration) {
-        new QueryRunner(dataSource).update("INSERT INTO bad_case_win(config) VALUES (?)", getId(configuration));
+        new QueryRunner(dataSource).update("INSERT INTO bad_case(config) VALUES (?)", getId(configuration));
     }
 
     @SneakyThrows
@@ -102,8 +102,15 @@ public class H2ProofStorage implements ProofStorage {
         new QueryRunner(dataSource).update("INSERT INTO comp_sorting(config, hash_code, sorting) VALUES (?, ?, ?)", getId(configuration), configuration.hashCode(), sorting.toString());
     }
 
+    @SneakyThrows
     @Override
-    public List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySorting(final String spi) {
-        throw new NotImplementedException();
+    public Optional<List<Cycle>> findBySorting(final String spi) {
+        val sorting = new QueryRunner(dataSource).query("SELECT * FROM sorting WHERE config = ?", new MapListHandler(), spi);
+        return sorting.stream().map(map -> Arrays.stream(map.get("sorting").toString()
+                        .replace("[", "")
+                        .replace("]", "")
+                        .split(", "))
+                .map(Cycle::of)
+                .collect(Collectors.toList())).findFirst();
     }
 }

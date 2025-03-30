@@ -6,15 +6,11 @@ import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class DefaultProofStorage implements ProofStorage {
@@ -94,7 +90,7 @@ public class DefaultProofStorage implements ProofStorage {
     }
 
     @Override
-    public List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySorting(String spi) {
+    public Optional<List<Cycle>> findBySorting(String spi) {
         throw new NotImplementedException();
     }
 }

@@ -2,9 +2,9 @@ package br.unb.cic.tdp.proof;
 
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface ProofStorage {
@@ -27,5 +27,5 @@ public interface ProofStorage {
 
     void saveComponentSorting(Configuration configuration, List<Cycle> cycles);
 
-    List<Pair<Configuration, Pair<Set<Integer>, List<Cycle>>>> findBySorting(String spi);
+    Optional<List<Cycle>> findBySorting(String spi);
 }

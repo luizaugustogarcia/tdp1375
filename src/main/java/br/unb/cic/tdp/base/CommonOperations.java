@@ -212,6 +212,7 @@ public class CommonOperations implements Serializable {
                     System.out.println("bad component -> " + configuration);
                 } else if (proofStorage != null) {
                     proofStorage.saveComponentSorting(configuration, sorting.get());
+                    return Optional.empty();
                 }
             }
         }
