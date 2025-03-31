@@ -194,7 +194,7 @@ public class CommonOperations implements Serializable {
     public static Optional<List<Cycle>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate) {
         // pivots are the leftmost symbols of each cycle, i.e. min if pi is canonical
         val pivots = configuration.getSpi().stream()
-                .map(Cycle::getMinSymbol)
+                .map(cycle -> leftMostSymbol(cycle, configuration.getPi()))
                 .collect(Collectors.toSet());
 
         val _2move = lookFor2Move(configuration, pivots);
@@ -218,6 +218,13 @@ public class CommonOperations implements Serializable {
         }
 
         return sorting;
+    }
+
+    private static Integer leftMostSymbol(final Cycle cycle, Cycle pi) {
+        return Arrays.stream(cycle.getSymbols())
+                .boxed()
+                .map(s -> Pair.of(s, s == 0 ? pi.size() - 1 : pi.indexOf(s)))
+                .min(Comparator.comparing(Pair::getRight)).get().getLeft();
     }
 
     private static Optional<List<Cycle>> lookFor2Move(final Configuration configuration, final Set<Integer> pivots) {
