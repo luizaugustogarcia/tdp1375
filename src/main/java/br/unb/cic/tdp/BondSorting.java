@@ -3,7 +3,8 @@ package br.unb.cic.tdp;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.H2ProofStorage;
+import br.unb.cic.tdp.permutation.PermutationGroups;
+import br.unb.cic.tdp.proof.MySQLProofStorage;
 import br.unb.cic.tdp.proof.ProofStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -14,6 +15,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
+import static br.unb.cic.tdp.base.Configuration.ofSignature;
 import static br.unb.cic.tdp.proof.SortOrExtend.insertAtPosition;
 
 @RequiredArgsConstructor
@@ -31,7 +33,7 @@ public class BondSorting {
             var spiPrime = simplification.getLeft().getLeft();
             var piPrime = simplification.getRight();
 
-            // TODO is zero pivot or 4, I think it's 4
+            // TODO is zero pivot or 4, I think it's 4 - I think zero must treated and n-th symbol in pi
             var pivots = getPivots(spiPrime, piPrime);
 
             val _2move = get2Move(spiPrime, piPrime, pivots);
@@ -50,10 +52,11 @@ public class BondSorting {
                         // reached a maximal configuration (i.e. component)
                         val sorting = findBySorting(configuration, piPrime, proofStorage);
                         System.out.println(sorting);
+                        break;
                     }
                     configuration = extension;
                     val sortings = findBySorting(configuration, piPrime, proofStorage);
-                    if (!sortings.isEmpty()) {
+                    if (sortings.isPresent()) {
                         System.out.println(sortings);
                         break;
                     }
@@ -69,7 +72,7 @@ public class BondSorting {
     }
 
     public static void main(String[] args) {
-        val storage = new H2ProofStorage(null);
+        val storage = new MySQLProofStorage(null);
         sort(Cycle.of(0, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1), storage);
     }
 
@@ -139,7 +142,7 @@ public class BondSorting {
     private static Integer leftMostSymbol(final Cycle cycle, Cycle pi) {
         return Arrays.stream(cycle.getSymbols())
                 .boxed()
-                .map(s -> Pair.of(s, pi.indexOf(s)))
+                .map(s -> Pair.of(s, s == 0 ? pi.size() - 1 : pi.indexOf(s))) // zero is the rightmost symbol
                 .min(Comparator.comparing(Pair::getRight)).get().getLeft();
     }
 
@@ -172,9 +175,37 @@ public class BondSorting {
     }
 
     private static Optional<List<Cycle>> findBySorting(final List<Cycle> configuration, final Cycle pi, final ProofStorage proofStorage) {
-        val spi = new MulticyclePermutation(configuration);
-        val config = new Configuration(spi, removeExtraSymbols(spi.getSymbols(), pi));
-        return proofStorage.findBySorting(Configuration.ofSignature(config.getSignature().getContent()).getSpi().toString());
+        var spiPrime = new MulticyclePermutation(configuration);
+        var piPrime = removeExtraSymbols(spiPrime.getSymbols(), pi);
+
+        val signature = new Configuration(spiPrime, piPrime).getSignature();
+        val canonicalConfig = ofSignature(signature.getContent());
+
+        val sorting = proofStorage.findBySorting(canonicalConfig.getSpi().toString());
+        if (sorting.isPresent()) {
+            // translate the sorting by simulating its application
+            val result = new ArrayList<Cycle>();
+            var piPrimePrime = canonicalConfig.getPi();
+            for (val move : sorting.get()) {
+                val a = move.get(0);
+                val b = move.get(1);
+                val c = move.get(2);
+
+                val i = piPrimePrime.indexOf(a);
+                val j = piPrimePrime.indexOf(b);
+                val k = piPrimePrime.indexOf(c);
+
+                val movePrime = Cycle.of(piPrime.get(i), piPrime.get(j), piPrime.get(k));
+                result.add(movePrime);
+
+                piPrime = PermutationGroups.computeProduct(false, movePrime.times(piPrime)).asNCycle();
+                piPrimePrime = move.times(piPrimePrime).asNCycle();
+                spiPrime = spiPrime.times(movePrime.getInverse());
+            }
+            return Optional.of(result);
+        }
+
+        return Optional.empty();
     }
 
     public static Cycle removeExtraSymbols(final Set<Integer> symbols, final Cycle pi) {
@@ -190,7 +221,6 @@ public class BondSorting {
         val piInverse = pi.getInverse().startingBy(pi.getMinSymbol());
 
         val configSymbols = new HashSet<Integer>();
-        // O(1), since at this point, ||mu|| never exceeds 16
         for (Cycle cycle : config)
             for (int i = 0; i < cycle.getSymbols().length; i++) {
                 configSymbols.add(cycle.getSymbols()[i]);

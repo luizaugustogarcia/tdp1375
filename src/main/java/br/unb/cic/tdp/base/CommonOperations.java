@@ -192,7 +192,7 @@ public class CommonOperations implements Serializable {
     private static double bestRate = Double.MAX_VALUE;
 
     public static Optional<List<Cycle>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate) {
-        // pivots are the leftmost symbols of each cycle, i.e. min if pi is canonical
+        // pivots are the leftmost symbols of each cycle - zero is the rightmost one
         val pivots = configuration.getSpi().stream()
                 .map(cycle -> leftMostSymbol(cycle, configuration.getPi()))
                 .collect(Collectors.toSet());
@@ -223,7 +223,7 @@ public class CommonOperations implements Serializable {
     private static Integer leftMostSymbol(final Cycle cycle, Cycle pi) {
         return Arrays.stream(cycle.getSymbols())
                 .boxed()
-                .map(s -> Pair.of(s, s == 0 ? pi.size() - 1 : pi.indexOf(s)))
+                .map(s -> Pair.of(s, s == 0 ? pi.size() - 1 : pi.indexOf(s))) // zero is the rightmost symbol
                 .min(Comparator.comparing(Pair::getRight)).get().getLeft();
     }
 

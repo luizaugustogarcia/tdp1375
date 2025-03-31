@@ -1,18 +1,13 @@
 package br.unb.cic.tdp.proof;
 
 import br.unb.cic.tdp.base.Configuration;
-import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.util.Pair;
 import lombok.SneakyThrows;
 import lombok.val;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +18,7 @@ public class Extensions {
 
     @SneakyThrows
     public static void generate(final String outputDir, final double minRate) {
-        val storage = new H2ProofStorage(outputDir);
+        val storage = new MySQLProofStorage(outputDir);
 
         val pool = new ForkJoinPool(Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 Runtime.getRuntime().availableProcessors() + "")));

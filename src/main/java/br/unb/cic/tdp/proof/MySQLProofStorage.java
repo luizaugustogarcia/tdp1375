@@ -15,12 +15,12 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class H2ProofStorage implements ProofStorage {
+public class MySQLProofStorage implements ProofStorage {
 
     private BasicDataSource dataSource;
 
     @SneakyThrows
-    public H2ProofStorage(final String outputDir) {
+    public MySQLProofStorage() {
         dataSource = new BasicDataSource();
         dataSource.setUrl("jdbc:mysql://localhost:3306/tdp?allowPublicKeyRetrieval=true&useSSL=false");
         dataSource.setUsername("luiz");
