@@ -9,6 +9,7 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -20,9 +21,9 @@ public class MySQLProofStorage implements ProofStorage {
     private BasicDataSource dataSource;
 
     @SneakyThrows
-    public MySQLProofStorage() {
+    public MySQLProofStorage(final String host) {
         dataSource = new BasicDataSource();
-        dataSource.setUrl("jdbc:mysql://localhost:3306/tdp?allowPublicKeyRetrieval=true&useSSL=false");
+        dataSource.setUrl("jdbc:mysql://" + host + ":3306/tdp?allowPublicKeyRetrieval=true&useSSL=false");
         dataSource.setUsername("luiz");
         dataSource.setPassword("luiz");
         dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
@@ -104,13 +105,23 @@ public class MySQLProofStorage implements ProofStorage {
 
     @SneakyThrows
     @Override
-    public Optional<List<Cycle>> findBySorting(final String spi) {
-        val sorting = new QueryRunner(dataSource).query("SELECT * FROM sorting WHERE config = ?", new MapListHandler(), spi);
+    public Optional<List<Cycle>> findSorting(final String spi) {
+        return findSorting("SELECT * FROM sorting WHERE config = ?", spi);
+    }
+
+    private Optional<List<Cycle>> findSorting(String query, String spi) throws SQLException {
+        val sorting = new QueryRunner(dataSource).query(query, new MapListHandler(), spi);
         return sorting.stream().map(map -> Arrays.stream(map.get("sorting").toString()
                         .replace("[", "")
                         .replace("]", "")
                         .split(", "))
                 .map(Cycle::of)
                 .collect(Collectors.toList())).findFirst();
+    }
+
+    @SneakyThrows
+    @Override
+    public Optional<List<Cycle>> findCompSorting(final String spi) {
+        return findSorting("SELECT * FROM comp_sorting WHERE config = ?", spi);
     }
 }

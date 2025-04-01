@@ -27,5 +27,7 @@ public interface ProofStorage {
 
     void saveComponentSorting(Configuration configuration, List<Cycle> cycles);
 
-    Optional<List<Cycle>> findBySorting(String spi);
+    Optional<List<Cycle>> findSorting(String spi);
+
+    Optional<List<Cycle>> findCompSorting(String spi);
 }

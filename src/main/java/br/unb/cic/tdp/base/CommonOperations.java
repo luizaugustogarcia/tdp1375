@@ -220,7 +220,7 @@ public class CommonOperations implements Serializable {
         return sorting;
     }
 
-    private static Integer leftMostSymbol(final Cycle cycle, Cycle pi) {
+    public static Integer leftMostSymbol(final Cycle cycle, Cycle pi) {
         return Arrays.stream(cycle.getSymbols())
                 .boxed()
                 .map(s -> Pair.of(s, s == 0 ? pi.size() - 1 : pi.indexOf(s))) // zero is the rightmost symbol

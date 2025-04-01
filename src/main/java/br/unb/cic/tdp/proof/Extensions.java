@@ -18,7 +18,7 @@ public class Extensions {
 
     @SneakyThrows
     public static void generate(final String outputDir, final double minRate) {
-        val storage = new MySQLProofStorage(outputDir);
+        val storage = new MySQLProofStorage(null);
 
         val pool = new ForkJoinPool(Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 Runtime.getRuntime().availableProcessors() + "")));

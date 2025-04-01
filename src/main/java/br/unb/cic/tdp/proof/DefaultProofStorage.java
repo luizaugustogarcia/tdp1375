@@ -90,7 +90,12 @@ public class DefaultProofStorage implements ProofStorage {
     }
 
     @Override
-    public Optional<List<Cycle>> findBySorting(String spi) {
+    public Optional<List<Cycle>> findSorting(String spi) {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public Optional<List<Cycle>> findCompSorting(String spi) {
         throw new NotImplementedException();
     }
 }
