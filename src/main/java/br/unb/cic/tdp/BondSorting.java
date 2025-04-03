@@ -4,7 +4,6 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
-import br.unb.cic.tdp.proof.DefaultProofStorage;
 import br.unb.cic.tdp.proof.MySQLProofStorage;
 import br.unb.cic.tdp.proof.ProofStorage;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +28,6 @@ public class BondSorting {
         var spi = sigma.times(pi.getInverse());
 
         while (!spi.isIdentity()) {
-            // TODO handle 2-cycles
-
             var simplification = simplify(spi, pi); // remove the inserted symbols and re-enumerate the symbols to restore original permutation
 
             var simplifiedPi = simplification.getRight();
@@ -47,7 +44,7 @@ public class BondSorting {
                 configuration.add(Cycle.of(gamma.get(0), gamma.get(1), gamma.get(2)));
 
                 while (true) {
-                    val extension = extend(configuration, simplifiedSpi, simplifiedPi);
+                    val extension = extend(configuration, simplifiedSpi, simplifiedPi); // TODO handle 2-cycles
                     if (extension == configuration) {
                         // reached a maximal configuration (i.e. component)
                         val sorting = findBySorting(configuration, simplifiedPi, proofStorage::findCompSorting);
@@ -113,7 +110,7 @@ public class BondSorting {
     }
 
     public static void main(String[] args) {
-        val storage = new MySQLProofStorage("192.168.68.114");
+        val storage = new MySQLProofStorage("192.168.68.114", "luiz", "luiz");
         sort(Cycle.of(0, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1), storage);
     }
 

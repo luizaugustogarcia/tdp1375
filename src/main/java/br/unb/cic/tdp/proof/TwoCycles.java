@@ -1,57 +1,161 @@
 package br.unb.cic.tdp.proof;
 
 import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.util.Pair;
+import lombok.SneakyThrows;
 import lombok.val;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.TimeUnit;
 
-import static br.unb.cic.tdp.base.CommonOperations.searchForSorting;
-import static br.unb.cic.tdp.base.CommonOperations.twoLinesNotation;
+import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
 import static br.unb.cic.tdp.base.Configuration.signature;
+import static br.unb.cic.tdp.proof.SortOrExtend.*;
+import static java.util.stream.Stream.concat;
 
 public class TwoCycles {
 
+    @SneakyThrows
     public static void main(String[] args) {
-        val minRate = 1.6;
-
-        // one 2-cycle intersecting another 2-cycle
-        val configuration = new Configuration(new MulticyclePermutation("(0 2)(1 3)"));
-        System.out.println(configuration.getSpi() + "-" + searchForSorting(configuration, new HashSet<>(), twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate)
-                .map(s -> s.stream().map(Arrays::toString).collect(Collectors.joining(", "))).stream().findFirst());
-
-        // one 2-cycle intersecting one 3-segment
-        extensions(new Configuration(new MulticyclePermutation("(0 2)(1 4 3)"))).stream().distinct().forEach(extension -> {
-            val spi = extension.getSpi();
-            val threeCycle = spi.stream().filter(c -> c.size() == 3).findFirst().get();
-            val twoCycle = spi.stream().filter(c -> c.size() == 2).findFirst().get();
-            System.out.println(spi + "-" + searchForSorting(extension, Set.of(twoCycle.get(0), threeCycle.get(0)), twoLinesNotation(spi), extension.getPi().getSymbols(), new Stack<>(), minRate)
-                    .map(s -> s.stream().map(Arrays::toString).collect(Collectors.joining(", "))).stream().findFirst());
-        });
-
-        // one 2-cycle intersecting one 4-segment
-        extensions(new Configuration(new MulticyclePermutation("(0 2)(1 5 4 3)"))).stream().distinct().forEach(extension -> {
-            val spi = extension.getSpi();
-            val fourCycle = spi.stream().filter(c -> c.size() == 4).findFirst().get();
-            val twoCycle = spi.stream().filter(c -> c.size() == 2).findFirst().get();
-            System.out.println(spi + "-" + searchForSorting(extension, Set.of(twoCycle.get(0), fourCycle.get(0)), twoLinesNotation(spi), extension.getPi().getSymbols(), new Stack<>(), minRate)
-                    .map(s -> s.stream().map(Arrays::toString).collect(Collectors.joining(", "))).stream().findFirst());
-        });
+        val pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
+        pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0 1)"), new MySQLProofStorage("localhost", "root", "12345678"), 1.6));
+        pool.shutdown();
+        // boundless
+        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
     }
 
-    private static List<Configuration> extensions(final Configuration configuration) {
-        val result = new ArrayList<Configuration>();
+    private static class TwoCyclesSortOrExtend extends AbstractSortOrExtend {
 
-        val newLabel = configuration.getSpi().size() + 1;
+        public TwoCyclesSortOrExtend(final Configuration configuration, final ProofStorage storage, final double minRate) {
+            super(configuration, storage, minRate);
+        }
 
-        val signature = signature(configuration.getSpi(), configuration.getPi());
+        @Override
+        protected void extend(Configuration configuration) {
+            concat(type1Extensions(configuration).stream(),
+                    concat(type2Extensions(configuration).stream(),
+                            type3Extensions(configuration).stream()))
+                    .map(Pair::getSecond)
+                    .map(extension -> new TwoCyclesSortOrExtend(extension, storage, minRate))
+                    .forEach(ForkJoinTask::fork);
+        }
 
-        for (int a = 0; a < signature.length; a++) {
-            if (configuration.getOpenGates().contains(a)) {
-                for (int b = 0; b < signature.length; b++) {
+        /*
+         * Type 1 extension.
+         */
+        private static List<Pair<String, Configuration>> type1Extensions(final Configuration configuration) {
+            val result = new ArrayList<Pair<String, Configuration>>();
+
+            val n = configuration.getPi().getSymbols().length;
+
+            for (var i = 0; i < n; i++) {
+                if (configuration.getOpenGates().contains(i)) {
+                    for (var b = 0; b < n; b++) {
+                        for (var c = b; c < n; c++) {
+                            if (!(i == b && b == c)) {
+                                val newCycle = "(" + n + " " + (n + 2) + " " + (n + 1) + ")";
+                                val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, i, b, c).elements();
+                                val extension = new Configuration(new MulticyclePermutation(configuration.getSpi() + newCycle), Cycle.of(extendedPi));
+                                result.add(new Pair<>(String.format("a=%d b=%d c=%d", i, b, c), extension));
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (var i = 0; i < n; i++) {
+                if (configuration.getOpenGates().contains(i)) {
+                    for (var b = 0; b < n; b++) {
+                        if (i != b) {
+                            val newCycle = "(" + n + " " + (n + 1) + ")";
+                            val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, i, b).elements();
+                            val extension = new Configuration(new MulticyclePermutation(configuration.getSpi() + newCycle), Cycle.of(extendedPi));
+                            result.add(new Pair<>(String.format("a=%d b=%d", i, b), extension));
+                        }
+                    }
+                }
+            }
+
+            return result;
+        }
+
+        /*
+         * Type 2 extension.
+         */
+        private static List<Pair<String, Configuration>> type2Extensions(final Configuration config) {
+            if (!config.isFull()) {
+                return Collections.emptyList();
+            }
+
+            val result = new ArrayList<Pair<String, Configuration>>();
+
+            val n = config.getPi().getSymbols().length;
+
+            for (var a = 0; a < n; a++) {
+                for (var b = a; b < n; b++) {
+                    for (var c = b; c < n; c++) {
+                        if (!(a == b)) {
+                            val newCycle = "(" + n + " " + (n + 2) + " " + (n + 1) + ")";
+                            val extendedPi = unorientedExtension(config.getPi().getSymbols(), n, a, b, c).elements();
+                            val extension = new Configuration(new MulticyclePermutation(config.getSpi() + newCycle), Cycle.of(extendedPi));
+                            result.add(new Pair<>(String.format("a=%d b=%d c=%d", a, b, c), extension));
+                        }
+                    }
+                }
+            }
+
+            for (var a = 0; a < n; a++) {
+                for (var b = a; b < n; b++) {
                     if (a != b) {
-                       // result.add(ofSignature(unorientedExtension(signature, newLabel, a, b).elements()));
+                        val newCycle = "(" + n + " " + (n + 1) + ")";
+                        val extendedPi = unorientedExtension(config.getPi().getSymbols(), n, a, b).elements();
+                        val extension = new Configuration(new MulticyclePermutation(config.getSpi() + newCycle), Cycle.of(extendedPi));
+                        result.add(new Pair<>(String.format("a=%d b=%d", a, b), extension));
+                    }
+                }
+            }
+
+            return result;
+        }
+    }
+
+    /*
+     * Type 3 extension.
+     */
+    private static List<Pair<String, Configuration>> type3Extensions(final Configuration config) {
+        val openGates = config.getOpenGates().size();
+
+        val result = new ArrayList<Pair<String, Configuration>>();
+
+        val signature = signature(config.getSpi(), config.getPi());
+
+        val cycleIndex = cycleIndex(config.getSpi(), config.getPi());
+        val cyclesByLabel = new HashMap<Integer, Cycle>();
+        for (var i = 0; i < signature.length; i++) {
+            val _i = i;
+            cyclesByLabel.computeIfAbsent((int) Math.floor(signature[i]), k -> cycleIndex[config.getPi().get(_i)]);
+        }
+
+        val n = config.getPi().getSymbols().length;
+
+        for (var label = 1; label <= config.getSpi().size(); label++) {
+            val cycle = cyclesByLabel.get(label);
+            if (cycle.size() == 3) { // only 3-cycles are extended
+                val extendedSpi = config.getSpi().toString().replace(cycle.toString(), cycle.toString().replace(")", " " + n + ")"));
+
+                for (var a = 0; a <= n; a++) {
+                    val extendedPi = insertAtPosition(config.getPi().getSymbols(), n, a);
+                    val extension = new Configuration(new MulticyclePermutation(extendedSpi), Cycle.of(extendedPi));
+                    if ((config.getSpi().size() == 2 && config.getSpi().stream().anyMatch(Cycle::isTwoCycle) && config.getSpi().stream().anyMatch(Cycle::isThreeCycle)) || // any extension of a 2-cycle intersecting with a 3-cycle
+                            (closesOneOpenGate(openGates, extension) || (openGates == 0 && extension.getOpenGates().size() <= 1))) {
+                        result.add(new Pair<>(String.format("a=%d, extended cycle: %s", a, cycle), extension));
                     }
                 }
             }

@@ -211,4 +211,12 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         this.symbols = symbols;
         updateInternalState();
     }
+
+    public boolean isTwoCycle() {
+        return size() == 2;
+    }
+
+    public boolean isThreeCycle() {
+        return size() == 3;
+    }
 }

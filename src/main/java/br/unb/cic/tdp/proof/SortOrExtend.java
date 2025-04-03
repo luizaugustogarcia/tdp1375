@@ -113,7 +113,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
         return result;
     }
 
-    private static boolean closesOneOpenGate(final int openGates, final Configuration extension) {
+   public static boolean closesOneOpenGate(final int openGates, final Configuration extension) {
         return openGates > 0 && extension.getOpenGates().size() < openGates;
     }
 
