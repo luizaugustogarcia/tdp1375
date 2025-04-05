@@ -25,7 +25,7 @@ public class TwoCycles {
     @SneakyThrows
     public static void main(String[] args) {
         val pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
-        pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0 1)"), new MySQLProofStorage("localhost", "root", "12345678"), 1.6));
+        pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0 1)"), new MySQLProofStorage("192.168.68.114", "luiz", "luiz"), 1.6));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
@@ -147,14 +147,13 @@ public class TwoCycles {
 
         for (var label = 1; label <= config.getSpi().size(); label++) {
             val cycle = cyclesByLabel.get(label);
-            if (cycle.size() == 3) { // only 3-cycles are extended
+            if (cycle.size() > 2) { // only 3-cycles or longer are extended
                 val extendedSpi = config.getSpi().toString().replace(cycle.toString(), cycle.toString().replace(")", " " + n + ")"));
 
                 for (var a = 0; a <= n; a++) {
                     val extendedPi = insertAtPosition(config.getPi().getSymbols(), n, a);
                     val extension = new Configuration(new MulticyclePermutation(extendedSpi), Cycle.of(extendedPi));
-                    if ((config.getSpi().size() == 2 && config.getSpi().stream().anyMatch(Cycle::isTwoCycle) && config.getSpi().stream().anyMatch(Cycle::isThreeCycle)) || // any extension of a 2-cycle intersecting with a 3-cycle
-                            (closesOneOpenGate(openGates, extension) || (openGates == 0 && extension.getOpenGates().size() <= 1))) {
+                    if (closesOneOpenGate(openGates, extension) || (openGates == 0 && extension.getOpenGates().size() <= 1)) {
                         result.add(new Pair<>(String.format("a=%d, extended cycle: %s", a, cycle), extension));
                     }
                 }
