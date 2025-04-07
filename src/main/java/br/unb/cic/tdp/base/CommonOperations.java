@@ -195,7 +195,7 @@ public class CommonOperations implements Serializable {
         // pivots are the leftmost symbols of each cycle - zero is the rightmost one
         val pivots = configuration.getSpi().stream()
                 .filter(cycle -> cycle.size() > 2) // 2-cycles do not have pivots
-                .map(cycle -> leftMostSymbol(cycle, configuration.getPi()))
+                .map(Cycle::getMinSymbol)
                 .collect(Collectors.toSet());
 
         val _2move = lookFor2Move(configuration, pivots);
@@ -213,8 +213,8 @@ public class CommonOperations implements Serializable {
                     System.out.println("bad component -> " + configuration);
                 } else if (proofStorage != null) {
                     proofStorage.saveComponentSorting(configuration, sorting.get());
-                    return Optional.empty();
                 }
+                return Optional.empty();
             }
         }
 
