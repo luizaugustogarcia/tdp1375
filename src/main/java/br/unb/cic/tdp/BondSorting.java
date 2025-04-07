@@ -17,8 +17,6 @@ import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
 import static br.unb.cic.tdp.base.Configuration.ofSignature;
-import static br.unb.cic.tdp.proof.SortOrExtend.insertAtPosition;
-import static java.util.stream.Collectors.toList;
 
 @RequiredArgsConstructor
 public class BondSorting {
@@ -28,81 +26,43 @@ public class BondSorting {
         var spi = sigma.times(pi.getInverse());
 
         while (!spi.isIdentity()) {
-            var simplification = simplify(spi, pi); // remove the inserted symbols and re-enumerate the symbols to restore original permutation
+            var pivots = getPivots(spi, pi);
 
-            var simplifiedPi = simplification.getRight();
-            var simplifiedSpi = simplification.getLeft().getLeft();
-
-            var pivots = getPivots(simplifiedSpi, simplifiedPi);
-
-            val _2move = get2Move(simplifiedSpi, simplifiedPi, pivots);
+            val _2move = get2Move(spi, pi, pivots);
             if (_2move.isPresent()) {
-                simplifiedPi = _2move.get().times(simplifiedPi).asNCycle();
+                pi = _2move.get().times(pi).asNCycle();
             } else {
                 List<Cycle> configuration = new ArrayList<>();
-                val gamma = simplifiedSpi.stream().filter(c -> c.size() > 1).findFirst().get();
-                configuration.add(Cycle.of(gamma.get(0), gamma.get(1), gamma.get(2)));
+                val gamma = spi.stream().filter(c -> c.size() > 1).findFirst().get();
+                val pivot = leftMostSymbol(gamma, pi);
+                configuration.add(Cycle.of(pivot, gamma.image(pivot), gamma.image(gamma.image(pivot))));
 
                 while (true) {
-                    val extension = extend(configuration, simplifiedSpi, simplifiedPi); // TODO handle 2-cycles
+                    val extension = extend(configuration, spi, pi);
                     if (extension == configuration) {
                         // reached a maximal configuration (i.e. component)
-                        val sorting = findBySorting(configuration, simplifiedPi, proofStorage::findCompSorting);
+                        val sorting = findBySorting(configuration, pi, proofStorage::findCompSorting);
                         if (sorting.isEmpty()) {
                             throw new RuntimeException("ERROR"); // it should always find a sorting at this point
                         }
                         for (val move : sorting.get()) {
-                            simplifiedPi = move.times(simplifiedPi).asNCycle();
-                            simplifiedSpi = simplifiedSpi.times(move.getInverse());
+                            pi = move.times(pi).asNCycle();
+                            spi = spi.times(move.getInverse());
                         }
                         break;
                     }
                     configuration = extension;
-                    val sorting = findBySorting(configuration, simplifiedPi, proofStorage::findSorting);
+                    val sorting = findBySorting(configuration, pi, proofStorage::findSorting);
                     if (sorting.isPresent()) {
                         for (val move : sorting.get()) {
-                            simplifiedPi = move.times(simplifiedPi).asNCycle();
-                            simplifiedSpi = simplifiedSpi.times(move.getInverse());
+                            pi = move.times(pi).asNCycle();
+                            spi = spi.times(move.getInverse());
                         }
                         break;
                     }
                 }
             }
-
-            pi = desimplifyAndNormalize(simplifiedPi, simplification.getLeft().getRight());
         }
-    }
-
-    private static Cycle desimplifyAndNormalize(final Cycle simplifiedPi, final Set<Integer> includedSymbols) {
-        val list = Arrays.stream(simplifiedPi.getSymbols())
-                .boxed()
-                .collect(toList());
-        list.removeIf(includedSymbols::contains);
-        return Cycle.of(normalizeAfterRemovals(list, includedSymbols, simplifiedPi.getMaxSymbol()));
-    }
-
-    public static int[] normalizeAfterRemovals(final List<Integer> list, final Set<Integer> removedValues, final int n) {
-        int[] shift = new int[n + 2];  // shift[i] = number of removed values < i
-
-        // Build prefix count of removed values
-        boolean[] isRemoved = new boolean[n + 2];
-        for (int x : removedValues) {
-            if (x >= 1 && x <= n) {
-                isRemoved[x] = true;
-            }
-        }
-        for (int i = 1; i <= n + 1; i++) {
-            shift[i] = shift[i - 1] + (isRemoved[i - 1] ? 1 : 0);
-        }
-
-        // Relabel values
-        int[] result = new int[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            int val = list.get(i);
-            result[i] = val - shift[val];
-        }
-
-        return result;
     }
 
     private static Set<Integer> getPivots(final MulticyclePermutation spiPrime, final Cycle piPrime) {
@@ -110,85 +70,15 @@ public class BondSorting {
     }
 
     public static void main(String[] args) {
-        val storage = new MySQLProofStorage("192.168.68.114", "luiz", "luiz");
-        sort(Cycle.of(0, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1), storage);
+        val storage = new MySQLProofStorage("localhost", "luiz", "luiz", "tdp");
+        sort(Cycle.of(0, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1), storage);
     }
 
-    private static Pair<Pair<MulticyclePermutation, Set<Integer>>, Cycle> simplify(MulticyclePermutation spi, Cycle pi) {
-        val segments = new ArrayList<Cycle>();
-        Set<Integer> insertedSymbols = new HashSet<>();
-
-        val queue = new LinkedList<>(spi);
-        while (!queue.isEmpty()) {
-            var breakingCycle = startingFromLeftMostSymbol(queue.poll(), pi);
-            if (breakingCycle.size() <= 4) {
-                segments.add(breakingCycle);
-            } else {
-                val segment = Cycle.of(breakingCycle.get(0), breakingCycle.get(1), breakingCycle.get(2));
-                segments.add(segment);
-
-                val pivot = segment.get(2) + 1;
-                // relabel inserted symbols
-                insertedSymbols = insertedSymbols.stream().map(s -> s > pivot ? s + 1 : s).collect(Collectors.toSet());
-                // relabel segments symbols
-                segments.forEach(s -> {
-                    val symbols = s.getSymbols();
-                    for (int i = 0; i < symbols.length; i++) {
-                        val currentSymbol = symbols[i];
-                        symbols[i] = currentSymbol >= pivot ? currentSymbol + 1 : currentSymbol;
-                    }
-                    s.update(symbols);
-                });
-
-                insertedSymbols.add(pivot);
-
-                val newBreakingCycle = new int[breakingCycle.size() - 2];
-                newBreakingCycle[0] = pivot;
-                for (int i = 1; i < newBreakingCycle.length; i++) {
-                    val currentSymbol = breakingCycle.getSymbols()[i + 2];
-                    newBreakingCycle[i] = currentSymbol >= pivot ? currentSymbol + 1 : currentSymbol;
-                }
-
-                val newPi = insertAtPosition(pi.getSymbols(), -1, pi.indexOf(breakingCycle.get(0)) + 1);
-                // relabel pi symbols
-                for (int i = 0; i < newPi.length; i++) {
-                    val currentSymbol = newPi[i];
-                    newPi[i] = currentSymbol >= pivot ? currentSymbol + 1 : currentSymbol;
-                    newPi[i] = currentSymbol == -1 ? pivot : newPi[i];
-                }
-
-                pi = Cycle.of(newPi);
-
-                // relabel symbols
-                queue.forEach(cycle -> {
-                    val symbols = cycle.getSymbols();
-                    for (int i = 0; i < symbols.length; i++) {
-                        val currentSymbol = symbols[i];
-                        symbols[i] = currentSymbol >= pivot ? currentSymbol + 1 : currentSymbol;
-                    }
-                    cycle.toString();
-                    cycle.update(symbols);
-                });
-
-                queue.offerFirst(Cycle.of(newBreakingCycle));
-            }
-        }
-
-        return Pair.of(Pair.of(new MulticyclePermutation(segments).conjugateBy(CANONICAL_PI[pi.size()]), insertedSymbols), pi);
-    }
-
-    private static Integer leftMostSymbol(final Cycle cycle, Cycle pi) {
+    public static Integer leftMostSymbol(final Cycle cycle, final Cycle pi) {
         return Arrays.stream(cycle.getSymbols())
                 .boxed()
-                .map(s -> Pair.of(s, s == 0 ? pi.size() - 1 : pi.indexOf(s))) // zero is the rightmost symbol
+                .map(s -> Pair.of(s, pi.startingBy(0).indexOf(s))) // zero is the leftmost
                 .min(Comparator.comparing(Pair::getRight)).get().getLeft();
-    }
-
-    private static Cycle startingFromLeftMostSymbol(final Cycle cycle, Cycle pi) {
-        return cycle.startingBy(Arrays.stream(cycle.getSymbols())
-                .boxed()
-                .map(s -> Pair.of(s, pi.indexOf(s)))
-                .min(Comparator.comparing(Pair::getRight)).get().getLeft());
     }
 
     private static Optional<Cycle> get2Move(final MulticyclePermutation spi, final Cycle pi, final Set<Integer> pivots) {
@@ -259,58 +149,54 @@ public class BondSorting {
         val piInverse = pi.getInverse().startingBy(pi.getMinSymbol());
 
         val configSymbols = new HashSet<Integer>();
+
         for (Cycle cycle : config)
             for (int i = 0; i < cycle.getSymbols().length; i++) {
                 configSymbols.add(cycle.getSymbols()[i]);
             }
 
-        val configCycleIndex = cycleIndex(config, pi);
-        val cycleIndex = cycleIndex(spi, pi);
+        val cycleIndex = cycleIndex(config, pi);
+        val spiCycleIndex = cycleIndex(spi, pi);
 
-        val spiPrime = new MulticyclePermutation(config);
-        val piPrime = removeExtraSymbols(spiPrime.getSymbols(), pi);
-        val openGates = new Configuration(spiPrime, piPrime).getOpenGates().stream().map(piPrime::get).collect(toList());
+        final Set<Integer> openGates = getOpenGates(config, pi);
 
         // Type 1 extension
         for (final int openGate : openGates) {
-            val cycle = configCycleIndex[openGate];
-            val aPos = piInverse.indexOf(openGate);
-            val bPos = piInverse.indexOf(cycle.image(openGate));
-            val intersectingCycle = getIntersectingCycle(aPos, bPos, cycleIndex, piInverse);
-            if (intersectingCycle.isPresent()
-                    && !contains(configSymbols, cycleIndex[intersectingCycle.get().get(0)])) {
+            val cycle = cycleIndex[openGate];
+            val aPos = pi.indexOf(openGate);
+            val bPos = pi.indexOf(cycle.pow(openGate, -1));
+            val intersectingCycle = getIntersectingCycle(aPos, bPos, spiCycleIndex, pi);
+            if (intersectingCycle.isPresent()) {
+                val pivot = leftMostSymbol(intersectingCycle.get(), pi);
+                if (!configSymbols.contains(pivot)) {
+                    int a = pivot;
+                    int b = intersectingCycle.get().image(a);
+                    int c = intersectingCycle.get().image(b);
 
-                int a = intersectingCycle.get().get(0);
-                int b = intersectingCycle.get().image(a);
-                int c = intersectingCycle.get().image(b);
-                val configPrime = new ArrayList<>(config);
-                configPrime.add(Cycle.of(a, b, c));
-
-                return configPrime;
+                    val configPrime = new ArrayList<>(config);
+                    configPrime.add(Cycle.of(a, b, c));
+                    return configPrime;
+                }
             }
         }
 
         // Type 2 extension
         if (openGates.isEmpty()) {
-            for (Cycle cycle : config) {
+            for (val cycle : config) {
                 for (int i = 0; i < cycle.size(); i++) {
                     val aPos = piInverse.indexOf(cycle.get(i));
                     val bPos = piInverse.indexOf(cycle.image(cycle.get(i)));
-                    for (int j = 1; j < (aPos < bPos ? bPos - aPos : piInverse.size() - (aPos - bPos)); j++) {
-                        val index = (j + aPos) % piInverse.size();
-                        if (configCycleIndex[piInverse.get(index)] == null) {
-                            val intersectingCycle = cycleIndex[piInverse.get(index)];
-                            if (intersectingCycle != null && intersectingCycle.size() > 1
-                                    && !contains(configSymbols, cycleIndex[intersectingCycle.get(0)])) {
-                                val a = piInverse.get(index);
-                                val b = intersectingCycle.image(a);
-                                if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
-                                    val c = intersectingCycle.image(b);
-                                    val configPrime = new ArrayList<>(config);
-                                    configPrime.add(Cycle.of(a, b, c));
-                                    return configPrime;
-                                }
-                            }
+                    val intersectingCycle = getIntersectingCycle(aPos, bPos, spiCycleIndex, pi);
+                    if (intersectingCycle.isPresent()) {
+                        val pivot = leftMostSymbol(intersectingCycle.get(), pi);
+                        if (!configSymbols.contains(pivot)) {
+                            int a = pivot;
+                            int b = intersectingCycle.get().image(a);
+                            int c = intersectingCycle.get().image(b);
+
+                            val configPrime = new ArrayList<>(config);
+                            configPrime.add(Cycle.of(a, b, c));
+                            return configPrime;
                         }
                     }
                 }
@@ -319,12 +205,12 @@ public class BondSorting {
 
         // Type 3 extension
         for (var cycle : config) {
-            if (cycle.size() < cycleIndex[cycle.get(0)].size()) {
-                val spiCycle = align(cycleIndex[cycle.get(0)], cycle);
-                cycle = cycle.startingBy(spiCycle.get(0));
+            if (cycle.size() < spiCycleIndex[cycle.get(0)].size()) {
+                val spiCycle = spiCycleIndex[cycle.get(0)];
+                val pivot = leftMostSymbol(cycle, pi);
+                cycle = cycle.startingBy(pivot);
                 val newSymbols = Arrays.copyOf(cycle.getSymbols(), cycle.size() + 1);
-                newSymbols[cycle.size()] = spiCycle
-                        .image(cycle.get(cycle.size() - 1));
+                newSymbols[cycle.size()] = spiCycle.pow(pivot, cycle.size());
 
                 final List<Cycle> configPrime = new ArrayList<>(config);
                 configPrime.remove(cycle);
@@ -332,7 +218,7 @@ public class BondSorting {
 
                 val spiPrimePrime = new MulticyclePermutation(configPrime);
                 val piPrimePrime = removeExtraSymbols(spiPrimePrime.getSymbols(), pi);
-                if (new Configuration(spiPrimePrime, piPrimePrime).getOpenGates().size() <= 2)
+                if (openGates.isEmpty() || new Configuration(spiPrimePrime, piPrimePrime).getOpenGates().size() < openGates.size())
                     return configPrime;
             }
         }
@@ -404,80 +290,21 @@ public class BondSorting {
         return null;
     }
 
-    protected static List<Cycle> ehExtend(final List<Cycle> config, final MulticyclePermutation spi, final Cycle pi) {
-        val piInverse = pi.getInverse().startingBy(pi.getMinSymbol());
+    private static Optional<Cycle> getIntersectingCycle(final int aPos, final int bPos, final Cycle[] spiCycleIndex, final Cycle pi) {
+        var nextPos = (aPos + 1) % pi.size();
 
-        val configSymbols = new HashSet<Integer>();
-        for (Cycle cycle : config)
-            for (int i = 0; i < cycle.getSymbols().length; i++) {
-                configSymbols.add(cycle.getSymbols()[i]);
-            }
-
-        val configCycleIndex = cycleIndex(config, pi);
-        val spiCycleIndex = cycleIndex(spi, pi);
-
-        final Set<Integer> openGates = new Configuration(new MulticyclePermutation(config), pi).getOpenGates();
-
-        // Type 1 extension
-        for (final int openGate : openGates) {
-            val cycle = configCycleIndex[openGate];
-            val aPos = piInverse.indexOf(openGate);
-            val bPos = piInverse.indexOf(cycle.image(openGate));
-            val intersectingCycle = getIntersectingCycle(aPos, bPos, spiCycleIndex, piInverse);
-            if (intersectingCycle.isPresent() && !contains(configSymbols, spiCycleIndex[intersectingCycle.get().get(0)])) {
-
-                int a = intersectingCycle.get().get(0);
-                int b = intersectingCycle.get().image(a);
-                int c = intersectingCycle.get().image(b);
-                val configPrime = new ArrayList<>(config);
-                configPrime.add(Cycle.of(a, b, c));
-
-                return configPrime;
-            }
-        }
-
-        // Type 2 extension
-        if (openGates.isEmpty()) {
-            for (Cycle cycle : config) {
-                for (int i = 0; i < cycle.size(); i++) {
-                    val aPos = piInverse.indexOf(cycle.get(i));
-                    val bPos = piInverse.indexOf(cycle.image(cycle.get(i)));
-                    for (int j = 1; j < (aPos < bPos ? bPos - aPos : piInverse.size() - (aPos - bPos)); j++) {
-                        val index = (j + aPos) % piInverse.size();
-                        if (configCycleIndex[piInverse.get(index)] == null) {
-                            val intersectingCycle = spiCycleIndex[piInverse.get(index)];
-                            if (intersectingCycle != null && intersectingCycle.size() > 1 && !contains(configSymbols, spiCycleIndex[intersectingCycle.get(0)])) {
-                                val a = piInverse.get(index);
-                                val b = intersectingCycle.image(a);
-                                if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
-                                    val c = intersectingCycle.image(b);
-                                    val configPrime = new ArrayList<>(config);
-                                    configPrime.add(Cycle.of(a, b, c));
-                                    return configPrime;
-                                }
-                            }
-                        }
+        while (nextPos != bPos) {
+            val intersectingCycle = spiCycleIndex[pi.get(nextPos)];
+            if (intersectingCycle != null && intersectingCycle.size() > 1) {
+                val pivot = leftMostSymbol(intersectingCycle, pi);
+                if (pi.get(nextPos) == pivot) {
+                    val b = intersectingCycle.image(pivot);
+                    if (isOutOfInterval(pi.indexOf(b), aPos, bPos)) {
+                        return Optional.of(intersectingCycle);
                     }
                 }
             }
-        }
-
-        return config;
-    }
-
-    private static Optional<Cycle> getIntersectingCycle(final int aPos, final int bPos, final Cycle[] spiCycleIndex, final Cycle piInverse) {
-        var nextPos = (aPos + 1) % piInverse.size();
-
-        while (nextPos != bPos) {
-            val intersectingCycle = spiCycleIndex[piInverse.get(nextPos)];
-            if (intersectingCycle != null && intersectingCycle.size() > 1) {
-                val a = piInverse.get(nextPos);
-                val b = intersectingCycle.image(a);
-                if (isOutOfInterval(piInverse.indexOf(b), aPos, bPos)) {
-                    return Optional.of(intersectingCycle.startingBy(a));
-                }
-            }
-            nextPos = (nextPos + 1) % piInverse.size();
+            nextPos = (nextPos + 1) % pi.size();
         }
 
         return Optional.empty();
