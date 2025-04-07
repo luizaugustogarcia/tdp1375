@@ -97,15 +97,13 @@ public class SortOrExtend extends AbstractSortOrExtend {
 
         for (var label = 1; label <= config.getSpi().size(); label++) {
             val cycle = cyclesByLabel.get(label);
-            if (cycle.size() == 3) { // only 3-cycles are extended
-                val extendedSpi = config.getSpi().toString().replace(cycle.toString(), cycle.toString().replace(")", " " + n + ")"));
+            val extendedSpi = config.getSpi().toString().replace(cycle.toString(), cycle.toString().replace(")", " " + n + ")"));
 
-                for (var a = 0; a <= n; a++) {
-                    val extendedPi = insertAtPosition(config.getPi().getSymbols(), n, a);
-                    val extension = new Configuration(new MulticyclePermutation(extendedSpi), Cycle.of(extendedPi));
-                    if (closesOneOpenGate(openGates, extension) || (openGates == 0 && extension.getOpenGates().size() <= 1)) {
-                        result.add(new Pair<>(String.format("a=%d, extended cycle: %s", a, cycle), extension));
-                    }
+            for (var a = 0; a <= n; a++) {
+                val extendedPi = insertAtPosition(config.getPi().getSymbols(), n, a);
+                val extension = new Configuration(new MulticyclePermutation(extendedSpi), Cycle.of(extendedPi));
+                if (closesOneOpenGate(openGates, extension) || (openGates == 0 && extension.getOpenGates().size() <= 1)) {
+                    result.add(new Pair<>(String.format("a=%d, extended cycle: %s", a, cycle), extension));
                 }
             }
         }
@@ -113,7 +111,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
         return result;
     }
 
-   public static boolean closesOneOpenGate(final int openGates, final Configuration extension) {
+    public static boolean closesOneOpenGate(final int openGates, final Configuration extension) {
         return openGates > 0 && extension.getOpenGates().size() < openGates;
     }
 
