@@ -228,7 +228,7 @@ public class CommonOperations implements Serializable {
                 .min(Comparator.comparing(Pair::getRight)).get().getLeft();
     }
 
-    private static Optional<List<Cycle>> lookFor2Move(final Configuration configuration, final Set<Integer> pivots) {
+    public static Optional<List<Cycle>> lookFor2Move(final Configuration configuration, final Set<Integer> pivots) {
         val pi = configuration.getPi().getSymbols();
 
         for (var i = 0; i < pi.length - 2; i++) {

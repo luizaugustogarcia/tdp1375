@@ -38,7 +38,7 @@ public class BondSorting {
                 configuration.add(Cycle.of(pivot, gamma.image(pivot), gamma.image(gamma.image(pivot))));
 
                 while (true) {
-                    val extension = extend(configuration, spi, pi);
+                    val extension = extend(configuration, spi, pi); // TODO handle 2-cycles
                     if (extension == configuration) {
                         // reached a maximal configuration (i.e. component)
                         val sorting = findBySorting(configuration, pi, proofStorage::findCompSorting);
@@ -70,7 +70,7 @@ public class BondSorting {
     }
 
     public static void main(String[] args) {
-        val storage = new MySQLProofStorage("localhost", "luiz", "luiz", "tdp");
+        val storage = new MySQLProofStorage("localhost", "luiz", "luiz");
         sort(Cycle.of(0, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1), storage);
     }
 
