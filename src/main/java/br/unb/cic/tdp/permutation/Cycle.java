@@ -6,6 +6,7 @@ import lombok.val;
 import org.apache.commons.lang.ArrayUtils;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
@@ -218,5 +219,9 @@ public class Cycle implements Permutation, Comparable<Cycle> {
 
     public boolean isThreeCycle() {
         return size() == 3;
+    }
+
+    public List<Integer> getSymbolsAsList() {
+        return Arrays.stream(this.symbols).boxed().toList();
     }
 }

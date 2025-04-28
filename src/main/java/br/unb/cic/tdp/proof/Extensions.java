@@ -22,7 +22,7 @@ public class Extensions {
 
         val pool = new ForkJoinPool(Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 Runtime.getRuntime().availableProcessors() + "")));
-        pool.execute(new SortOrExtend(new Configuration("(0 2 1)"), storage, minRate));
+        pool.execute(new SortOrExtendNew(new Configuration("(0 2 1)"), storage, minRate));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);

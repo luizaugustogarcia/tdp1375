@@ -300,7 +300,8 @@ public class Configuration {
         }
     }
 
-    public static void main(String[] args) {
-        System.out.println(new Configuration("(0 4 2)(1 6 3)(5 7)"));
+    @ToString.Include
+    public int get3Norm() {
+        return this.spi.get3Norm();
     }
 }

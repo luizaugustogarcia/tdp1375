@@ -25,7 +25,7 @@ public class TwoCycles {
     @SneakyThrows
     public static void main(String[] args) {
         val pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
-        pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0 1)"), new MySQLProofStorage("192.168.68.114", "luiz", "luiz"), 1.6));
+        pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0 1)"), new MySQLProofStorage("localhost", "luiz", "luiz"), 1.6));
         pool.shutdown();
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
