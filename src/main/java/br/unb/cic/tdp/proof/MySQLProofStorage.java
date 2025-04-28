@@ -44,7 +44,11 @@ public class MySQLProofStorage implements ProofStorage {
     }
 
     private static String getId(final Configuration configuration) {
-        return configuration.getSpi().toString();
+        String id = configuration.getSpi().toString();
+        if (id.equals("(0 4 2)(1 5 3 6)")) {
+            System.out.println("ID: " + id);
+        }
+        return id;
     }
 
     @SneakyThrows

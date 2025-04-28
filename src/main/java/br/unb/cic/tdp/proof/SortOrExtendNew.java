@@ -178,7 +178,7 @@ public class SortOrExtendNew extends AbstractSortOrExtend {
     @Override
     protected void extend(final Configuration configuration) {
         getExtensions(configuration)
-                .map(extension -> new SortOrExtend(extension, storage, minRate)).
+                .map(extension -> new SortOrExtendNew(extension, storage, minRate)).
                 forEach(ForkJoinTask::fork);
     }
 
@@ -191,11 +191,11 @@ public class SortOrExtendNew extends AbstractSortOrExtend {
                         type2Extensions(configuration).stream().map(Pair::getSecond).flatMap(extension -> type2Extensions(extension).stream()).map(Pair::getSecond),
                         type3Extensions(configuration).stream().map(Pair::getSecond)
                 ))
-                .filter(extension -> extension.getSpi().stream().noneMatch(Cycle::isTwoCycle))
+                .filter(extension -> numberOf2Cycles == 0 || extension.getSpi().stream().noneMatch(Cycle::isTwoCycle))
                 .filter(SortOrExtendNew::isProductOfTwoNCycles);
     }
 
     public static void main(String[] args) {
-        type3Extensions(new Configuration("(0 9 7)(1 5 2 6 3)(4 10 8)")).forEach(p -> System.out.println(p.getSecond()));
+        type3Extensions(new Configuration("(0 4 2)(1 5 3 6)")).forEach(p -> System.out.println(p.getSecond()));
     }
 }

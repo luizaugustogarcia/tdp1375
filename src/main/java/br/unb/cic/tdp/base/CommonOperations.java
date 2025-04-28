@@ -194,7 +194,7 @@ public class CommonOperations implements Serializable {
     public static Optional<List<Cycle>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate) {
         // pivots are the leftmost symbols of each cycle - zero is the rightmost one
         val pivots = configuration.getSpi().stream()
-                .filter(cycle -> cycle.size() > 2) // 2-cycles do not have pivots
+//                .filter(cycle -> cycle.size() > 2) // 2-cycles do not have pivots
                 .map(Cycle::getMinSymbol)
                 .collect(Collectors.toSet());
 
