@@ -244,7 +244,7 @@ public class Configuration {
                 .map(og -> (og + 1) % n);
     }
 
-    public static class Signature {
+    public static class Signature implements Comparable<Signature> {
 
         @Getter
         private final Cycle pi;
@@ -297,6 +297,12 @@ public class Configuration {
             return "[" + Floats.asList(content).stream()
                     .map(f -> f % 1 == 0 ? Integer.toString((int) Math.floor(f)) : Float.toString(f))
                     .collect(Collectors.joining(",")) + "]";
+        }
+
+
+        @Override
+        public int compareTo(final Signature other) {
+            return Arrays.compare(this.content, other.content);
         }
     }
 

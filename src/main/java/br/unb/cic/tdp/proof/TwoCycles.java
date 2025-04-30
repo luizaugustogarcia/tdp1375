@@ -1,5 +1,6 @@
 package br.unb.cic.tdp.proof;
 
+import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
@@ -7,17 +8,16 @@ import br.unb.cic.tdp.util.Pair;
 import lombok.SneakyThrows;
 import lombok.val;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
 import static br.unb.cic.tdp.base.Configuration.signature;
 import static br.unb.cic.tdp.proof.SortOrExtend.*;
+import static java.util.function.Predicate.not;
 import static java.util.stream.Stream.concat;
 
 public class TwoCycles {
@@ -35,6 +35,18 @@ public class TwoCycles {
 
         public TwoCyclesSortOrExtend(final Configuration configuration, final ProofStorage storage, final double minRate) {
             super(configuration, storage, minRate);
+        }
+
+        @Override
+        protected Optional<List<Cycle>> searchForSorting(Configuration configuration) {
+            if (storage.hasNoSorting(configuration)) {
+                return Optional.empty();
+            }
+            val pivots = configuration.getSpi().stream()
+                    .filter(not(Cycle::isTwoCycle))
+                    .map(Cycle::getMinSymbol)
+                    .collect(Collectors.toSet());
+            return CommonOperations.searchForSorting(storage, configuration, minRate, pivots);
         }
 
         @Override

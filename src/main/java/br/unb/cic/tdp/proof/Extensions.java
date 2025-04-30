@@ -4,11 +4,12 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.util.Pair;
 import lombok.SneakyThrows;
 import lombok.val;
+import net.openhft.chronicle.queue.impl.single.SingleChronicleQueueBuilder;
 
 import java.io.File;
 import java.io.PrintStream;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
@@ -20,10 +21,32 @@ public class Extensions {
     public static void generate(final String outputDir, final double minRate) {
         val storage = new MySQLProofStorage("localhost", "luiz", "luiz");
 
-        val pool = new ForkJoinPool(Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
-                Runtime.getRuntime().availableProcessors() + "")));
-        pool.execute(new SortOrExtendNew(new Configuration("(0 2 1)"), storage, minRate));
-        pool.shutdown();
+        val queue = SingleChronicleQueueBuilder.single("C:\\Users\\laugu\\Temp\\queue").build();
+
+        val threads = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
+                Runtime.getRuntime().availableProcessors() + ""));
+        val pool = Executors.newFixedThreadPool(threads);
+        queue.acquireAppender().writeDocument(w -> w.write("spi").text("(0 2 1)").write("pi").text("(0 1 2)"));
+
+        for (int i = 0; i < threads; i++) {
+            int threadLabel = i;
+            pool.execute(() -> {
+                val tailer = queue.createTailer();
+                while (true) {
+                    tailer.readDocument(w -> {
+                        long index = tailer.index();
+                        if ((index % threads) == threadLabel) {
+                            try {
+                                new SortOrExtendNew(queue, new Configuration(w.read("spi").text(), w.read("pi").text()), storage, 1.6).compute();
+                            } catch (Exception e) {
+                                System.out.println(e.getMessage());
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
         // boundless
         pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
 

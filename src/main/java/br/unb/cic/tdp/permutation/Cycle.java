@@ -7,6 +7,7 @@ import org.apache.commons.lang.ArrayUtils;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
@@ -222,6 +223,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     public List<Integer> getSymbolsAsList() {
-        return Arrays.stream(this.symbols).boxed().toList();
+        return Arrays.stream(this.symbols).boxed().collect(Collectors.toList());
     }
 }

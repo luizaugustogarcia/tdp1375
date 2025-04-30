@@ -6,10 +6,9 @@ import br.unb.cic.tdp.permutation.Cycle;
 import lombok.AllArgsConstructor;
 import lombok.val;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.RecursiveAction;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public abstract class AbstractSortOrExtend extends RecursiveAction {
@@ -19,7 +18,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
 
     @Override
     protected void compute() {
-        val configuration = Configuration.ofSignature(this.configuration.getSignature().getContent());
+        val configuration = getCanonical(this.configuration);
 
         if (storage.isAlreadySorted(configuration)) {
             return;
@@ -44,11 +43,30 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
         }
     }
 
-    private Optional<List<Cycle>> searchForSorting(Configuration configuration) {
+    private Configuration getCanonical(final Configuration configuration) {
+        val pivots = configuration.getSpi().stream()
+                .map(Cycle::getMinSymbol)
+                .collect(Collectors.toSet());
+
+        val equivalents = new TreeSet<Configuration.Signature>();
+
+        for (val pivot : pivots) {
+            val equivalentConfig = new Configuration(configuration.getSpi(), configuration.getPi().startingBy(pivot));
+            equivalents.add(equivalentConfig.getSignature());
+        }
+
+        return Configuration.ofSignature(equivalents.first().getContent());
+    }
+
+    protected Optional<List<Cycle>> searchForSorting(Configuration configuration) {
+
         if (storage.hasNoSorting(configuration)) {
             return Optional.empty();
         }
-        return CommonOperations.searchForSorting(storage, configuration, minRate);
+        val pivots = configuration.getSpi().stream()
+                .map(Cycle::getMinSymbol)
+                .collect(Collectors.toSet());
+        return CommonOperations.searchForSorting(storage, configuration, minRate, pivots);
     }
 
     protected abstract void extend(Configuration configuration);

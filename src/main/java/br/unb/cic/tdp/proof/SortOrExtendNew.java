@@ -5,12 +5,14 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.util.Pair;
+import lombok.RequiredArgsConstructor;
 import lombok.val;
+import net.openhft.chronicle.queue.ExcerptAppender;
+import net.openhft.chronicle.queue.impl.single.SingleChronicleQueue;
 import org.paukov.combinatorics3.Generator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ForkJoinTask;
+import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.proof.SortOrExtend.insertAtPosition;
@@ -18,7 +20,8 @@ import static br.unb.cic.tdp.proof.SortOrExtend.unorientedExtension;
 import static java.lang.String.format;
 import static java.util.stream.Stream.concat;
 
-public class SortOrExtendNew extends AbstractSortOrExtend {
+@RequiredArgsConstructor
+public class SortOrExtendNew {
 
     /*
     starting with a 3-cycle (1 2 3)
@@ -33,10 +36,61 @@ public class SortOrExtendNew extends AbstractSortOrExtend {
     * never leave a odd spi?
      */
 
-    public SortOrExtendNew(final Configuration configuration,
-                           final ProofStorage storage,
-                           final double minRate) {
-        super(configuration, storage, minRate);
+    private final SingleChronicleQueue queue;
+    private final Configuration configuration;
+    private final ProofStorage storage;
+    private final double minRate;
+
+    public void compute() {
+        val configuration = getCanonical(this.configuration);
+
+        if (storage.isAlreadySorted(configuration)) {
+            return;
+        }
+
+        if (!storage.isBadCase(configuration)) {
+            if (storage.tryLock(configuration)) {
+                try {
+                    val sorting = searchForSorting(configuration);
+                    if (sorting.isPresent()) {
+                        storage.saveSorting(configuration, Set.of(), sorting.get());
+                        return;
+                    } else {
+                        storage.markNoSorting(configuration);
+                        storage.markBadCase(configuration);
+                    }
+                    extend(configuration);
+                } finally {
+                    storage.unlock(configuration);
+                }
+            } // else: another thread is already working on this configuration
+        }
+    }
+
+    private Configuration getCanonical(final Configuration configuration) {
+        val pivots = configuration.getSpi().stream()
+                .map(Cycle::getMinSymbol)
+                .collect(Collectors.toSet());
+
+        val equivalents = new TreeSet<Configuration.Signature>();
+
+        for (val pivot : pivots) {
+            val equivalentConfig = new Configuration(configuration.getSpi(), configuration.getPi().startingBy(pivot));
+            equivalents.add(equivalentConfig.getSignature());
+        }
+
+        return Configuration.ofSignature(equivalents.first().getContent());
+    }
+
+    private Optional<List<Cycle>> searchForSorting(Configuration configuration) {
+
+        if (storage.hasNoSorting(configuration)) {
+            return Optional.empty();
+        }
+        val pivots = configuration.getSpi().stream()
+                .map(Cycle::getMinSymbol)
+                .collect(Collectors.toSet());
+        return CommonOperations.searchForSorting(storage, configuration, minRate, pivots);
     }
 
     /*
@@ -123,7 +177,6 @@ public class SortOrExtendNew extends AbstractSortOrExtend {
             }
         }
 
-
         // one new symbol
         var extendedSpi = new MulticyclePermutation(configuration.getSpi());
         extendedSpi.add(Cycle.of(n));
@@ -141,7 +194,6 @@ public class SortOrExtendNew extends AbstractSortOrExtend {
                 }
             }
         }
-
 
         // two new symbols
         extendedSpi = new MulticyclePermutation(configuration.getSpi());
@@ -175,11 +227,12 @@ public class SortOrExtendNew extends AbstractSortOrExtend {
         return configuration.getSigma().size() == 1 && configuration.getSigma().asNCycle().size() == configuration.getPi().size();
     }
 
-    @Override
-    protected void extend(final Configuration configuration) {
-        getExtensions(configuration)
-                .map(extension -> new SortOrExtendNew(extension, storage, minRate)).
-                forEach(ForkJoinTask::fork);
+    private void extend(final Configuration configuration) {
+        val excerptAppender = queue.acquireAppender();
+        getExtensions(configuration).forEach(extension -> {
+            excerptAppender.writeDocument(w -> w.write("spi").text(extension.getSpi().toString()).write("pi").text(extension.getPi().toString()));
+        });
+
     }
 
     private static Stream<Configuration> getExtensions(final Configuration configuration) {
@@ -193,9 +246,5 @@ public class SortOrExtendNew extends AbstractSortOrExtend {
                 ))
                 .filter(extension -> numberOf2Cycles == 0 || extension.getSpi().stream().noneMatch(Cycle::isTwoCycle))
                 .filter(SortOrExtendNew::isProductOfTwoNCycles);
-    }
-
-    public static void main(String[] args) {
-        type3Extensions(new Configuration("(0 4 2)(1 5 3 6)")).forEach(p -> System.out.println(p.getSecond()));
     }
 }
