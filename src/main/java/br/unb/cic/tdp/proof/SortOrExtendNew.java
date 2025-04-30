@@ -7,14 +7,14 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.util.Pair;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
-import net.openhft.chronicle.queue.ExcerptAppender;
-import net.openhft.chronicle.queue.impl.single.SingleChronicleQueue;
 import org.paukov.combinatorics3.Generator;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static br.unb.cic.tdp.Application.CONFIGS_QUEUE;
 import static br.unb.cic.tdp.proof.SortOrExtend.insertAtPosition;
 import static br.unb.cic.tdp.proof.SortOrExtend.unorientedExtension;
 import static java.lang.String.format;
@@ -36,7 +36,7 @@ public class SortOrExtendNew {
     * never leave a odd spi?
      */
 
-    private final SingleChronicleQueue queue;
+    private final RabbitTemplate rabbitTemplate;
     private final Configuration configuration;
     private final ProofStorage storage;
     private final double minRate;
@@ -83,13 +83,14 @@ public class SortOrExtendNew {
     }
 
     private Optional<List<Cycle>> searchForSorting(Configuration configuration) {
-
         if (storage.hasNoSorting(configuration)) {
             return Optional.empty();
         }
+
         val pivots = configuration.getSpi().stream()
                 .map(Cycle::getMinSymbol)
                 .collect(Collectors.toSet());
+
         return CommonOperations.searchForSorting(storage, configuration, minRate, pivots);
     }
 
@@ -227,14 +228,6 @@ public class SortOrExtendNew {
         return configuration.getSigma().size() == 1 && configuration.getSigma().asNCycle().size() == configuration.getPi().size();
     }
 
-    private void extend(final Configuration configuration) {
-        val excerptAppender = queue.acquireAppender();
-        getExtensions(configuration).forEach(extension -> {
-            excerptAppender.writeDocument(w -> w.write("spi").text(extension.getSpi().toString()).write("pi").text(extension.getPi().toString()));
-        });
-
-    }
-
     private static Stream<Configuration> getExtensions(final Configuration configuration) {
         val numberOf2Cycles = configuration.getSpi().stream().filter(Cycle::isTwoCycle).count();
 
@@ -246,5 +239,10 @@ public class SortOrExtendNew {
                 ))
                 .filter(extension -> numberOf2Cycles == 0 || extension.getSpi().stream().noneMatch(Cycle::isTwoCycle))
                 .filter(SortOrExtendNew::isProductOfTwoNCycles);
+    }
+
+    private void extend(final Configuration configuration) {
+        getExtensions(configuration).forEach(extension -> rabbitTemplate
+                .convertAndSend(CONFIGS_QUEUE, extension.getSpi().toString() + "#" + extension.getPi().toString()));
     }
 }

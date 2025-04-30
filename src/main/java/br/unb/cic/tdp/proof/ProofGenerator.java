@@ -77,12 +77,12 @@ public class ProofGenerator {
         Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("draw-config.js"),
                 Paths.get(outputDir + "/draw-config.js"), REPLACE_EXISTING);
 
-        val stopWatch = StopWatch.createStarted();
-        val minRate = Double.parseDouble(args[1]);
-        System.out.println("Min rate: " + minRate);
-        Extensions.generate(outputDir, minRate);
-        stopWatch.stop();
-        System.out.println(stopWatch.getTime(TimeUnit.MINUTES));
+//        val stopWatch = StopWatch.createStarted();
+//        val minRate = Double.parseDouble(args[1]);
+//        System.out.println("Min rate: " + minRate);
+//        Extensions.generate(outputDir, minRate);
+//        stopWatch.stop();
+//        System.out.println(stopWatch.getTime(TimeUnit.MINUTES));
     }
 
     public static String permutationToJsArray(final MulticyclePermutation permutation) {

@@ -72,9 +72,16 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>net.openhft</groupId>
-            <artifactId>chronicle-queue</artifactId>
-            <version>5.20.117</version>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+            <version>3.3.4</version>
+            <exclusions>
+                <!-- avoid: LoggerFactory is not a Logback LoggerContext but Logback is on the classpath. on run with vscode -->
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
