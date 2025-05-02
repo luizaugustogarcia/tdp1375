@@ -18,7 +18,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
 
     @Override
     protected void compute() {
-        val configuration = getCanonical(this.configuration);
+        val configuration = Configuration.ofSignature(this.configuration.getSignature().getContent());
 
         if (storage.isAlreadySorted(configuration)) {
             return;
@@ -32,7 +32,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                         storage.saveSorting(configuration, Set.of(), sorting.get());
                         return;
                     } else {
-                        storage.markNoSorting(configuration);
+                        storage.markNoSorting(configuration, null); // TODO
                         storage.markBadCase(configuration);
                     }
                     extend(configuration);
@@ -41,21 +41,6 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                 }
             } // else: another thread is already working on this configuration
         }
-    }
-
-    private Configuration getCanonical(final Configuration configuration) {
-        val pivots = configuration.getSpi().stream()
-                .map(Cycle::getMinSymbol)
-                .collect(Collectors.toSet());
-
-        val equivalents = new TreeSet<Configuration.Signature>();
-
-        for (val pivot : pivots) {
-            val equivalentConfig = new Configuration(configuration.getSpi(), configuration.getPi().startingBy(pivot));
-            equivalents.add(equivalentConfig.getSignature());
-        }
-
-        return Configuration.ofSignature(equivalents.first().getContent());
     }
 
     protected Optional<List<Cycle>> searchForSorting(Configuration configuration) {

@@ -35,7 +35,7 @@ public class MySQLProofStorage implements ProofStorage {
 
         new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS sorting (config VARCHAR(255), hash_code INTEGER, pivots VARCHAR(255), sorting VARCHAR(255), PRIMARY KEY (config, pivots));");
 
-        new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS no_sorting (config VARCHAR(255) primary key);");
+        new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS no_sorting (config VARCHAR(255) primary key, parent VARCHAR(255));");
 
         new QueryRunner(dataSource).update("CREATE TABLE IF NOT EXISTS comp_sorting (config VARCHAR(255) primary key, hash_code INTEGER, sorting VARCHAR(255));");
 
@@ -87,8 +87,8 @@ public class MySQLProofStorage implements ProofStorage {
 
     @SneakyThrows
     @Override
-    public void markNoSorting(final Configuration configuration) {
-        new QueryRunner(dataSource).update("INSERT IGNORE INTO no_sorting(config) VALUES (?);", getId(configuration));
+    public void markNoSorting(final Configuration configuration, Configuration parent) {
+        new QueryRunner(dataSource).update("INSERT IGNORE INTO no_sorting(config, parent) VALUES (?, ?);", getId(configuration), getId(parent));
     }
 
     @SneakyThrows

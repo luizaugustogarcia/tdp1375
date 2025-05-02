@@ -75,7 +75,7 @@ public class DefaultProofStorage implements ProofStorage {
     }
 
     @Override
-    public void markNoSorting(Configuration configuration) {
+    public void markNoSorting(Configuration configuration, Configuration parent) {
         throw new NotImplementedException();
     }
 

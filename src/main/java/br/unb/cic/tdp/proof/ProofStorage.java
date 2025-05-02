@@ -19,9 +19,9 @@ public interface ProofStorage {
 
     void markBadCase(Configuration configuration);
 
-    void saveSorting(final Configuration configuration, Set<Integer> pivots, List<Cycle> sorting);
+    void saveSorting(Configuration configuration, Set<Integer> pivots, List<Cycle> sorting);
 
-    void markNoSorting(Configuration configuration);
+    void markNoSorting(Configuration configuration, Configuration parent);
 
     boolean hasNoSorting(Configuration configuration);
 
