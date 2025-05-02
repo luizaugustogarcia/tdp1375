@@ -252,7 +252,7 @@ public class SortOrExtendNew {
     }
 
     public static void main(String[] args) {
-        type1Extensions(new Configuration("(0 6 2)(1 8 4)(3 10 5)(7 11 9)"))
-                .stream().map(Pair::getSecond).map(SortOrExtendNew::getCanonical).forEach(System.out::println);
+        getExtensions(new Configuration("(0 3)(1 2)"))
+                .map(SortOrExtendNew::getCanonical).forEach(System.out::println);
     }
 }
