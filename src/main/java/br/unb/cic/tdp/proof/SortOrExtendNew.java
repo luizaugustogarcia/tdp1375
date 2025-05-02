@@ -220,10 +220,6 @@ public class SortOrExtendNew {
         return result;
     }
 
-    private static boolean isProductOfTwoNCycles(final Configuration configuration) {
-        return configuration.getSigma().size() == 1 && configuration.getSigma().asNCycle().size() == configuration.getPi().size();
-    }
-
     private static Stream<Configuration> getExtensions(final Configuration configuration) {
         val numberOf2Cycles = configuration.getSpi().stream().filter(Cycle::isTwoCycle).count();
 

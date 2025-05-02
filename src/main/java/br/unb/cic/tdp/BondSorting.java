@@ -79,7 +79,7 @@ public class BondSorting {
     }
 
     public static void main(String[] args) {
-        val storage = new MySQLProofStorage("localhost", "luiz", "luiz");
+        val storage = new MySQLProofStorage("localhost", "luiz", "luiz", "tdp");
         var pi = Cycle.of(0, 5, 4, 2, 1, 6, 11, 3, 10, 9, 8, 7);
         System.out.println(pi);
         for (val move : sort(pi, storage)) {

@@ -21,9 +21,9 @@ public class MySQLProofStorage implements ProofStorage {
     private BasicDataSource dataSource;
 
     @SneakyThrows
-    public MySQLProofStorage(final String host, final String userName, final String password) {
+    public MySQLProofStorage(final String host, final String userName, final String password, final String schema) {
         dataSource = new BasicDataSource();
-        dataSource.setUrl("jdbc:mysql://" + host + ":3306/tdp?allowPublicKeyRetrieval=true&useSSL=false");
+        dataSource.setUrl("jdbc:mysql://" + host + ":3306/" + schema + "?allowPublicKeyRetrieval=true&useSSL=false");
         dataSource.setUsername(userName);
         dataSource.setPassword(password);
         dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");

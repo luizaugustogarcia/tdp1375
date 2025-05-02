@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 @AllArgsConstructor
 public abstract class AbstractSortOrExtend extends RecursiveAction {
+    final Configuration parent;
     final Configuration configuration;
     final ProofStorage storage;
     final double minRate;
@@ -32,7 +33,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                         storage.saveSorting(configuration, Set.of(), sorting.get());
                         return;
                     } else {
-                        storage.markNoSorting(configuration, null); // TODO
+                        storage.markNoSorting(configuration, parent);
                         storage.markBadCase(configuration);
                     }
                     extend(configuration);

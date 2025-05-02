@@ -6,7 +6,6 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.context.event.ContextStartedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -15,7 +14,7 @@ import static br.unb.cic.tdp.Application.CONFIGS_QUEUE;
 @Component
 public class Extensions {
 
-    private final ProofStorage storage = new MySQLProofStorage("localhost", "luiz", "luiz");
+    private final ProofStorage storage = new MySQLProofStorage("localhost", "luiz", "luiz", "tdp");
 
     @Autowired
     private RabbitTemplate rabbitTemplate;
