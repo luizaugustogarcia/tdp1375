@@ -91,7 +91,7 @@ public class H2ProofStorage implements ProofStorage {
     @Override
     public void saveSorting(final Configuration configuration, final List<Cycle> sorting) {
         new QueryRunner(dataSource).update(
-                "INSERT INTO sorting(config, hash_code, sorting) VALUES (?, ?, ?, ?)",
+                "INSERT INTO sorting(config, hash_code, sorting) VALUES (?, ?, ?)",
                 getId(configuration), configuration.hashCode(), sorting.toString()
         );
     }
