@@ -3,6 +3,7 @@ package br.unb.cic.tdp.base;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.ProofStorage;
+import cern.colt.list.IntArrayList;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -215,13 +216,6 @@ public class CommonOperations implements Serializable {
         return sorting;
     }
 
-    public static Integer leftMostSymbol(final Cycle cycle, Cycle pi) {
-        return Arrays.stream(cycle.getSymbols())
-                .boxed()
-                .map(s -> Pair.of(s, s == 0 ? pi.size() - 1 : pi.indexOf(s))) // zero is the rightmost symbol
-                .min(Comparator.comparing(Pair::getRight)).get().getLeft();
-    }
-
     public static Optional<List<Cycle>> lookFor2Move(final Configuration configuration, final Set<Integer> pivots) {
         val pi = configuration.getPi().getSymbols();
 
@@ -248,5 +242,23 @@ public class CommonOperations implements Serializable {
             result[i] = spi.image(i);
         }
         return result;
+    }
+
+    public static int[] insertAtPosition(final int[] array, final int value, final int index) {
+        val newArray = new int[array.length + 1];
+        System.arraycopy(array, 0, newArray, 0, index);
+        newArray[index] = value;
+        System.arraycopy(array, index, newArray, index + 1, array.length - index);
+        return newArray;
+    }
+
+    public static IntArrayList unorientedExtension(final int[] pi, final int n, final int... positions) {
+        Arrays.sort(positions);
+        val extension = new IntArrayList(pi);
+        for (var i = 0; i < positions.length; i++) {
+            extension.beforeInsert(positions[i] + i, n + i);
+        }
+        extension.trimToSize();
+        return extension;
     }
 }

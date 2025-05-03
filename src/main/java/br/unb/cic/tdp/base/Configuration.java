@@ -305,9 +305,4 @@ public class Configuration {
             return Arrays.compare(this.content, other.content);
         }
     }
-
-    @ToString.Include
-    public int get3Norm() {
-        return this.spi.get3Norm();
-    }
 }

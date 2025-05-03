@@ -42,7 +42,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
         if (!permutation.contains("(")) {
             this.add(Cycle.of(permutation));
         } else {
-            val matcher= cyclePattern.matcher(permutation);
+            val matcher = cyclePattern.matcher(permutation);
             while (matcher.find()) {
                 this.add(Cycle.of(matcher.group(1)));
             }
@@ -95,7 +95,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
     @Override
     public int image(final int a) {
-        for (val cycle: cycles) {
+        for (val cycle : cycles) {
             if (cycle.contains(a)) {
                 return cycle.image(a);
             }
@@ -114,14 +114,6 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
     public int getNumberOfSymbols() {
         return symbols.size();
-    }
-
-    public Set<Integer> getSymbols() {
-        return symbols;
-    }
-
-    public int get3Norm() {
-        return (this.getNumberOfSymbols() - getNumberOfEvenCycles()) / 2;
     }
 
     public int getMaxSymbol() {

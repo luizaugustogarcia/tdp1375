@@ -6,7 +6,9 @@ import br.unb.cic.tdp.permutation.Cycle;
 import lombok.AllArgsConstructor;
 import lombok.val;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.RecursiveAction;
 import java.util.stream.Collectors;
 
@@ -19,7 +21,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
 
     @Override
     protected void compute() {
-        val configuration = Configuration.ofSignature(this.configuration.getSignature().getContent());
+        val configuration = canonicalize(this.configuration);
 
         if (storage.isAlreadySorted(configuration)) {
             return;
@@ -30,10 +32,10 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                 try {
                     val sorting = searchForSorting(configuration);
                     if (sorting.isPresent()) {
-                        storage.saveSorting(configuration, Set.of(), sorting.get());
+                        storage.saveSorting(configuration, sorting.get());
                         return;
                     } else {
-                        storage.markNoSorting(configuration, parent);
+                        storage.markNoSorting(configuration, canonicalize(parent));
                         storage.markBadCase(configuration);
                     }
                     extend(configuration);
@@ -44,16 +46,19 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
         }
     }
 
-    protected Optional<List<Cycle>> searchForSorting(Configuration configuration) {
+    private static Configuration canonicalize(final Configuration configuration) {
+        return Configuration.ofSignature(configuration.getSignature().getContent());
+    }
 
+    protected Optional<List<Cycle>> searchForSorting(Configuration configuration) {
         if (storage.hasNoSorting(configuration)) {
             return Optional.empty();
         }
-        val pivots = configuration.getSpi().stream()
-                .map(Cycle::getMinSymbol)
-                .collect(Collectors.toSet());
+        val pivots = getPivots(configuration);
         return CommonOperations.searchForSorting(storage, configuration, minRate, pivots);
     }
 
-    protected abstract void extend(Configuration configuration);
+    protected abstract Set<Integer> getPivots(Configuration configuration);
+
+    protected abstract void extend(Configuration noSortingConfig);
 }

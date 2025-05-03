@@ -4,21 +4,20 @@ import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.util.Pair;
 import lombok.SneakyThrows;
 import lombok.val;
+import org.apache.commons.lang3.tuple.Pair;
 import org.paukov.combinatorics3.Generator;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static br.unb.cic.tdp.proof.SortOrExtend.insertAtPosition;
-import static br.unb.cic.tdp.proof.SortOrExtend.unorientedExtension;
+import static br.unb.cic.tdp.base.CommonOperations.insertAtPosition;
+import static br.unb.cic.tdp.base.CommonOperations.unorientedExtension;
 import static java.lang.String.format;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Stream.concat;
@@ -26,13 +25,13 @@ import static java.util.stream.Stream.concat;
 public class TwoCycles {
 
     @SneakyThrows
-    public static void main(String[] args) {
-        val pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors());
-        //pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0)"), new Configuration("(0 2)(1 3)"), new MySQLProofStorage("localhost", "luiz", "luiz", "2cycles"), 1.6));
-        pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0)"), new Configuration("(0 2)(1 4 3)"), new MySQLProofStorage("localhost", "luiz", "luiz", "2cycles"), 1.6));
-        pool.shutdown();
-        // boundless
-        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
+    public static void generate(final String outputDir, final double minRate) {
+        try (val pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors())) {
+            val proofStorage = new H2ProofStorage("%s/2cycles".formatted(outputDir));
+            pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0)"), new Configuration("(0 2)(1 3)"), proofStorage, minRate));
+            pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0)"), new Configuration("(0 2)(1 4 3)"), proofStorage, minRate));
+            pool.shutdown();
+        }
     }
 
     private static class TwoCyclesSortOrExtend extends AbstractSortOrExtend {
@@ -45,24 +44,24 @@ public class TwoCycles {
         }
 
         @Override
-        protected Optional<List<Cycle>> searchForSorting(final Configuration configuration) {
-            if (storage.hasNoSorting(configuration)) {
-                return Optional.empty();
-            }
-            val pivots = configuration.getSpi().stream()
+        protected Set<Integer> getPivots(Configuration configuration) {
+            return configuration.getSpi().stream()
                     .filter(not(Cycle::isTwoCycle))
                     .map(Cycle::getMinSymbol)
                     .collect(Collectors.toSet());
-            return CommonOperations.searchForSorting(storage, configuration, minRate, pivots);
         }
 
         @Override
         protected void extend(final Configuration noSortingConfig) {
             val num2Cycles = noSortingConfig.getSpi().stream().filter(Cycle::isTwoCycle).count();
-            concat(type1Extensions(noSortingConfig).stream(),
-                    concat(type2Extensions(noSortingConfig).stream(),
-                            type3Extensions(noSortingConfig).stream()))
-                    .map(Pair::getSecond)
+            concat(
+                    type1Extensions(noSortingConfig).stream(),
+                    concat(
+                            type2Extensions(noSortingConfig).stream(),
+                            type3Extensions(noSortingConfig).stream()
+                    )
+            )
+                    .map(Pair::getRight)
                     .filter(extension -> extension.openGates().count() <= 1)
                     .filter(extension -> extension.getSpi().stream().filter(Cycle::isTwoCycle).count() >= num2Cycles)
                     .map(extension -> new TwoCyclesSortOrExtend(noSortingConfig, extension, storage, minRate))
@@ -72,7 +71,7 @@ public class TwoCycles {
         /*
          * Type 1 extension.
          */
-        static List<Pair<String, Configuration>> type1Extensions(final Configuration configuration) {
+        private static List<Pair<String, Configuration>> type1Extensions(final Configuration configuration) {
             val result = new ArrayList<Pair<String, Configuration>>();
 
             val n = configuration.getPi().getSymbols().length;
@@ -84,7 +83,7 @@ public class TwoCycles {
                             val newCycle = format("(%d %d %d)", n, n + 2, n + 1);
                             val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a, b, c).elements();
                             val extension = new Configuration(new MulticyclePermutation(configuration.getSpi() + newCycle), Cycle.of(extendedPi));
-                            result.add(new Pair<>(format("a=%d b=%d c=%d", a, b, c), extension));
+                            result.add(Pair.of(format("a=%d b=%d c=%d", a, b, c), extension));
                         }
                     }
                 }
@@ -96,19 +95,19 @@ public class TwoCycles {
         /*
          * Type 2 extension.
          */
-        static List<Pair<String, Configuration>> type2Extensions(final Configuration configuration) {
+        private static List<Pair<String, Configuration>> type2Extensions(final Configuration configuration) {
             val result = new ArrayList<Pair<String, Configuration>>();
 
             val n = configuration.getPi().getSymbols().length;
 
-            // adds a new 2-cycle with two new symbols
+            // adds a new 2-cycle, introducing two new symbols
             for (var a = 0; a < n; a++) {
                 var extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
                 for (var b = 0; b < n + 1; b++) {
                     extendedPi = unorientedExtension(extendedPi, n + 1, b).elements();
                     val newCycle = format("(%d %d)", n, n + 1);
                     val extension = new Configuration(new MulticyclePermutation(configuration.getSpi() + newCycle), Cycle.of(extendedPi));
-                    result.add(new Pair<>(format("a=%d b=%d", a, b), extension));
+                    result.add(Pair.of(format("a=%d b=%d", a, b), extension));
                 }
             }
 
@@ -119,7 +118,7 @@ public class TwoCycles {
                         val newCycle = format("(%s %d)", cycle.toString().substring(0, cycle.toString().length() - 1), n);
                         val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
                         val extension = new Configuration(new MulticyclePermutation(configuration.getSpi().toString().replace(cycle.toString(), newCycle.toString())), Cycle.of(extendedPi));
-                        result.add(new Pair<>(format("cycle=%s a=%d", cycle, a), extension));
+                        result.add(Pair.of(format("cycle=%s a=%d", cycle, a), extension));
                     }
                 }
             }
@@ -130,7 +129,7 @@ public class TwoCycles {
         /*
          * Type 3 extension.
          */
-        static List<Pair<String, Configuration>> type3Extensions(final Configuration configuration) {
+        private static List<Pair<String, Configuration>> type3Extensions(final Configuration configuration) {
             val result = new ArrayList<Pair<String, Configuration>>();
 
             val pi = configuration.getPi();
@@ -143,7 +142,7 @@ public class TwoCycles {
                         cycles.get(1).getSymbolsAsList(), cycles.get(2).getSymbolsAsList())) {
                     val move = Cycle.of(triple.get(0), triple.get(1), triple.get(2));
                     if (CommonOperations.isOriented(pi, move)) {
-                        result.add(new Pair<>("", new Configuration(spi.times(move.getInverse()), move.times(pi).asNCycle())));
+                        result.add(Pair.of("", new Configuration(spi.times(move.getInverse()), move.times(pi).asNCycle())));
                     }
                 }
             }
@@ -160,7 +159,7 @@ public class TwoCycles {
                             cycles.get(1).getSymbolsAsList())) {
                         val move = Cycle.of(pair.get(0), pair.get(1), n);
                         if (CommonOperations.isOriented(extendedPi, move)) {
-                            result.add(new Pair<>("", new Configuration(spi.times(move.getInverse()), move.times(extendedPi).asNCycle())));
+                            result.add(Pair.of("", new Configuration(spi.times(move.getInverse()), move.times(extendedPi).asNCycle())));
                         }
                     }
                 }
@@ -181,11 +180,11 @@ public class TwoCycles {
                             for (val c : cycle.getSymbols()) {
                                 var move = Cycle.of(n, n + 1, c);
                                 if (CommonOperations.isOriented(extendedPi, move)) {
-                                    result.add(new Pair<>("", new Configuration(spi.times(move.getInverse()), move.times(extendedPi).asNCycle())));
+                                    result.add(Pair.of("", new Configuration(spi.times(move.getInverse()), move.times(extendedPi).asNCycle())));
                                 }
                                 move = Cycle.of(n + 1, n, c);
                                 if (CommonOperations.isOriented(extendedPi, move)) {
-                                    result.add(new Pair<>("", new Configuration(spi.times(move.getInverse()), move.times(extendedPi).asNCycle())));
+                                    result.add(Pair.of("", new Configuration(spi.times(move.getInverse()), move.times(extendedPi).asNCycle())));
                                 }
                             }
                         }

@@ -13,7 +13,7 @@ import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 public class Cycle implements Permutation, Comparable<Cycle> {
     @Getter
-    private int[] symbols;
+    private final int[] symbols;
     @Getter
     private int[] symbolIndexes;
     @Getter
@@ -209,17 +209,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return this.size() > 3;
     }
 
-    public void update(final int... symbols) {
-        this.symbols = symbols;
-        updateInternalState();
-    }
-
     public boolean isTwoCycle() {
         return size() == 2;
-    }
-
-    public boolean isThreeCycle() {
-        return size() == 3;
     }
 
     public List<Integer> getSymbolsAsList() {

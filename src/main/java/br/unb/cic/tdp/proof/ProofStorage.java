@@ -19,7 +19,7 @@ public interface ProofStorage {
 
     void markBadCase(Configuration configuration);
 
-    void saveSorting(Configuration configuration, Set<Integer> pivots, List<Cycle> sorting);
+    void saveSorting(Configuration configuration, List<Cycle> sorting);
 
     void markNoSorting(Configuration configuration, Configuration parent);
 

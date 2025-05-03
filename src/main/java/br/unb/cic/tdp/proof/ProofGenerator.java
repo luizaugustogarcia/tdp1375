@@ -5,7 +5,6 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.primitives.Ints;
 import lombok.val;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
 
@@ -14,54 +13,14 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class ProofGenerator {
-    /*
-	\section*{Improved Upper Bound via an Average Bond Increase of 1.6 per Transposition}
 
-	Recall that the identity permutation has $n-1$ bonds, while a worst-case permutation (e.g., the reverse permutation or other bondless configuration) starts with few or no bonds. In a sorting process by block moves, each transposition increases the total number of bonds.
-
-	\subsection*{Original Argument}
-	In the work by Eriksson et al., it is shown that for any permutation $\pi\in S_n$, one can perform a fixed sequence of 2 moves that increases the number of bonds by 3. This implies an average increase of
-	\[
-	\frac{3}{2} = 1.5 \quad \text{bonds per move}.
-	\]
-	Thus, since the identity has $n-1$ bonds, one deduces that
-	\[
-	d(n) \le 2 + d(n-3).
-	\]
-
-	\subsection*{Improved Bound with an Average Increase of 1.6 Bonds per Move}
-	Suppose now that you have demonstrated that, for all $n\ge 15$, one can find sequences of block moves (not necessarily fixed two-move sequences) that yield an average bond increase of at least $1.6$ per move in the worst-case. In other words, if $k$ moves are performed, then the total increase in bonds is at least
-	\[
-	1.6k.
-	\]
-	****Since we must accumulate at least $n-1$ bonds to reach the sorted (identity) permutation**** (it does not need to accumulate n+1 (considering the zero)!!! the only permutation having k >= n-1 bonds is the identity!!!, we require:
-	\[
-	1.6k \ge n-1.
-	\]
-	Solving for $k$, we have:
-	\[
-	k \ge \frac{n-1}{1.6} = \frac{5(n-1)}{8}.
-	\]
-	Since the number of moves must be an integer, it follows that the worst-case number of moves required satisfies
-	\[
-	d(n) \le \left\lfloor \frac{5(n-1)}{8} \right\rfloor = \left\lfloor \frac{5n-5}{8} \right\rfloor.
-	\]
-
-	\subsection*{Conclusion}
-	Thus, by showing that every transposition contributes on average at least 1.6 bonds, one immediately obtains the improved upper bound:
-	\[
-	\boxed{d(n) \le \left\lfloor \frac{5n-5}{8} \right\rfloor, \quad \text{for } n\ge 15.}
-	\]
-	This improvement over the previous bound stems directly from the enhanced average bond gain per move.
-	     */
-    public static void main(String[] args) throws Throwable {
+    public static void main(final String[] args) throws Throwable {
         Velocity.setProperty("resource.loader", "class");
         Velocity.setProperty("parser.pool.size", Runtime.getRuntime().availableProcessors());
         Velocity.setProperty("class.resource.loader.class", "org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader");
@@ -78,9 +37,10 @@ public class ProofGenerator {
                 Paths.get(outputDir + "/draw-config.js"), REPLACE_EXISTING);
 
 //        val stopWatch = StopWatch.createStarted();
-//        val minRate = Double.parseDouble(args[1]);
-//        System.out.println("Min rate: " + minRate);
-//        Extensions.generate(outputDir, minRate);
+        val minRate = Double.parseDouble(args[1]);
+        System.out.println("Min rate: " + minRate);
+        TwoCycles.generate(outputDir, minRate);
+        Extensions.generate(outputDir, minRate);
 //        stopWatch.stop();
 //        System.out.println(stopWatch.getTime(TimeUnit.MINUTES));
     }
