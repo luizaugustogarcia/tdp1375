@@ -66,13 +66,9 @@ public class H2ProofStorage implements ProofStorage {
     @SneakyThrows
     @Override
     public boolean tryLock(final Configuration configuration) {
-        val sql = "MERGE INTO working (config) KEY(config) VALUES (?)";
+        val sql = "INSERT INTO working (config) SELECT ? FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM working WHERE config = ?)";
         val id = getId(configuration);
-        try {
-            return new QueryRunner(dataSource).update(sql, id) > 0;
-        } catch (SQLException e) {
-            return false;
-        }
+        return new QueryRunner(dataSource).update(sql, id, id) > 0;
     }
 
     @SneakyThrows
