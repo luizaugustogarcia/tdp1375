@@ -9,6 +9,7 @@ import lombok.val;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.RecursiveAction;
 import java.util.stream.Collectors;
 
@@ -46,11 +47,23 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
         }
     }
 
-    private static Configuration canonicalize(final Configuration configuration) {
-        return Configuration.ofSignature(configuration.getSignature().getContent());
+    protected static Configuration canonicalize(final Configuration configuration) {
+        //return Configuration.ofSignature(configuration.getSignature().getContent());
+        val pivots = configuration.getSpi().stream()
+                .map(Cycle::getMinSymbol)
+                .collect(Collectors.toSet());
+
+        val equivalents = new TreeSet<Configuration.Signature>();
+
+        for (val pivot : pivots) {
+            val equivalentConfig = new Configuration(configuration.getSpi(), configuration.getPi().startingBy(pivot));
+            equivalents.add(equivalentConfig.getSignature());
+        }
+
+        return Configuration.ofSignature(equivalents.first().getContent());
     }
 
-    protected Optional<List<Cycle>> searchForSorting(Configuration configuration) {
+    protected Optional<List<Cycle>> searchForSorting(final Configuration configuration) {
         if (storage.hasNoSorting(configuration)) {
             return Optional.empty();
         }
