@@ -10,6 +10,7 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +26,8 @@ public class DerbyProofStorage implements ProofStorage {
     public DerbyProofStorage(final String dbPath, final String database) {
         val config = new HikariConfig();
 
+        System.setProperty("derby.storage.pageCacheSize", "100000");
+
         config.setJdbcUrl("jdbc:derby:%s/db;databaseName=%s;create=true".formatted(dbPath, database));
         config.setDriverClassName("org.apache.derby.iapi.jdbc.AutoloadedDriver");
         config.setMaximumPoolSize(50);
@@ -32,7 +35,7 @@ public class DerbyProofStorage implements ProofStorage {
         config.setAutoCommit(true);
 
         dataSource = new HikariDataSource(config);
-        val runner = new QueryRunner(dataSource);
+        val runner = getQueryRunner();
 
         try {
             runner.update("CREATE TABLE working (config VARCHAR(255) PRIMARY KEY)");
@@ -66,7 +69,7 @@ public class DerbyProofStorage implements ProofStorage {
     @SneakyThrows
     @Override
     public boolean isAlreadySorted(final Configuration configuration) {
-        return new QueryRunner(dataSource).query(
+        return getQueryRunner().query(
                 "SELECT COUNT(1) FROM sorting WHERE config = ?",
                 new ScalarHandler<Integer>(1),
                 getId(configuration)
@@ -76,11 +79,20 @@ public class DerbyProofStorage implements ProofStorage {
     @SneakyThrows
     @Override
     public boolean isBadCase(final Configuration configuration) {
-        return new QueryRunner(dataSource).query(
+        return getQueryRunner().query(
                 "SELECT 1 FROM bad_case WHERE config = ?",
                 new ScalarHandler<Object>(),
                 getId(configuration)
         ) != null;
+    }
+
+    private static ThreadLocal<Connection> CONNECTION = new ThreadLocal<>();
+
+    private QueryRunner getQueryRunner() throws SQLException {
+        if (CONNECTION.get() == null) {
+            CONNECTION.set(dataSource.getConnection());
+        }
+        return new QueryRunner(new SingletonConnectionDataSource(CONNECTION.get()));
     }
 
     @SneakyThrows
@@ -100,39 +112,27 @@ public class DerbyProofStorage implements ProofStorage {
     @SneakyThrows
     @Override
     public void markBadCase(final Configuration configuration) {
-        try {
-            new QueryRunner(dataSource).update("INSERT INTO bad_case(config) VALUES (?)", getId(configuration));
-        } catch (SQLException e) {
-            if (!"23505".equals(e.getSQLState())) throw e;
-        }
+        getQueryRunner().update("INSERT INTO bad_case(config) VALUES (?)", getId(configuration));
     }
 
     @SneakyThrows
     @Override
     public void saveSorting(final Configuration configuration, final List<Cycle> sorting) {
-        try {
-            new QueryRunner(dataSource).update("INSERT INTO sorting(config, hash_code, sorting) VALUES (?, ?, ?)",
-                    getId(configuration), configuration.hashCode(), sorting.toString());
-        } catch (SQLException e) {
-            if (!"23505".equals(e.getSQLState())) throw e;
-        }
+        getQueryRunner().update("INSERT INTO sorting(config, hash_code, sorting) VALUES (?, ?, ?)",
+                getId(configuration), configuration.hashCode(), sorting.toString());
     }
 
     @SneakyThrows
     @Override
     public void markNoSorting(final Configuration configuration, Configuration parent) {
-        try {
-            new QueryRunner(dataSource).update("INSERT INTO no_sorting(config, parent) VALUES (?, ?)",
-                    getId(configuration), getId(parent));
-        } catch (SQLException e) {
-            if (!"23505".equals(e.getSQLState())) throw e;
-        }
+        getQueryRunner().update("INSERT INTO no_sorting(config, parent) VALUES (?, ?)",
+                getId(configuration), getId(parent));
     }
 
     @SneakyThrows
     @Override
     public boolean markedNoSorting(final Configuration configuration) {
-        return new QueryRunner(dataSource).query(
+        return getQueryRunner().query(
                 "SELECT 1 FROM no_sorting WHERE config = ?",
                 new ScalarHandler<>(),
                 getId(configuration)
@@ -143,7 +143,7 @@ public class DerbyProofStorage implements ProofStorage {
     @Override
     public void saveComponentSorting(final Configuration configuration, final List<Cycle> sorting) {
         try {
-            new QueryRunner(dataSource).update("INSERT INTO comp_sorting(config, hash_code, sorting) VALUES (?, ?, ?)",
+            getQueryRunner().update("INSERT INTO comp_sorting(config, hash_code, sorting) VALUES (?, ?, ?)",
                     getId(configuration), configuration.hashCode(), sorting.toString());
         } catch (SQLException e) {
             if (!"23505".equals(e.getSQLState())) throw e;
@@ -157,7 +157,7 @@ public class DerbyProofStorage implements ProofStorage {
     }
 
     private Optional<List<Cycle>> findSorting(String query, String spi) throws SQLException {
-        val sorting = new QueryRunner(dataSource).query(query, new MapListHandler(), spi);
+        val sorting = getQueryRunner().query(query, new MapListHandler(), spi);
         return sorting.stream()
                 .map(map -> Arrays.stream(
                                 map.get("sorting").toString().replace("[", "").replace("]", "").split(", "))
