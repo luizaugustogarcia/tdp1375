@@ -25,7 +25,8 @@ public class SortOrExtend extends AbstractSortOrExtend {
     private final StructuredTaskScope scope;
 
     public SortOrExtend(
-            StructuredTaskScope scope, final Configuration parent,
+            final StructuredTaskScope scope,
+            final Configuration parent,
             final Configuration configuration,
             final ProofStorage storage,
             final double minRate

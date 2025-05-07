@@ -14,11 +14,12 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class DerbyProofStorage implements ProofStorage {
-
-    private HikariDataSource dataSource;
+    private final ConcurrentHashMap<String, Boolean> working = new ConcurrentHashMap<>();
+    private final HikariDataSource dataSource;
 
     @SneakyThrows
     public DerbyProofStorage(final String dbPath, final String database) {
@@ -86,19 +87,14 @@ public class DerbyProofStorage implements ProofStorage {
     @Override
     public boolean tryLock(final Configuration configuration) {
         val id = getId(configuration);
-        try {
-            new QueryRunner(dataSource).update("INSERT INTO working (config) VALUES (?)", id);
-            return true;
-        } catch (SQLException e) {
-            if ("23505".equals(e.getSQLState())) return false;  // Primary key violation
-            throw e;
-        }
+        return working.putIfAbsent(id, Boolean.TRUE) == null;
     }
 
     @SneakyThrows
     @Override
     public void unlock(final Configuration configuration) {
-        new QueryRunner(dataSource).update("DELETE FROM working WHERE config = ?", getId(configuration));
+        val id = getId(configuration);
+        working.remove(id);
     }
 
     @SneakyThrows
