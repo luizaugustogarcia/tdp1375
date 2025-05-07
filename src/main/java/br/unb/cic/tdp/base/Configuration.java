@@ -34,9 +34,6 @@ public class Configuration {
     private final Cycle pi;
 
     @Getter
-    private final MulticyclePermutation sigma;
-
-    @Getter
     private final Signature signature;
 
     @ToString.Exclude
@@ -50,7 +47,6 @@ public class Configuration {
         this.pi = pi;
         this.cycleIndex = cycleIndex(spi, pi);
         this.signature = new Signature(pi, signature(spi, pi, cycleIndex), false);
-        this.sigma = spi.times(pi);
     }
 
     public Configuration(final MulticyclePermutation spi) {

@@ -70,27 +70,34 @@ public class SortOrExtend extends AbstractSortOrExtend {
 
         val n = configuration.getPi().getSymbols().length;
 
-        // adds a new 2-cycle with two new symbols
-        for (var a = 0; a <= n; a++) {
-            val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
-            for (var b = 0; b <= n + 1; b++) {
-                val extendedPi_ = unorientedExtension(extendedPi, n + 1, b).elements();
-                val newCycle = format("(%d %d)", n, n + 1);
-                val extension = new Configuration(new MulticyclePermutation(configuration.getSpi() + newCycle), Cycle.of(extendedPi_));
-                if (extension.isFull()) {
-                    result.add(Pair.of(format("a=%d b=%d", a, b), extension));
+        {
+            val newCycle = format("(%d %d)", n, n + 1);
+            val newSpi = new MulticyclePermutation(configuration.getSpi() + newCycle);
+
+            // adds a new 2-cycle with two new symbols
+            for (var a = 0; a <= n; a++) {
+                val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
+                for (var b = 0; b <= n + 1; b++) {
+                    val extendedPi_ = unorientedExtension(extendedPi, n + 1, b).elements();
+                    val extension = new Configuration(newSpi, Cycle.of(extendedPi_));
+                    if (extension.isFull()) {
+                        result.add(Pair.of(format("a=%d b=%d", a, b), extension));
+                    }
                 }
             }
         }
 
-        // grows an existing cycle
-        for (var cycle : configuration.getSpi()) {
-            for (var a = 0; a <= n; a++) {
+        {
+            // grows an existing cycle
+            for (var cycle : configuration.getSpi()) {
                 val newCycle = format("(%s %d)", cycle.toString().substring(0, cycle.toString().length() - 1), n);
-                val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
-                val extension = new Configuration(new MulticyclePermutation(configuration.getSpi().toString().replace(cycle.toString(), newCycle.toString())), Cycle.of(extendedPi));
-                if (extension.isFull()) {
-                    result.add(Pair.of(format("cycle=%s a=%d", cycle, a), extension));
+                val newSpi = configuration.getSpi().toString().replace(cycle.toString(), newCycle);
+                for (var a = 0; a <= n; a++) {
+                    val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
+                    val extension = new Configuration(new MulticyclePermutation(newSpi), Cycle.of(extendedPi));
+                    if (extension.isFull()) {
+                        result.add(Pair.of(format("cycle=%s a=%d", cycle, a), extension));
+                    }
                 }
             }
         }
