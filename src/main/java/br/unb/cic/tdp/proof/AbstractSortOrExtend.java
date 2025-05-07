@@ -22,28 +22,36 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
 
     @Override
     protected void compute() {
-        val configuration = canonicalize(this.configuration);
+        try {
+            val configuration = canonicalize(this.configuration);
 
-        if (storage.isAlreadySorted(configuration)) {
-            return;
-        }
+            if (storage.isAlreadySorted(configuration)) {
+                return;
+            }
 
-        if (!storage.isBadCase(configuration)) {
-            if (storage.tryLock(configuration)) {
-                try {
-                    val sorting = searchForSorting(configuration);
-                    if (sorting.isPresent()) {
-                        storage.saveSorting(configuration, sorting.get());
-                        return;
-                    } else {
-                        storage.markNoSorting(configuration, canonicalize(parent));
-                        storage.markBadCase(configuration);
+            if (!storage.isBadCase(configuration)) {
+                if (storage.tryLock(configuration)) {
+                    try {
+                        if (!storage.markedNoSorting(configuration)) {
+                            val sorting = searchForSorting(configuration);
+                            if (sorting.isPresent()) {
+                                storage.saveSorting(configuration, sorting.get());
+                                return;
+                            } else {
+                                storage.markNoSorting(configuration, canonicalize(parent));
+                                storage.markBadCase(configuration);
+                            }
+                        }
+                        extend(configuration);
+                    } finally {
+                        storage.unlock(configuration);
                     }
-                    extend(configuration);
-                } finally {
-                    storage.unlock(configuration);
-                }
-            } // else: another thread is already working on this configuration
+                } // else: another thread is already working on this configuration
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.exit(1);
+            throw new RuntimeException(e);
         }
     }
 
@@ -64,9 +72,6 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
     }
 
     protected Optional<List<Cycle>> searchForSorting(final Configuration configuration) {
-        if (storage.hasNoSorting(configuration)) {
-            return Optional.empty();
-        }
         val pivots = getPivots(configuration);
         return CommonOperations.searchForSorting(storage, configuration, minRate, pivots);
     }

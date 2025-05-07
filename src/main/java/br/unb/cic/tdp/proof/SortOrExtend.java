@@ -11,7 +11,7 @@ import org.paukov.combinatorics3.Generator;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.StructuredTaskScope;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,13 +22,16 @@ import static java.util.stream.Stream.concat;
 
 public class SortOrExtend extends AbstractSortOrExtend {
 
+    private final StructuredTaskScope scope;
+
     public SortOrExtend(
-            final Configuration parent,
+            StructuredTaskScope scope, final Configuration parent,
             final Configuration configuration,
             final ProofStorage storage,
             final double minRate
     ) {
         super(parent, configuration, storage, minRate);
+        this.scope = scope;
     }
 
     /*
@@ -187,7 +190,11 @@ public class SortOrExtend extends AbstractSortOrExtend {
     @Override
     protected void extend(final Configuration noSortingConfig) {
         extensions(noSortingConfig)
-                .map(extension -> new SortOrExtend(noSortingConfig, extension, storage, minRate))
-                .forEach(ForkJoinTask::fork);
+                .map(extension -> new SortOrExtend(scope, noSortingConfig, extension, storage, minRate))
+                .forEach(task ->
+                        scope.fork(() -> {
+                            task.compute();
+                            return Void.TYPE;
+                        }));
     }
 }

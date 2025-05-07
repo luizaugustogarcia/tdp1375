@@ -27,9 +27,9 @@ public class TwoCycles {
     @SneakyThrows
     public static void generate(final String outputDir, final double minRate) {
         try (val pool = new ForkJoinPool(Runtime.getRuntime().availableProcessors())) {
-            val proofStorage = new H2ProofStorage("%s/2cycles".formatted(outputDir));
-            pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0)"), new Configuration("(0 2)(1 3)"), proofStorage, minRate));
-            pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0)"), new Configuration("(0 2)(1 4 3)"), proofStorage, minRate));
+            val storage = new DerbyProofStorage(outputDir, "2cycles");
+            pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0)"), new Configuration("(0 2)(1 3)"), storage, minRate));
+            pool.execute(new TwoCyclesSortOrExtend(new Configuration("(0)"), new Configuration("(0 2)(1 4 3)"), storage, minRate));
             pool.shutdown();
         }
     }

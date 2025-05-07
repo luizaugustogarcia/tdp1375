@@ -4,7 +4,7 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
-import br.unb.cic.tdp.proof.H2ProofStorage;
+import br.unb.cic.tdp.proof.DerbyProofStorage;
 import br.unb.cic.tdp.proof.ProofStorage;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -79,7 +79,7 @@ public class BondSorting {
     }
 
     public static void main(String[] args) {
-        val storage = new H2ProofStorage("...");
+        val storage = new DerbyProofStorage(null, "extensions");
         var pi = Cycle.of(0, 5, 4, 2, 1, 6, 11, 3, 10, 9, 8, 7);
         System.out.println(pi);
         for (val move : sort(pi, storage)) {

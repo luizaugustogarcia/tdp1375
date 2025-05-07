@@ -5,7 +5,6 @@ import br.unb.cic.tdp.permutation.Cycle;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 public interface ProofStorage {
 
@@ -23,7 +22,7 @@ public interface ProofStorage {
 
     void markNoSorting(Configuration configuration, Configuration parent);
 
-    boolean hasNoSorting(Configuration configuration);
+    boolean markedNoSorting(Configuration configuration);
 
     void saveComponentSorting(Configuration configuration, List<Cycle> cycles);
 

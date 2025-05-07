@@ -8,7 +8,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.StructuredTaskScope;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
 import static br.unb.cic.tdp.proof.SortOrExtend.*;
@@ -17,12 +17,14 @@ public class Extensions {
 
     @SneakyThrows
     public static void generate(final String outputDir, final double minRate) {
-        val storage = new H2ProofStorage("%s/extensions".formatted(outputDir));
+        val storage = new DerbyProofStorage(outputDir, "extensions");
 
-        try (val pool = new ForkJoinPool(Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
-                Runtime.getRuntime().availableProcessors() + "")))) {
-            pool.execute(new SortOrExtend(new Configuration("(0)"), new Configuration("(0 2 1)"), storage, minRate));
-            pool.shutdown();
+        try (var scope = new StructuredTaskScope.ShutdownOnFailure()) {
+            scope.fork(() -> {
+                new SortOrExtend(scope, new Configuration("(0)"), new Configuration("(0 2 1)"), storage, minRate).compute();
+                return Void.TYPE;
+            });
+            scope.join();
         }
 
 //        val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
