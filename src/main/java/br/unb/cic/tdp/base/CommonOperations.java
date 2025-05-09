@@ -125,7 +125,7 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        var movesLeft = movedSymbols.size() / 3.0; // each move can add up to 3 bonds
+        var movesLeft = Math.floor(movedSymbols.size() / 3.0); // each move can add up to 3 bonds
         var totalMoves = stack.size() + movesLeft;
         var globalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - pivots.size()) / totalMoves;
         if (globalRate < minRate) {
