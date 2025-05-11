@@ -8,10 +8,10 @@ import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.paukov.combinatorics3.Generator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -22,6 +22,18 @@ import static java.util.stream.Stream.concat;
 
 public class SortOrExtend extends AbstractSortOrExtend {
 
+    private static final AtomicLong enqueued = new AtomicLong();
+    private static final Timer timer = new Timer();
+
+    static {
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                System.out.println(Instant.now() + ", queue size: " + enqueued.get());
+            }
+        }, 0, 60 * 1 * 1000);
+    }
+
     public SortOrExtend(
             final Configuration parent,
             final Configuration configuration,
@@ -29,6 +41,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
             final double minRate
     ) {
         super(parent, configuration, storage, minRate);
+        enqueued.incrementAndGet();
     }
 
     /*
@@ -196,5 +209,11 @@ public class SortOrExtend extends AbstractSortOrExtend {
         extensions(noSortingConfig)
                 .map(extension -> new SortOrExtend(noSortingConfig, extension, storage, minRate))
                 .forEach(ForkJoinTask::fork);
+    }
+
+    @Override
+    protected void compute() {
+        enqueued.decrementAndGet();
+        super.compute();
     }
 }

@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.StructuredTaskScope;
 
 import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
 import static br.unb.cic.tdp.proof.SortOrExtend.*;
@@ -22,7 +21,7 @@ public class Extensions {
 
         int parallelism = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 Runtime.getRuntime().availableProcessors() + ""));
-        try (val pool = new ForkJoinPool(15)) {
+        try (val pool = new ForkJoinPool(parallelism)) {
             pool.execute(new SortOrExtend(new Configuration("(0)"), new Configuration("(0 2 1)"), storage, minRate));
         }
 
