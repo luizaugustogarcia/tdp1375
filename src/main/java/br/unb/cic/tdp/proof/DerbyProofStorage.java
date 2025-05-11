@@ -12,15 +12,14 @@ import org.apache.commons.dbutils.handlers.ScalarHandler;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class DerbyProofStorage implements ProofStorage {
     private final ConcurrentHashMap<String, Boolean> working = new ConcurrentHashMap<>();
     private final HikariDataSource dataSource;
+    private final String database;
 
     @SneakyThrows
     public DerbyProofStorage(final String dbPath, final String database) {
@@ -28,7 +27,8 @@ public class DerbyProofStorage implements ProofStorage {
 
         System.setProperty("derby.storage.pageCacheSize", "100000");
 
-        config.setJdbcUrl("jdbc:derby:%s/db;databaseName=%s;create=true".formatted(dbPath, database));
+        this.database = database;
+        config.setJdbcUrl("jdbc:derby:%s/%s;create=true".formatted(dbPath, this.database));
         config.setDriverClassName("org.apache.derby.iapi.jdbc.AutoloadedDriver");
         config.setMaximumPoolSize(50);
         config.setConnectionTimeout(0);
@@ -86,13 +86,21 @@ public class DerbyProofStorage implements ProofStorage {
         ) != null;
     }
 
-    private static ThreadLocal<Connection> CONNECTION = new ThreadLocal<>();
+    private static ThreadLocal<Map<String, QueryRunner>> CONNECTION = new ThreadLocal<>();
 
     private QueryRunner getQueryRunner() throws SQLException {
         if (CONNECTION.get() == null) {
-            CONNECTION.set(dataSource.getConnection());
+            CONNECTION.set(new HashMap<>());
         }
-        return new QueryRunner(new SingletonConnectionDataSource(CONNECTION.get()));
+
+        return CONNECTION.get().computeIfAbsent(database, database ->
+        {
+            try {
+                return new QueryRunner(new SingletonConnectionDataSource(dataSource.getConnection()));
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
     @SneakyThrows

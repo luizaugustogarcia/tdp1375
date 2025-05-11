@@ -38,6 +38,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                                 storage.saveSorting(configuration, sorting.get());
                                 return;
                             } else {
+                                System.out.println(configuration.getSpi());
                                 storage.markNoSorting(configuration, canonicalize(parent));
                                 storage.markBadCase(configuration);
                             }
@@ -50,25 +51,12 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.exit(1);
             throw new RuntimeException(e);
         }
     }
 
     protected static Configuration canonicalize(final Configuration configuration) {
-        //return Configuration.ofSignature(configuration.getSignature().getContent());
-        val pivots = configuration.getSpi().stream()
-                .map(Cycle::getMinSymbol)
-                .collect(Collectors.toSet());
-
-        val equivalents = new TreeSet<Configuration.Signature>();
-
-        for (val pivot : pivots) {
-            val equivalentConfig = new Configuration(configuration.getSpi(), configuration.getPi().startingBy(pivot));
-            equivalents.add(equivalentConfig.getSignature());
-        }
-
-        return Configuration.ofSignature(equivalents.first().getContent());
+        return Configuration.ofSignature(configuration.getSignature().getContent());
     }
 
     protected Optional<List<Cycle>> searchForSorting(final Configuration configuration) {
