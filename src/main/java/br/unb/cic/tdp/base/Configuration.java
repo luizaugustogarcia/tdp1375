@@ -225,7 +225,7 @@ public class Configuration {
                         val currentLabel = Math.floor(current);
                         val nextLabel = Math.floor(next);
                         if (currentLabel == nextLabel) {
-                            val orientedCycle = cycleIndex[i];
+                            val orientedCycle = cycleIndex[pi.get(i)];
                             int currentIndex = (int) Math.round(current * 100F - currentLabel * 100);
                             int nextIndex = (int) Math.round(next * 100F - nextLabel * 100F);
                             if (currentIndex % orientedCycle.size() == (nextIndex + 1) % orientedCycle.size()) {

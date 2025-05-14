@@ -18,5 +18,6 @@ public class ConfigurationTest {
         assertFalse(new Configuration("(0 15 13 2 1)(3 16 5)(4 8 6)(7 11 9)(10 14 12)").isFull());
         assertTrue(new Configuration("(0 1 10)(2 9 5)(3 11 7)(4 8 6)").isFull());
         assertFalse(new Configuration("(0 7 3)(1 6 2 8 5 4)").isFull());
+        assertFalse(new Configuration("(0 4 1 7 3 9)(2 8 6)(5 10 11 12)", "(0 1 2 12 11 3 4 5 6 7 8 9 10)").isFull());
     }
 }
