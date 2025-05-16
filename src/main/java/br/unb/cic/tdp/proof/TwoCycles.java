@@ -9,9 +9,7 @@ import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.paukov.combinatorics3.Generator;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 import java.util.stream.Collectors;
@@ -44,11 +42,52 @@ public class TwoCycles {
         }
 
         @Override
+        protected void compute() {
+            try {
+                val configuration = canonicalize(this.configuration);
+
+                if (storage.isAlreadySorted(configuration)) {
+                    return;
+                }
+
+                if (!storage.isBadCase(configuration)) {
+                    if (storage.tryLock(configuration)) {
+                        try {
+                            if (!storage.markedNoSorting(configuration)) {
+                                val sorting = searchForSorting(configuration);
+                                if (sorting.isPresent()) {
+                                    storage.saveSorting(configuration, sorting.get());
+                                    return;
+                                } else {
+                                    storage.markNoSorting(configuration, canonicalize(parent));
+                                    storage.markBadCase(configuration);
+                                }
+                            }
+                            extend(configuration);
+                        } finally {
+                            storage.unlock(configuration);
+                        }
+                    } // else: another thread is already working on this configuration
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        }
+
+        @Override
         protected Set<Integer> getPivots(Configuration configuration) {
             return configuration.getSpi().stream()
                     .filter(not(Cycle::isTwoCycle))
-                    .map(Cycle::getMinSymbol)
+                    .map(cycle -> rightMostSymbol(cycle, configuration.getPi()))
                     .collect(Collectors.toSet());
+        }
+
+        public static Integer rightMostSymbol(final Cycle cycle, final Cycle pi) {
+            return Arrays.stream(cycle.getSymbols())
+                    .boxed()
+                    .map(s -> Pair.of(s, s == 0 ? pi.size() : pi.indexOf(s))) // zero is the rightmost symbol
+                    .max(Comparator.comparing(Pair::getRight)).get().getLeft();
         }
 
         @Override

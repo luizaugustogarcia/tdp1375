@@ -21,7 +21,7 @@ public class Extensions {
 
         int parallelism = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 Runtime.getRuntime().availableProcessors() + ""));
-        try (val pool = new ForkJoinPool(parallelism)) {
+        try (val pool = new ForkJoinPool(parallelism + 2)) {
             pool.execute(new SortOrExtend(new Configuration("(0)"), new Configuration("(0 2 1)"), storage, minRate));
         }
 

@@ -22,6 +22,7 @@ import static java.util.stream.Stream.concat;
 
 public class SortOrExtend extends AbstractSortOrExtend {
 
+    private static int n = 0;
     private static final AtomicLong enqueued = new AtomicLong();
     private static final Timer timer = new Timer();
 
@@ -30,6 +31,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
             @Override
             public void run() {
                 System.out.println(Instant.now() + ", queue size: " + enqueued.get());
+                System.out.println("n: " + n);
             }
         }, 0, 60 * 1 * 1000);
     }
@@ -65,9 +67,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
                 for (var c = 0; c <= n + 2; c++) {
                     val extendedPi__ = unorientedExtension(extendedPi_, n + 2, c).elements();
                     val extension = new Configuration(new MulticyclePermutation(configuration.getSpi() + newCycle), Cycle.of(extendedPi__));
-                    if (extension.isFull()) {
                         result.add(Pair.of(format("a=%d b=%d c=%d", a, b, c), extension));
-                    }
                 }
             }
         }
@@ -93,9 +93,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
                 for (var b = 0; b <= n + 1; b++) {
                     val extendedPi_ = unorientedExtension(extendedPi, n + 1, b).elements();
                     val extension = new Configuration(newSpi, Cycle.of(extendedPi_));
-                    if (extension.isFull()) {
                         result.add(Pair.of(format("a=%d b=%d", a, b), extension));
-                    }
                 }
             }
         }
@@ -108,9 +106,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
                 for (var a = 0; a <= n; a++) {
                     val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
                     val extension = new Configuration(new MulticyclePermutation(newSpi), Cycle.of(extendedPi));
-                    if (extension.isFull()) {
                         result.add(Pair.of(format("cycle=%s a=%d", cycle, a), extension));
-                    }
                 }
             }
         }
@@ -200,13 +196,24 @@ public class SortOrExtend extends AbstractSortOrExtend {
     @Override
     protected Set<Integer> getPivots(final Configuration configuration) {
         return configuration.getSpi().stream()
-                .map(Cycle::getMinSymbol)
+                .map(cycle -> rightMostSymbol(cycle, configuration.getPi()))
                 .collect(Collectors.toSet());
+    }
+
+    public static Integer rightMostSymbol(final Cycle cycle, final Cycle pi) {
+        return Arrays.stream(cycle.getSymbols())
+                .boxed()
+                .map(s -> Pair.of(s, s == 0 ? pi.size() : pi.indexOf(s))) // zero is the rightmost symbol
+                .max(Comparator.comparing(Pair::getRight)).get().getLeft();
     }
 
     @Override
     protected void extend(final Configuration noSortingConfig) {
+        int maxSymbol = noSortingConfig.getPi().getMaxSymbol();
+        if (maxSymbol > n)
+            n = maxSymbol;
         extensions(noSortingConfig)
+                .filter(Configuration::isFull)
                 .map(extension -> new SortOrExtend(noSortingConfig, extension, storage, minRate))
                 .forEach(ForkJoinTask::fork);
     }
