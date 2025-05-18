@@ -22,7 +22,7 @@ public class Extensions {
         int parallelism = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 Runtime.getRuntime().availableProcessors() + ""));
         try (val pool = new ForkJoinPool(parallelism + 2)) {
-            pool.execute(new SortOrExtend(new Configuration("(0)"), new Configuration("(0 2 1)"), storage, minRate));
+            pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0 2 1)", 2), storage, minRate));
         }
 
 //        val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());

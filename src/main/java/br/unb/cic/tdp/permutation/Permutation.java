@@ -13,7 +13,7 @@ public interface Permutation extends Serializable {
     Cycle asNCycle();
 
     default MulticyclePermutation conjugateBy(final Permutation conjugator) {
-        return PermutationGroups.computeProduct(false, conjugator, this, conjugator.getInverse());
+        return PermutationGroups.computeProduct(true, conjugator, this, conjugator.getInverse());
     }
 
     default MulticyclePermutation times(final Permutation rightOperand) {

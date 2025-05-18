@@ -39,7 +39,7 @@ public class ProofGenerator {
 //        val stopWatch = StopWatch.createStarted();
         val minRate = Double.parseDouble(args[1]);
         System.out.println("Min rate: " + minRate);
-        TwoCycles.generate(outputDir, minRate);
+        //TwoCycles.generate(outputDir, minRate);
         Extensions.generate(outputDir, minRate);
 //        stopWatch.stop();
 //        System.out.println(stopWatch.getTime(TimeUnit.MINUTES));
