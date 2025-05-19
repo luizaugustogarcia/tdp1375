@@ -29,10 +29,10 @@ public class SortOrExtend extends AbstractSortOrExtend {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                System.out.println(Instant.now() + ", queue size: " + enqueued.get());
-                System.out.println("n: " + n);
+                System.out.printf("%s, queue size: %d%n", Instant.now(), enqueued.get());
+                System.out.printf("max n: %d%n", n);
             }
-        }, 0, 60 * 1 * 1000);
+        }, 60_000, 60_000);
     }
 
     public SortOrExtend(
@@ -58,15 +58,26 @@ public class SortOrExtend extends AbstractSortOrExtend {
         val n = configuration.getPi().getSymbols().length;
 
         val newCycle = format("(%d %d %d)", n, n + 2, n + 1);
+        val newSpi = new MulticyclePermutation(configuration.getSpi() + newCycle);
 
-        for (var a = 0; a <= n; a++) {
-            val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
-            for (var b = 0; b <= n + 1; b++) {
-                val extendedPi_ = unorientedExtension(extendedPi, n + 1, b).elements();
-                for (var c = 0; c <= n + 2; c++) {
-                    val extendedPi__ = unorientedExtension(extendedPi_, n + 2, c).elements();
-                    val extension = new Configuration(new MulticyclePermutation(configuration.getSpi() + newCycle), Cycle.of(extendedPi__));
-                    result.add(Pair.of(format("a=%d b=%d c=%d", a, b, c), extension));
+        final int[] newSymbols = {n + 2, n + 1, n};
+
+        for (int i = 0; i < n - 2; i++) {
+            for (int j = i + 1; j < n - 1; j++) {
+                for (int k = j + 1; k < n; k++) {
+                    int[] extension = new int[n + 3];
+                    int originalPos = 0;
+                    int newPos = 0;
+
+                    for (int g = 0; g < n; g++) {
+                        extension[originalPos++] = configuration.getPi().getSymbols()[g];
+
+                        if (g == i || g == j || g == k) {
+                            extension[originalPos++] = newSymbols[newPos++];
+                        }
+                    }
+
+                    result.add(Pair.of(format("a=%d b=%d c=%d", i, j, k), new Configuration(newSpi, Cycle.of(extension))));
                 }
             }
         }
@@ -86,13 +97,23 @@ public class SortOrExtend extends AbstractSortOrExtend {
             val newCycle = format("(%d %d)", n, n + 1);
             val newSpi = new MulticyclePermutation(configuration.getSpi() + newCycle);
 
-            // adds a new 2-cycle with two new symbols
-            for (var a = 0; a <= n; a++) {
-                val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
-                for (var b = 0; b <= n + 1; b++) {
-                    val extendedPi_ = unorientedExtension(extendedPi, n + 1, b).elements();
-                    val extension = new Configuration(newSpi, Cycle.of(extendedPi_));
-                    result.add(Pair.of(format("a=%d b=%d", a, b), extension));
+            final int[] newSymbols = {n + 1, n};
+
+            for (int i = 0; i < n - 1; i++) {
+                for (int j = i + 1; j < n; j++) {
+                    int[] extension = new int[n + 2];
+                    int originalPos = 0;
+                    int newPos = 0;
+
+                    for (int g = 0; g < n; g++) {
+                        extension[originalPos++] = configuration.getPi().getSymbols()[g];
+
+                        if (g == i || g == j) {
+                            extension[originalPos++] = newSymbols[newPos++];
+                        }
+                    }
+
+                    result.add(Pair.of(format("a=%d b=%d", i, j), new Configuration(newSpi, Cycle.of(extension))));
                 }
             }
         }
@@ -129,7 +150,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
                     cycles.get(1).getSymbolsAsList(), cycles.get(2).getSymbolsAsList())) {
                 val move = Cycle.of(triple.get(0), triple.get(1), triple.get(2));
                 if (CommonOperations.isOriented(pi, move)) {
-                    result.add(Pair.of("", new Configuration(spi.times(move.getInverse()), move.times(pi).asNCycle())));
+                    result.add(Pair.of("%s".formatted(move), new Configuration(spi.times(move.getInverse()), move.times(pi).asNCycle())));
                 }
             }
         }
@@ -146,7 +167,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
                         cycles.get(1).getSymbolsAsList())) {
                     val move = Cycle.of(pair.get(0), pair.get(1), n);
                     if (CommonOperations.isOriented(extendedPi, move)) {
-                        result.add(Pair.of("", new Configuration(spi.times(move.getInverse()), move.times(extendedPi).asNCycle())));
+                        result.add(Pair.of("%s".formatted(move), new Configuration(spi.times(move.getInverse()), move.times(extendedPi).asNCycle())));
                     }
                 }
             }
@@ -157,21 +178,31 @@ public class SortOrExtend extends AbstractSortOrExtend {
         extendedSpi.add(Cycle.of(n));
         extendedSpi.add(Cycle.of(n + 1));
 
-        for (var a = 0; a <= n; a++) {
-            val extendedPi = Cycle.of(insertAtPosition(pi.getSymbols(), n, a));
-            for (var b = 0; b <= n + 1; b++) {
-                val extendedPi_ = Cycle.of(insertAtPosition(extendedPi.getSymbols(), n + 1, b));
+        final int[] newSymbols = {n + 1, n};
+
+        for (int i = 0; i < n - 1; i++) {
+            for (int j = i + 1; j < n; j++) {
+                int[] extension = new int[n + 2];
+                int originalPos = 0;
+                int newPos = 0;
+
+                for (int g = 0; g < n; g++) {
+                    extension[originalPos++] = configuration.getPi().getSymbols()[g];
+
+                    if (g == i || g == j) {
+                        extension[originalPos++] = newSymbols[newPos++];
+                    }
+                }
+
+                val extendedPi = Cycle.of(extension);
 
                 for (val cycle : configuration.getSpi()) {
                     for (val c : cycle.getSymbols()) {
                         var move = Cycle.of(n, n + 1, c);
-                        if (CommonOperations.isOriented(extendedPi_, move)) {
-                            result.add(Pair.of("", new Configuration(spi.times(move.getInverse()), move.times(extendedPi_).asNCycle())));
+                        if (!CommonOperations.isOriented(extendedPi, move)) {
+                            move = Cycle.of(n + 1, n, c);
                         }
-                        move = Cycle.of(n + 1, n, c);
-                        if (CommonOperations.isOriented(extendedPi_, move)) {
-                            result.add(Pair.of("", new Configuration(spi.times(move.getInverse()), move.times(extendedPi_).asNCycle())));
-                        }
+                        result.add(Pair.of("%s".formatted(move), new Configuration(spi.times(move.getInverse()), move.times(extendedPi).asNCycle())));
                     }
                 }
             }
