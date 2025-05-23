@@ -4,6 +4,7 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.primitives.Ints;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
+@Slf4j
 public class ProofGenerator {
 
     public static void main(final String[] args) throws Throwable {
@@ -27,6 +29,8 @@ public class ProofGenerator {
         Velocity.init();
 
         val outputDir = args[0];
+
+        Files.createDirectories(Paths.get("%s/search".formatted(outputDir)));
         Files.createDirectories(Paths.get(outputDir));
 
         Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("index.html"),
@@ -38,25 +42,26 @@ public class ProofGenerator {
 
 //        val stopWatch = StopWatch.createStarted();
         val minRate = Double.parseDouble(args[1]);
-        System.out.println("Min rate: " + minRate);
+        log.info("Min rate: {}", minRate);
         //TwoCycles.generate(outputDir, minRate);
         Extensions.generate(outputDir, minRate);
 //        stopWatch.stop();
 //        System.out.println(stopWatch.getTime(TimeUnit.MINUTES));
+        System.exit(0);
     }
 
     public static String permutationToJsArray(final MulticyclePermutation permutation) {
-        return "[" + permutation
-                .stream().map(c -> "[" + Ints.asList(c.getSymbols()).stream()
+        return "[%s]".formatted(permutation
+                .stream().map(c -> "[%s]".formatted(Ints.asList(c.getSymbols()).stream()
                         .map(s -> Integer.toString(s))
-                        .collect(Collectors.joining(",")) + "]")
-                .collect(Collectors.joining(",")) + "]";
+                        .collect(Collectors.joining(","))))
+                .collect(Collectors.joining(",")));
     }
 
     private static String cycleToJsArray(final Cycle cycle) {
-        return "[" + Ints.asList(cycle.getSymbols()).stream()
+        return "[%s]".formatted(Ints.asList(cycle.getSymbols()).stream()
                 .map(s -> Integer.toString(s))
-                .collect(Collectors.joining(",")) + "]";
+                .collect(Collectors.joining(",")));
     }
 
     public static void renderSorting(final Configuration canonicalConfig,

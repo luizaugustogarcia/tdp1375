@@ -1,4 +1,4 @@
-package br.unb.cic.tdp.proof;
+package br.unb.cic.tdp.util;
 
 import javax.sql.DataSource;
 import java.io.PrintWriter;
@@ -7,10 +7,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
 
-public class SingletonConnectionDataSource implements DataSource {
+public class SingleConnectionDataSource implements DataSource {
     private final Connection connection;
 
-    public SingletonConnectionDataSource(Connection connection) {
+    public SingleConnectionDataSource(Connection connection) {
         this.connection = new NonClosingConnectionWrapper(connection);
     }
 

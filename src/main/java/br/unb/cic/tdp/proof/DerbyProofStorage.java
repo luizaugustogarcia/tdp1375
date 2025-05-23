@@ -2,6 +2,7 @@ package br.unb.cic.tdp.proof;
 
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.util.SingleConnectionDataSource;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.SneakyThrows;
@@ -17,6 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class DerbyProofStorage implements ProofStorage {
+    private static final ThreadLocal<Map<String, QueryRunner>> CONNECTION = new ThreadLocal<>();
+
     private final ConcurrentHashMap<String, Boolean> working = new ConcurrentHashMap<>();
     private final HikariDataSource dataSource;
     private final String database;
@@ -86,8 +89,6 @@ public class DerbyProofStorage implements ProofStorage {
         ) != null;
     }
 
-    private static ThreadLocal<Map<String, QueryRunner>> CONNECTION = new ThreadLocal<>();
-
     private QueryRunner getQueryRunner() throws SQLException {
         if (CONNECTION.get() == null) {
             CONNECTION.set(new HashMap<>());
@@ -96,7 +97,7 @@ public class DerbyProofStorage implements ProofStorage {
         return CONNECTION.get().computeIfAbsent(database, database ->
         {
             try {
-                return new QueryRunner(new SingletonConnectionDataSource(dataSource.getConnection()));
+                return new QueryRunner(new SingleConnectionDataSource(dataSource.getConnection()));
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -124,15 +125,23 @@ public class DerbyProofStorage implements ProofStorage {
     @SneakyThrows
     @Override
     public void saveSorting(final Pair<Configuration, Set<Integer>> configurationPair, Pair<Configuration, Set<Integer>> parent, final List<Cycle> sorting) {
-        getQueryRunner().update("INSERT INTO sorting(config, parent, sorting) VALUES (?, ?, ?)",
-                getId(configurationPair), getId(parent), sorting.toString());
+        try {
+            getQueryRunner().update("INSERT INTO sorting(config, parent, sorting) VALUES (?, ?, ?)",
+                    getId(configurationPair), getId(parent), sorting.toString());
+        } catch (SQLException e) {
+            if (!"23505".equals(e.getSQLState())) throw e;
+        }
     }
 
     @SneakyThrows
     @Override
     public void markNoSorting(final Pair<Configuration, Set<Integer>> configurationPair, final Pair<Configuration, Set<Integer>> parent) {
-        getQueryRunner().update("INSERT INTO no_sorting(config, parent) VALUES (?, ?)",
-                getId(configurationPair), getId(parent));
+        try {
+            getQueryRunner().update("INSERT INTO no_sorting(config, parent) VALUES (?, ?)",
+                    getId(configurationPair), getId(parent));
+        } catch (SQLException e) {
+            if (!"23505".equals(e.getSQLState())) throw e;
+        }
     }
 
     @SneakyThrows
@@ -158,8 +167,8 @@ public class DerbyProofStorage implements ProofStorage {
 
     @SneakyThrows
     @Override
-    public Optional<List<Cycle>> findSorting(final String spi) {
-        return findSorting("SELECT * FROM sorting WHERE config = ?", spi);
+    public Optional<List<Cycle>> findSorting(final Pair<Configuration, Set<Integer>> configurationPair) {
+        return findSorting("SELECT * FROM sorting WHERE config = ?", getId(configurationPair));
     }
 
     private Optional<List<Cycle>> findSorting(String query, String spi) throws SQLException {

@@ -58,7 +58,7 @@ public class BondSorting {
                         break;
                     }
                     configuration = extension;
-                    val moves = findCase(configuration, pi, proofStorage::findSorting);
+                    Optional<MulticyclePermutation> moves = null; // findCase(configuration, pi, proofStorage::findSorting);
                     if (moves.isPresent()) {
                         for (val move : moves.get()) {
                             pi = move.times(pi).asNCycle();

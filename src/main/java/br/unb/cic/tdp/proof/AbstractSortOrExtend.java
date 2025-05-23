@@ -4,6 +4,7 @@ import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -12,8 +13,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.RecursiveAction;
+import java.util.logging.Logger;
 
 @AllArgsConstructor
+@Slf4j
 public abstract class AbstractSortOrExtend extends RecursiveAction {
     final Pair<Configuration, Set<Integer>> parent;
     final Pair<Configuration, Set<Integer>> configurationPair;
@@ -39,7 +42,6 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                                 storage.saveSorting(canonical, parent, sorting.get());
                                 return;
                             } else {
-                                System.out.printf("%s#%s%n", configurationPair.getLeft().getSpi(), configurationPair.getRight());
                                 storage.markNoSorting(canonical, parent);
                                 storage.markBadCase(canonical);
                             }
@@ -50,9 +52,8 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                     }
                 } // else: another thread is already working on this canonical
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
+        } catch (final Exception e) {
+            log.error(e.getMessage());
         }
     }
 

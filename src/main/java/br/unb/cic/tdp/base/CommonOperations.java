@@ -4,6 +4,7 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.ProofStorage;
 import cern.colt.list.IntArrayList;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -11,6 +12,7 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class CommonOperations implements Serializable {
 
     public static final Cycle[] CANONICAL_PI;
@@ -118,7 +120,7 @@ public class CommonOperations implements Serializable {
         if (!fixedSymbols.isEmpty()) {
             if (rate >= minRate) {
                 if (rate < bestRate) {
-                    System.out.println("Lowest rate: " + rate);
+                    log.info("Lowest rate: {}", rate);
                     bestRate = rate;
                 }
                 return Optional.of(stack);
@@ -205,7 +207,7 @@ public class CommonOperations implements Serializable {
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
                 sorting = searchForSorting(configuration, Set.of(), twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate).map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
                 if (sorting.isEmpty()) {
-                    System.out.println("bad component -> " + configuration);
+                    log.error("bad component {}", configuration);
                 } else if (proofStorage != null) {
                     proofStorage.saveComponentSorting(configuration, sorting.get());
                 }
@@ -260,5 +262,18 @@ public class CommonOperations implements Serializable {
         }
         extension.trimToSize();
         return extension;
+    }
+
+    public static Set<Integer> pivots(final Configuration configuration) {
+        return configuration.getSpi().stream()
+                .map(cycle -> rightMostSymbol(cycle, configuration.getPi()))
+                .collect(Collectors.toSet());
+    }
+
+    public static Integer rightMostSymbol(final Cycle cycle, final Cycle pi) {
+        return Arrays.stream(cycle.getSymbols())
+                .boxed()
+                .map(s -> Pair.of(s, s == 0 ? pi.size() : pi.indexOf(s))) // zero is the rightmost symbol
+                .max(Comparator.comparing(Pair::getRight)).get().getLeft();
     }
 }

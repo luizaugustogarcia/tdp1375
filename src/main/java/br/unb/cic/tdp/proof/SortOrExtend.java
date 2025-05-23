@@ -4,6 +4,7 @@ import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 import org.paukov.combinatorics3.Generator;
@@ -15,10 +16,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static br.unb.cic.tdp.base.CommonOperations.*;
+import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
+import static br.unb.cic.tdp.base.CommonOperations.pivots;
 import static java.lang.String.format;
 import static java.util.stream.Stream.concat;
 
+@Slf4j
 public class SortOrExtend extends AbstractSortOrExtend {
 
     private static int n = 0;
@@ -27,10 +30,10 @@ public class SortOrExtend extends AbstractSortOrExtend {
 
     static {
         timer.schedule(new TimerTask() {
+
             @Override
             public void run() {
-                System.out.printf("%s, queue size: %d%n", Instant.now(), enqueued.get());
-                System.out.printf("max n: %d%n", n);
+                log.info("{}, max n: {}, queue size: {}", Instant.now(), n, enqueued.get());
             }
         }, 60_000, 60_000);
     }
@@ -60,19 +63,19 @@ public class SortOrExtend extends AbstractSortOrExtend {
         val newCycle = format("(%d %d %d)", n, n + 2, n + 1);
         val newSpi = new MulticyclePermutation(configuration.getSpi() + newCycle);
 
-        final int[] newSymbols = {n + 2, n + 1, n};
+        val newSymbols = new int[]{n + 2, n + 1, n};
 
-        for (int i = 0; i < n - 2; i++) {
-            for (int j = i + 1; j < n - 1; j++) {
-                for (int k = j + 1; k < n; k++) {
-                    int[] extension = new int[n + 3];
-                    int originalPos = 0;
-                    int newPos = 0;
+        for (var i = 0; i < n - 2; i++) {
+            for (var j = i + 1; j < n - 1; j++) {
+                for (var k = j + 1; k < n; k++) {
+                    val extension = new int[n + 3];
+                    var originalPos = 0;
+                    var newPos = 0;
 
-                    for (int g = 0; g < n; g++) {
-                        extension[originalPos++] = configuration.getPi().getSymbols()[g];
+                    for (var l = 0; l < n; l++) {
+                        extension[originalPos++] = configuration.getPi().getSymbols()[l];
 
-                        if (g == i || g == j || g == k) {
+                        if (l == i || l == j || l == k) {
                             extension[originalPos++] = newSymbols[newPos++];
                         }
                     }
@@ -82,13 +85,21 @@ public class SortOrExtend extends AbstractSortOrExtend {
             }
         }
 
-        return result;
+        return result.stream()
+                .filter(extension -> isValid(configuration, extension.getRight()))
+                .toList();
     }
 
     /*
      * Type 2 extension.
      */
-    static List<Pair<String, Configuration>> type2Extensions(final Configuration configuration) {
+    static List<Pair<String, Configuration>> type2Extensions(Configuration configuration) {
+        return type2SubExtensions(configuration).stream().flatMap(firstPair -> type2SubExtensions(firstPair.getRight()).stream().map(secondPair -> Pair.of("%s; %s".formatted(firstPair.getLeft(), secondPair.getLeft()), secondPair.getRight())))
+                .filter(extension -> isValid(configuration, extension.getRight()))
+                .toList();
+    }
+
+    static List<Pair<String, Configuration>> type2SubExtensions(final Configuration configuration) {
         val result = new ArrayList<Pair<String, Configuration>>();
 
         val n = configuration.getPi().getSymbols().length;
@@ -97,23 +108,23 @@ public class SortOrExtend extends AbstractSortOrExtend {
             val newCycle = format("(%d %d)", n, n + 1);
             val newSpi = new MulticyclePermutation(configuration.getSpi() + newCycle);
 
-            final int[] newSymbols = {n + 1, n};
+            val newSymbols = new int[]{n + 1, n};
 
-            for (int i = 0; i < n - 1; i++) {
-                for (int j = i + 1; j < n; j++) {
-                    int[] extension = new int[n + 2];
-                    int originalPos = 0;
-                    int newPos = 0;
+            for (var i = 0; i < n - 1; i++) {
+                for (var j = i + 1; j < n; j++) {
+                    val extension = new int[n + 2];
+                    var originalPos = 0;
+                    var newPos = 0;
 
-                    for (int g = 0; g < n; g++) {
-                        extension[originalPos++] = configuration.getPi().getSymbols()[g];
+                    for (var k = 0; k < n; k++) {
+                        extension[originalPos++] = configuration.getPi().getSymbols()[k];
 
-                        if (g == i || g == j) {
+                        if (k == i || k == j) {
                             extension[originalPos++] = newSymbols[newPos++];
                         }
                     }
 
-                    result.add(Pair.of(format("a=%d b=%d", i, j), new Configuration(newSpi, Cycle.of(extension))));
+                    result.add(Pair.of(format("new cycle, pos a=%d b=%d", i, j), new Configuration(newSpi, Cycle.of(extension))));
                 }
             }
         }
@@ -124,9 +135,9 @@ public class SortOrExtend extends AbstractSortOrExtend {
                 val newCycle = format("(%s %d)", cycle.toString().substring(0, cycle.toString().length() - 1), n);
                 val newSpi = configuration.getSpi().toString().replace(cycle.toString(), newCycle);
                 for (var a = 0; a <= n; a++) {
-                    val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
+                    val extendedPi = CommonOperations.unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
                     val extension = new Configuration(new MulticyclePermutation(newSpi), Cycle.of(extendedPi));
-                    result.add(Pair.of(format("cycle=%s a=%d", cycle, a), extension));
+                    result.add(Pair.of(format("grown cycle=%s, pos a=%d", cycle, a), extension));
                 }
             }
         }
@@ -160,7 +171,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
         extendedSpi.add(Cycle.of(n));
 
         for (var a = 0; a <= n; a++) {
-            val extendedPi = Cycle.of(insertAtPosition(pi.getSymbols(), n, a));
+            val extendedPi = Cycle.of(CommonOperations.insertAtPosition(pi.getSymbols(), n, a));
 
             for (val cycles : Generator.permutation(configuration.getSpi()).k(2)) {
                 for (val pair : Generator.cartesianProduct(cycles.get(0).getSymbolsAsList(),
@@ -178,11 +189,11 @@ public class SortOrExtend extends AbstractSortOrExtend {
         extendedSpi.add(Cycle.of(n));
         extendedSpi.add(Cycle.of(n + 1));
 
-        final int[] newSymbols = {n + 1, n};
+        val newSymbols = new int[]{n + 1, n};
 
         for (int i = 0; i < n - 1; i++) {
             for (int j = i + 1; j < n; j++) {
-                int[] extension = new int[n + 2];
+                val extension = new int[n + 2];
                 int originalPos = 0;
                 int newPos = 0;
 
@@ -208,19 +219,27 @@ public class SortOrExtend extends AbstractSortOrExtend {
             }
         }
 
-        return result;
+
+        return result.stream()
+                .filter(extension -> isValid(configuration, extension.getRight()))
+                .toList();
     }
 
     private static Stream<Configuration> extensions(final Configuration configuration) {
-        val numOf2Cycles = configuration.getSpi().stream().filter(Cycle::isTwoCycle).count();
-
         return concat(
                 type1Extensions(configuration).stream().map(Pair::getRight),
                 concat(
-                        type2Extensions(configuration).stream().map(Pair::getRight).flatMap(extension -> type2Extensions(extension).stream()).map(Pair::getRight),
+                        type2Extensions(configuration).stream().map(Pair::getRight),
                         type3Extensions(configuration).stream().map(Pair::getRight)
-                ))
-                .filter(extension -> numOf2Cycles == 0 || extension.getSpi().stream().noneMatch(Cycle::isTwoCycle));
+                ));
+    }
+
+    private static boolean isValid(final Configuration configuration, final Configuration extension) {
+        if (extension.isFull()) {
+            val numOf2Cycles = configuration.getSpi().stream().filter(Cycle::isTwoCycle).count();
+            return numOf2Cycles == 0 || extension.getSpi().stream().noneMatch(Cycle::isTwoCycle);
+        }
+        return false;
     }
 
     @Override
@@ -228,22 +247,9 @@ public class SortOrExtend extends AbstractSortOrExtend {
         return pivots(configuration);
     }
 
-    private static Set<Integer> pivots(Configuration configuration) {
-        return configuration.getSpi().stream()
-                .map(cycle -> rightMostSymbol(cycle, configuration.getPi()))
-                .collect(Collectors.toSet());
-    }
-
-    public static Integer rightMostSymbol(final Cycle cycle, final Cycle pi) {
-        return Arrays.stream(cycle.getSymbols())
-                .boxed()
-                .map(s -> Pair.of(s, s == 0 ? pi.size() : pi.indexOf(s))) // zero is the rightmost symbol
-                .max(Comparator.comparing(Pair::getRight)).get().getLeft();
-    }
-
     @Override
     protected void extend(Pair<Configuration, Set<Integer>> configurationPair) {
-        int maxSymbol = configurationPair.getLeft().getPi().getMaxSymbol();
+        val maxSymbol = configurationPair.getLeft().getPi().getMaxSymbol();
 
         if (maxSymbol > n) {
             n = maxSymbol;
@@ -271,8 +277,12 @@ public class SortOrExtend extends AbstractSortOrExtend {
 
     @Override
     protected Pair<Configuration, Set<Integer>> canonicalize(final Pair<Configuration, Set<Integer>> configurationPair) {
-        val configuration = configurationPair.getLeft();
-        return canonical(Pair.of(Configuration.ofSignature(configuration.getSignature().getContent()), pivots(configuration)));
+        return getCanonical(configurationPair);
+    }
+
+    public static Pair<Configuration, Set<Integer>> getCanonical(final Pair<Configuration, Set<Integer>> configurationPair) {
+        val configuration = Configuration.ofSignature(configurationPair.getLeft().getSignature().getContent());
+        return canonical(Pair.of(configuration, pivots(configuration)));
     }
 
     private static Pair<Configuration, Set<Integer>> canonical(final Pair<Configuration, Set<Integer>> configurationPair) {
@@ -295,7 +305,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
     }
 
     private static Pair<Configuration, Set<Integer>> rotate(final int i, MulticyclePermutation spi, Set<Integer> pivots) {
-        var conjugator = CANONICAL_PI[spi.getNumberOfSymbols()].getInverse();
+        var conjugator = CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()].getInverse();
 
         for (int j = 0; j < i; j++) {
             spi = spi.conjugateBy(conjugator);
@@ -309,7 +319,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
     }
 
     private static Pair<Configuration, Set<Integer>> mirror(final MulticyclePermutation spi, final Set<Integer> pivots) {
-        val pi = CANONICAL_PI[spi.getNumberOfSymbols()];
+        val pi = CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()];
         val conjugator = new MulticyclePermutation();
         for (var i = 0; i < pi.size() / 2; i++) {
             conjugator.add(Cycle.of(pi.get(i), pi.get(pi.size() - 1 - i)));
@@ -317,14 +327,5 @@ public class SortOrExtend extends AbstractSortOrExtend {
         return Pair.of(new Configuration(spi.conjugateBy(conjugator).getInverse()), pivots.stream()
                 .map(conjugator::image)
                 .collect(Collectors.toCollection(TreeSet::new)));
-    }
-
-    public static void main(String[] args) {
-        extensions(new Configuration("(0 5 2)(1 7 4)(3 8 6)"))
-                .filter(Configuration::isFull)
-                .map(Configuration::getSignature)
-                .distinct()
-                .map(s -> Configuration.ofSignature(s.getContent()))
-                .forEach(System.out::println);
     }
 }
