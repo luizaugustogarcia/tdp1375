@@ -8,14 +8,22 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.SneakyThrows;
 import lombok.val;
 import org.apache.commons.dbutils.QueryRunner;
+import org.apache.commons.dbutils.handlers.AbstractListHandler;
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jooq.Cursor;
+import org.jooq.Record2;
+import org.jooq.impl.DSL;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.table;
 
 public class DerbyProofStorage implements ProofStorage {
     private static final ThreadLocal<Map<String, QueryRunner>> CONNECTION = new ThreadLocal<>();
@@ -185,5 +193,33 @@ public class DerbyProofStorage implements ProofStorage {
     @Override
     public Optional<List<Cycle>> findCompSorting(final String spi) {
         return findSorting("SELECT * FROM comp_sorting WHERE config = ?", spi);
+    }
+
+    @Override
+    public List<Pair<Configuration, Set<Integer>>> findAllNoSortings() throws SQLException {
+        return getQueryRunner().query(
+                "SELECT config FROM no_sorting",
+                new AbstractListHandler<>() {
+
+                    @Override
+                    protected Pair<Configuration, Set<Integer>> handleRow(final ResultSet resultSet) throws SQLException {
+                        val config = resultSet.getString("config").split("#");
+                        return Pair.of(
+                                new Configuration(config[0]),
+                                Arrays.stream(config[1].replaceAll("[\\[\\]\\s]", "").split(","))
+                                        .map(Integer::parseInt)
+                                        .collect(Collectors.toCollection(TreeSet::new))
+                        );
+                    }
+                }
+        );
+    }
+
+    @Override
+    public Cursor<Record2<String, String>> findAllSortings() throws SQLException {
+        return DSL.using(dataSource.getConnection())
+                .select(field("config", String.class), field("sorting", String.class))
+                .from(table("sorting"))
+                .fetchLazy();
     }
 }

@@ -219,7 +219,6 @@ public class SortOrExtend extends AbstractSortOrExtend {
             }
         }
 
-
         return result.stream()
                 .filter(extension -> isValid(configuration, extension.getRight()))
                 .toList();
@@ -256,7 +255,6 @@ public class SortOrExtend extends AbstractSortOrExtend {
         }
 
         extensions(configurationPair.getLeft())
-                .filter(Configuration::isFull)
                 .map(Configuration::getSignature)
                 .distinct()
                 .map(s -> Configuration.ofSignature(s.getContent()))
