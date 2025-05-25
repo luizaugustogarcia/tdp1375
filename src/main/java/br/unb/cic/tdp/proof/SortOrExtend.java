@@ -105,6 +105,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
         val n = configuration.getPi().getSymbols().length;
 
         {
+            // adds a new 2-cycle, introducing two new symbols
             val newCycle = format("(%d %d)", n, n + 1);
             val newSpi = new MulticyclePermutation(configuration.getSpi() + newCycle);
 
@@ -242,12 +243,12 @@ public class SortOrExtend extends AbstractSortOrExtend {
     }
 
     @Override
-    protected Set<Integer> getStandardPivots(final Configuration configuration) {
+    protected Set<Integer> sortingPivots(final Configuration configuration) {
         return pivots(configuration);
     }
 
     @Override
-    protected void extend(Pair<Configuration, Set<Integer>> configurationPair) {
+    protected void extend(final Pair<Configuration, Set<Integer>> configurationPair) {
         val maxSymbol = configurationPair.getLeft().getPi().getMaxSymbol();
 
         if (maxSymbol > n) {
@@ -260,7 +261,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
                 .map(s -> Configuration.ofSignature(s.getContent()))
                 .map(extension -> new SortOrExtend(
                         configurationPair,
-                        Pair.of(extension, pivots(extension)),
+                        Pair.of(extension, sortingPivots(extension)),
                         storage,
                         minRate)
                 )
@@ -271,59 +272,5 @@ public class SortOrExtend extends AbstractSortOrExtend {
     protected void compute() {
         enqueued.decrementAndGet();
         super.compute();
-    }
-
-    @Override
-    protected Pair<Configuration, Set<Integer>> canonicalize(final Pair<Configuration, Set<Integer>> configurationPair) {
-        return getCanonical(configurationPair);
-    }
-
-    public static Pair<Configuration, Set<Integer>> getCanonical(final Pair<Configuration, Set<Integer>> configurationPair) {
-        val configuration = Configuration.ofSignature(configurationPair.getLeft().getSignature().getContent());
-        return canonical(Pair.of(configuration, pivots(configuration)));
-    }
-
-    private static Pair<Configuration, Set<Integer>> canonical(final Pair<Configuration, Set<Integer>> configurationPair) {
-        var canonical = configurationPair;
-        var canonicalStr = configurationPair.toString();
-
-        for (int i = 0; i < configurationPair.getLeft().getSpi().getMaxSymbol(); i++) {
-            val rotation = rotate(i, configurationPair.getLeft().getSpi(), configurationPair.getRight());
-            if (rotation.toString().compareTo(canonicalStr) < 0) {
-                canonical = rotation;
-                canonicalStr = rotation.toString();
-            }
-            val reflection = mirror(rotation.getLeft().getSpi(), rotation.getRight());
-            if (reflection.toString().compareTo(canonicalStr) < 0) {
-                canonical = reflection;
-                canonicalStr = reflection.toString();
-            }
-        }
-        return canonical;
-    }
-
-    private static Pair<Configuration, Set<Integer>> rotate(final int i, MulticyclePermutation spi, Set<Integer> pivots) {
-        var conjugator = CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()].getInverse();
-
-        for (int j = 0; j < i; j++) {
-            spi = spi.conjugateBy(conjugator);
-        }
-
-        for (int j = 0; j < i; j++) {
-            pivots = pivots.stream().map(conjugator::image).collect(Collectors.toCollection(TreeSet::new));
-        }
-
-        return Pair.of(new Configuration(spi), pivots);
-    }
-
-    private static Pair<Configuration, Set<Integer>> mirror(final MulticyclePermutation spi, final Set<Integer> pivots) {
-        val pi = CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()];
-        val conjugator = new MulticyclePermutation();
-        for (var i = 0; i < pi.size() / 2; i++) {
-            conjugator.add(Cycle.of(pi.get(i), pi.get(pi.size() - 1 - i)));
-        }
-        return Pair.of(new Configuration(spi.conjugateBy(conjugator).getInverse()), pivots.stream()
-                .map(conjugator::image)
-                .collect(Collectors.toCollection(TreeSet::new)));
     }
 }

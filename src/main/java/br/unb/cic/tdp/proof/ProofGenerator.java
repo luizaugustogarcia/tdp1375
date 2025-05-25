@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static org.apache.commons.io.IOUtils.resourceToURL;
 
 @Slf4j
 public class ProofGenerator {
@@ -23,17 +24,18 @@ public class ProofGenerator {
         Files.createDirectories(Paths.get("%s/search".formatted(outputDir)));
         Files.createDirectories(Paths.get(outputDir));
 
-        Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("index.html"),
+        val classLoader = ProofGenerator.class.getClassLoader();
+        Files.copy(resourceToURL("index.html", classLoader).openStream(),
                 Paths.get("%s/index.html".formatted(outputDir)), REPLACE_EXISTING);
-        Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("explain.html"),
+        Files.copy(resourceToURL("explain.html", classLoader).openStream(),
                 Paths.get("%s/explain.html".formatted(outputDir)), REPLACE_EXISTING);
-        Files.copy(ProofGenerator.class.getClassLoader().getResourceAsStream("draw-config.js"),
+        Files.copy(resourceToURL("draw-config.js", classLoader).openStream(),
                 Paths.get("%s/draw-config.js".formatted(outputDir)), REPLACE_EXISTING);
 
         val minRate = Double.parseDouble(args[1]);
         log.info("Min rate: {}", minRate);
 
-        //TwoCycles.generate(outputDir, minRate);
+        TwoCycles.generate(outputDir, minRate);
         Extensions.generate(outputDir, minRate);
 
         System.exit(0);

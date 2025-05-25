@@ -3,6 +3,7 @@ package br.unb.cic.tdp.proof;
 import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -13,7 +14,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.RecursiveAction;
-import java.util.logging.Logger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @AllArgsConstructor
 @Slf4j
@@ -37,7 +39,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                     try {
                         if (!storage.markedNoSorting(canonical)) {
                             val sorting = searchForSorting(canonical);
-                            val parent = Pair.of(Configuration.ofSignature(this.parent.getLeft().getSignature().getContent()), getStandardPivots(this.parent.getLeft()));
+                            val parent = Pair.of(Configuration.ofSignature(this.parent.getLeft().getSignature().getContent()), sortingPivots(this.parent.getLeft()));
                             if (sorting.isPresent()) {
                                 storage.saveSorting(canonical, parent, sorting.get());
                                 return;
@@ -58,7 +60,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
     }
 
     protected Optional<List<Cycle>> searchForSorting(final Pair<Configuration, Set<Integer>> configurationPair) {
-        val pivots = getStandardPivots(configurationPair.getLeft());
+        val pivots = sortingPivots(configurationPair.getLeft());
         return CommonOperations.searchForSorting(storage, configurationPair.getLeft(), minRate, pivots);
     }
 
@@ -70,9 +72,63 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
         return Pair.of(new Configuration(spi), pivotSet);
     }
 
-    protected abstract Pair<Configuration, Set<Integer>> canonicalize(final Pair<Configuration, Set<Integer>> configurationPair);
+    protected Pair<Configuration, Set<Integer>> canonicalize(final Pair<Configuration, Set<Integer>> configurationPair) {
+        return getCanonical(configurationPair, this::sortingPivots);
+    }
 
-    protected abstract Set<Integer> getStandardPivots(Configuration configuration);
+    public static Pair<Configuration, Set<Integer>> getCanonical(
+            final Pair<Configuration, Set<Integer>> configurationPair,
+            final Function<Configuration, Set<Integer>> pivotsFn
+    ) {
+        val configuration = Configuration.ofSignature(configurationPair.getLeft().getSignature().getContent());
+        return canonical(Pair.of(configuration, pivotsFn.apply(configuration)));
+    }
+
+    private static Pair<Configuration, Set<Integer>> canonical(final Pair<Configuration, Set<Integer>> configurationPair) {
+        var canonical = configurationPair;
+        var canonicalStr = configurationPair.toString();
+
+        for (int i = 0; i < configurationPair.getLeft().getSpi().getMaxSymbol(); i++) {
+            val rotation = rotate(i, configurationPair.getLeft().getSpi(), configurationPair.getRight());
+            if (rotation.toString().compareTo(canonicalStr) < 0) {
+                canonical = rotation;
+                canonicalStr = rotation.toString();
+            }
+            val reflection = mirror(rotation.getLeft().getSpi(), rotation.getRight());
+            if (reflection.toString().compareTo(canonicalStr) < 0) {
+                canonical = reflection;
+                canonicalStr = reflection.toString();
+            }
+        }
+        return canonical;
+    }
+
+    private static Pair<Configuration, Set<Integer>> rotate(final int i, MulticyclePermutation spi, Set<Integer> pivots) {
+        var conjugator = CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()].getInverse();
+
+        for (int j = 0; j < i; j++) {
+            spi = spi.conjugateBy(conjugator);
+        }
+
+        for (int j = 0; j < i; j++) {
+            pivots = pivots.stream().map(conjugator::image).collect(Collectors.toCollection(TreeSet::new));
+        }
+
+        return Pair.of(new Configuration(spi), pivots);
+    }
+
+    private static Pair<Configuration, Set<Integer>> mirror(final MulticyclePermutation spi, final Set<Integer> pivots) {
+        val pi = CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()];
+        val conjugator = new MulticyclePermutation();
+        for (var i = 0; i < pi.size() / 2; i++) {
+            conjugator.add(Cycle.of(pi.get(i), pi.get(pi.size() - 1 - i)));
+        }
+        return Pair.of(new Configuration(spi.conjugateBy(conjugator).getInverse()), pivots.stream()
+                .map(conjugator::image)
+                .collect(Collectors.toCollection(TreeSet::new)));
+    }
+
+    protected abstract Set<Integer> sortingPivots(Configuration configuration);
 
     protected abstract void extend(Pair<Configuration, Set<Integer>> configurationPair);
 }
