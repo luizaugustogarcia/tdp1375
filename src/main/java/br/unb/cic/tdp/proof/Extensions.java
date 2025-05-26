@@ -31,7 +31,8 @@ public class Extensions {
         int parallelism = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 "%d".formatted(Runtime.getRuntime().availableProcessors())));
         try (val pool = new ForkJoinPool(parallelism)) {
-            pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0 2 1)", 2), storage, minRate));
+            pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0 1 2)", 2), storage, minRate));
+            pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0 2)(1 3)", 0, 3), storage, minRate));
         }
 
         storage.findAllNoSortings().stream()
@@ -146,7 +147,7 @@ public class Extensions {
             val configuration = Configuration.ofSignature(extension.getRight().getSignature().getContent());
             val pivots = pivots(configuration);
 
-            val canonical = getCanonical(Pair.of(configuration, pivots) , c -> pivots);
+            val canonical = getCanonical(Pair.of(configuration, pivots), c -> pivots);
 
             val hasSorting = storage.findSorting(canonical);
             out.println(hasSorting.isPresent() ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :

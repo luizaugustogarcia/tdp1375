@@ -39,7 +39,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                     try {
                         if (!storage.markedNoSorting(canonical)) {
                             val sorting = searchForSorting(canonical);
-                            val parent = Pair.of(Configuration.ofSignature(this.parent.getLeft().getSignature().getContent()), sortingPivots(this.parent.getLeft()));
+                            val parent = canonicalize(this.parent);
                             if (sorting.isPresent()) {
                                 storage.saveSorting(canonical, parent, sorting.get());
                                 return;
