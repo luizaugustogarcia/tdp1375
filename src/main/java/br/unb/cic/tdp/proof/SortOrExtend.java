@@ -60,7 +60,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
 
         val n = configuration.getPi().getSymbols().length;
 
-        val newCycle = format("(%d %d %d)", n, n + 2, n + 1);
+        val newCycle = format("(%d %d %d)", n, n + 1, n + 2);
         val newSpi = new MulticyclePermutation(configuration.getSpi() + newCycle);
 
         val newSymbols = new int[]{n + 2, n + 1, n};
