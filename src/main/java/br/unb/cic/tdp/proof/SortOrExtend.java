@@ -13,11 +13,10 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
 import static br.unb.cic.tdp.base.CommonOperations.pivots;
+import static br.unb.cic.tdp.base.CommonOperations.unorientedExtension;
 import static java.lang.String.format;
 import static java.util.stream.Stream.concat;
 
@@ -133,12 +132,16 @@ public class SortOrExtend extends AbstractSortOrExtend {
         {
             // grows an existing cycle
             for (var cycle : configuration.getSpi()) {
-                val newCycle = format("(%s %d)", cycle.toString().substring(0, cycle.toString().length() - 1), n);
-                val newSpi = configuration.getSpi().toString().replace(cycle.toString(), newCycle);
-                for (var a = 0; a <= n; a++) {
-                    val extendedPi = CommonOperations.unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
-                    val extension = new Configuration(new MulticyclePermutation(newSpi), Cycle.of(extendedPi));
-                    result.add(Pair.of(format("grown cycle=%s, pos a=%d", cycle, a), extension));
+                for (val symbol : cycle.getSymbols()) {
+                    cycle = cycle.startingBy(symbol);
+
+                    val newCycle = format("(%s %d)", cycle.toString().substring(0, cycle.toString().length() - 1), n);
+                    val newSpi = configuration.getSpi().toString().replace(cycle.toString(), newCycle);
+                    for (var a = 0; a <= n; a++) {
+                        val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
+                        val extension = new Configuration(new MulticyclePermutation(newSpi), Cycle.of(extendedPi));
+                        result.add(Pair.of(format("grown cycle=%s, pos a=%d", cycle, a), extension));
+                    }
                 }
             }
         }
