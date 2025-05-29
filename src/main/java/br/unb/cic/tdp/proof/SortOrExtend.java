@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.base.CommonOperations.pivots;
@@ -133,9 +134,12 @@ public class SortOrExtend extends AbstractSortOrExtend {
             // grows an existing cycle
             for (var cycle : configuration.getSpi()) {
                 for (val symbol : cycle.getSymbols()) {
-                    cycle = cycle.startingBy(symbol);
+                    val cycle_ = Arrays.stream(cycle.startingBy(symbol).getSymbols())
+                            .boxed()
+                            .map(Object::toString)
+                            .collect(Collectors.joining(" "));
 
-                    val newCycle = format("(%s %d)", cycle.toString().substring(0, cycle.toString().length() - 1), n);
+                    val newCycle = format("(%s %d)", cycle_, n);
                     val newSpi = configuration.getSpi().toString().replace(cycle.toString(), newCycle);
                     for (var a = 0; a <= n; a++) {
                         val extendedPi = unorientedExtension(configuration.getPi().getSymbols(), n, a).elements();
