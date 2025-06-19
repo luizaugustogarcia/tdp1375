@@ -12,9 +12,9 @@ import java.util.concurrent.ForkJoinTask;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.rightMostSymbol;
-import static br.unb.cic.tdp.proof.SortOrExtend.*;
+import static br.unb.cic.tdp.proof.SortOrExtend.configurationPair;
+import static br.unb.cic.tdp.proof.SortOrExtend.type1Extensions;
 import static java.util.function.Predicate.not;
-import static java.util.stream.Stream.concat;
 
 public class TwoCycles {
 
@@ -49,13 +49,7 @@ public class TwoCycles {
             val noSortingConfig = configurationPair.getLeft();
 
             val num2Cycles = noSortingConfig.getSpi().stream().filter(Cycle::isTwoCycle).count();
-            concat(
-                    type1Extensions(noSortingConfig).stream(),
-                    concat(
-                            type2SubExtensions(noSortingConfig).stream(),
-                            type3Extensions(noSortingConfig).stream()
-                    )
-            )
+            type1Extensions(noSortingConfig).stream()
                     .map(Pair::getRight)
                     .filter(extension -> extension.openGates().count() <= 1)
                     .filter(extension -> extension.getSpi().stream().filter(Cycle::isTwoCycle).count() >= num2Cycles)

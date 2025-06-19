@@ -86,21 +86,26 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
 
     private static Pair<Configuration, Set<Integer>> canonical(final Pair<Configuration, Set<Integer>> configurationPair) {
         var canonical = configurationPair;
-        var canonicalStr = configurationPair.toString();
+        var canonicalStr = toString(configurationPair);
 
         for (int i = 0; i < configurationPair.getLeft().getSpi().getMaxSymbol(); i++) {
             val rotation = rotate(i, configurationPair.getLeft().getSpi(), configurationPair.getRight());
-            if (rotation.toString().compareTo(canonicalStr) < 0) {
+            if (toString(rotation).compareTo(canonicalStr) < 0) {
                 canonical = rotation;
-                canonicalStr = rotation.toString();
+                canonicalStr = toString(rotation);
             }
             val reflection = mirror(rotation.getLeft().getSpi(), rotation.getRight());
-            if (reflection.toString().compareTo(canonicalStr) < 0) {
+            if (toString(reflection).compareTo(canonicalStr) < 0) {
                 canonical = reflection;
-                canonicalStr = reflection.toString();
+                canonicalStr = toString(reflection);
             }
         }
         return canonical;
+    }
+
+    private static String toString(final Pair<Configuration, Set<Integer>> pair) {
+        // Requirement: pi has to be the canonical one
+        return "%s#%s".formatted(pair.getLeft().getSpi().toString(), pair.getRight());
     }
 
     private static Pair<Configuration, Set<Integer>> rotate(final int i, MulticyclePermutation spi, Set<Integer> pivots) {

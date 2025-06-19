@@ -28,35 +28,34 @@ public class Extensions {
     public static void generate(final String outputDir, final double minRate) throws SQLException {
         val storage = new DerbyProofStorage(outputDir, "extensions");
 
-        int parallelism = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
+        val parallelism = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 "%d".formatted(Runtime.getRuntime().availableProcessors())));
         try (val pool = new ForkJoinPool(parallelism)) {
-            pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0 1 2)", 2), storage, minRate));
-            pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0 2)(1 3)", 0, 3), storage, minRate));
+            pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0 2 1)", 0), storage, minRate));
         }
 
-        storage.findAllNoSortings().stream()
-                .parallel()
-                .forEach(configurationPair -> renderNoSortingCase(configurationPair.getLeft(), configurationPair.getRight(), outputDir, storage));
-
-        try (val cursor = storage.findAllSortings()) {
-            cursor.stream()
-                    .parallel()
-                    .forEach(record -> {
-                        val config = record.value1().split("#");
-                        val configurationPair = Pair.of(
-                                new Configuration(config[0]),
-                                Arrays.stream(config[1].replaceAll("[\\[\\]\\s]", "").split(","))
-                                        .map(Integer::parseInt)
-                                        .collect(Collectors.toCollection(TreeSet::new))
-                        );
-                        val sorting = Arrays.stream(record.value2().replace("[", "").replace("]", "").split(", "))
-                                .map(Cycle::of)
-                                .toList();
-
-                        renderSorting(configurationPair.getLeft(), configurationPair.getRight(), sorting, outputDir);
-                    });
-        }
+//        storage.findAllNoSortings().stream()
+//                .parallel()
+//                .forEach(configurationPair -> renderNoSortingCase(configurationPair.getLeft(), configurationPair.getRight(), outputDir, storage));
+//
+//        try (val cursor = storage.findAllSortings()) {
+//            cursor.stream()
+//                    .parallel()
+//                    .forEach(record -> {
+//                        val config = record.value1().split("#");
+//                        val configurationPair = Pair.of(
+//                                new Configuration(config[0]),
+//                                Arrays.stream(config[1].replaceAll("[\\[\\]\\s]", "").split(","))
+//                                        .map(Integer::parseInt)
+//                                        .collect(Collectors.toCollection(TreeSet::new))
+//                        );
+//                        val sorting = Arrays.stream(record.value2().replace("[", "").replace("]", "").split(", "))
+//                                .map(Cycle::of)
+//                                .toList();
+//
+//                        renderSorting(configurationPair.getLeft(), configurationPair.getRight(), sorting, outputDir);
+//                    });
+//        }
     }
 
     @SneakyThrows
@@ -126,10 +125,10 @@ public class Extensions {
         renderExtensions(type1Extensions(configuration), out, storage);
         out.println("    </td>");
         out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-        renderExtensions(type2Extensions(configuration), out, storage);
+        //renderExtensions(type1Extensions(configuration), out, storage);
         out.println("    </td>");
         out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-        renderExtensions(type3Extensions(configuration), out, storage);
+        //renderExtensions(type3Extensions(configuration), out, storage);
         out.println("    </td>");
         out.println("  </tr>");
         out.println("</table>");

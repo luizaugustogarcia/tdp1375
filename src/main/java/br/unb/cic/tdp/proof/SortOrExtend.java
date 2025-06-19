@@ -1,6 +1,5 @@
 package br.unb.cic.tdp.proof;
 
-import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
@@ -51,55 +50,15 @@ public class SortOrExtend extends AbstractSortOrExtend {
     /*
      * Type 1 extension.
      */
-    static List<Pair<String, Configuration>> type1Extensions(final Configuration configuration) {
-        if (configuration.getSpi().stream().anyMatch(Cycle::isTwoCycle)) {
-            return List.of();
-        }
-
-        val result = new ArrayList<Pair<String, Configuration>>();
-
-        val n = configuration.getPi().getSymbols().length;
-
-        val newCycle = format("(%d %d %d)", n, n + 1, n + 2);
-        val newSpi = new MulticyclePermutation(configuration.getSpi() + newCycle);
-
-        val newSymbols = new int[]{n + 2, n + 1, n};
-
-        for (var i = 0; i < n - 2; i++) {
-            for (var j = i + 1; j < n - 1; j++) {
-                for (var k = j + 1; k < n; k++) {
-                    val extension = new int[n + 3];
-                    var originalPos = 0;
-                    var newPos = 0;
-
-                    for (var l = 0; l < n; l++) {
-                        extension[originalPos++] = configuration.getPi().getSymbols()[l];
-
-                        if (l == i || l == j || l == k) {
-                            extension[originalPos++] = newSymbols[newPos++];
-                        }
-                    }
-
-                    result.add(Pair.of(format("a=%d b=%d c=%d", i, j, k), new Configuration(newSpi, Cycle.of(extension))));
-                }
-            }
-        }
-
-        return result.stream()
+    static List<Pair<String, Configuration>> type1Extensions(Configuration configuration) {
+        return type1SubExtensions(configuration).stream()
+                .flatMap(firstPair -> type1SubExtensions(firstPair.getRight()).stream()
+                        .map(secondPair -> Pair.of("%s; %s".formatted(firstPair.getLeft(), secondPair.getLeft()), secondPair.getRight())))
                 .filter(extension -> isValid(configuration, extension.getRight()))
                 .toList();
     }
 
-    /*
-     * Type 2 extension.
-     */
-    static List<Pair<String, Configuration>> type2Extensions(Configuration configuration) {
-        return type2SubExtensions(configuration).stream().flatMap(firstPair -> type2SubExtensions(firstPair.getRight()).stream().map(secondPair -> Pair.of("%s; %s".formatted(firstPair.getLeft(), secondPair.getLeft()), secondPair.getRight())))
-                .filter(extension -> isValid(configuration, extension.getRight()))
-                .toList();
-    }
-
-    static List<Pair<String, Configuration>> type2SubExtensions(final Configuration configuration) {
+    static List<Pair<String, Configuration>> type1SubExtensions(final Configuration configuration) {
         val result = new ArrayList<Pair<String, Configuration>>();
 
         val n = configuration.getPi().getSymbols().length;
@@ -150,95 +109,25 @@ public class SortOrExtend extends AbstractSortOrExtend {
             }
         }
 
+        {
+            // joins two existing cycles
+            Generator.combination(configuration.getSpi())
+                    .simple(2)
+                    .forEach(pair -> {
+                        for (val a : pair.get(0).getSymbols()) {
+                            for (val b : pair.get(1).getSymbols()) {
+                                val extension = new Configuration(configuration.getSpi().times(Cycle.of(a, b)), configuration.getPi());
+                                result.add(Pair.of(format("joined=[%s, %s], a=%d, b=%d", pair.get(0), pair.get(1), a, b), extension));
+                            }
+                        }
+                    });
+        }
+
         return result;
     }
 
-    /*
-     * Type 3 extension.
-     */
-    static List<Pair<String, Configuration>> type3Extensions(final Configuration configuration) {
-        val result = new ArrayList<Pair<String, Configuration>>();
-
-        val pi = configuration.getPi();
-        val spi = configuration.getSpi();
-        val n = pi.getSymbols().length;
-
-        // no new symbol
-        for (val cycles : Generator.permutation(configuration.getSpi()).k(3)) {
-            for (val triple : Generator.cartesianProduct(cycles.get(0).getSymbolsAsList(),
-                    cycles.get(1).getSymbolsAsList(), cycles.get(2).getSymbolsAsList())) {
-                val move = Cycle.of(triple.get(0), triple.get(1), triple.get(2));
-                if (CommonOperations.isOriented(pi, move)) {
-                    result.add(Pair.of("%s".formatted(move), new Configuration(spi.times(move.getInverse()), move.times(pi).asNCycle())));
-                }
-            }
-        }
-
-        // one new symbol
-        var extendedSpi = new MulticyclePermutation(configuration.getSpi());
-        extendedSpi.add(Cycle.of(n));
-
-        for (var a = 0; a <= n; a++) {
-            val extendedPi = Cycle.of(CommonOperations.insertAtPosition(pi.getSymbols(), n, a));
-
-            for (val cycles : Generator.permutation(configuration.getSpi()).k(2)) {
-                for (val pair : Generator.cartesianProduct(cycles.get(0).getSymbolsAsList(),
-                        cycles.get(1).getSymbolsAsList())) {
-                    val move = Cycle.of(pair.get(0), pair.get(1), n);
-                    if (CommonOperations.isOriented(extendedPi, move)) {
-                        result.add(Pair.of("%s".formatted(move), new Configuration(spi.times(move.getInverse()), move.times(extendedPi).asNCycle())));
-                    }
-                }
-            }
-        }
-
-        // two new symbols
-        extendedSpi = new MulticyclePermutation(configuration.getSpi());
-        extendedSpi.add(Cycle.of(n));
-        extendedSpi.add(Cycle.of(n + 1));
-
-        val newSymbols = new int[]{n + 1, n};
-
-        for (int i = 0; i < n - 1; i++) {
-            for (int j = i + 1; j < n; j++) {
-                val extension = new int[n + 2];
-                int originalPos = 0;
-                int newPos = 0;
-
-                for (int g = 0; g < n; g++) {
-                    extension[originalPos++] = configuration.getPi().getSymbols()[g];
-
-                    if (g == i || g == j) {
-                        extension[originalPos++] = newSymbols[newPos++];
-                    }
-                }
-
-                val extendedPi = Cycle.of(extension);
-
-                for (val cycle : configuration.getSpi()) {
-                    for (val c : cycle.getSymbols()) {
-                        var move = Cycle.of(n, n + 1, c);
-                        if (!CommonOperations.isOriented(extendedPi, move)) {
-                            move = Cycle.of(n + 1, n, c);
-                        }
-                        result.add(Pair.of("%s".formatted(move), new Configuration(spi.times(move.getInverse()), move.times(extendedPi).asNCycle())));
-                    }
-                }
-            }
-        }
-
-        return result.stream()
-                .filter(extension -> isValid(configuration, extension.getRight()))
-                .toList();
-    }
-
     private static Stream<Configuration> extensions(final Configuration configuration) {
-        return concat(
-                type1Extensions(configuration).stream().map(Pair::getRight),
-                concat(
-                        type2Extensions(configuration).stream().map(Pair::getRight),
-                        type3Extensions(configuration).stream().map(Pair::getRight)
-                ));
+        return type1Extensions(configuration).stream().map(Pair::getRight);
     }
 
     private static boolean isValid(final Configuration configuration, final Configuration extension) {
@@ -265,7 +154,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
         extensions(configurationPair.getLeft())
                 .map(Configuration::getSignature)
                 .distinct()
-                .map(s -> Configuration.ofSignature(s.getContent()))
+                .map(s -> Configuration.ofSignature(s.getContent())) // canonical computation rely on this instantiation from signature
                 .map(extension -> new SortOrExtend(
                         configurationPair,
                         Pair.of(extension, sortingPivots(extension)),

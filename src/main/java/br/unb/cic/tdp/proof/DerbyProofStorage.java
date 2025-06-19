@@ -36,8 +36,6 @@ public class DerbyProofStorage implements ProofStorage {
     public DerbyProofStorage(final String dbPath, final String database) {
         val config = new HikariConfig();
 
-        System.setProperty("derby.storage.pageCacheSize", "100000");
-
         this.database = database;
         config.setJdbcUrl("jdbc:derby:%s/%s;create=true".formatted(dbPath, this.database));
         config.setDriverClassName("org.apache.derby.iapi.jdbc.AutoloadedDriver");

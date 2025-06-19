@@ -35,7 +35,7 @@ public class ProofGenerator {
         val minRate = Double.parseDouble(args[1]);
         log.info("Min rate: {}", minRate);
 
-        TwoCycles.generate(outputDir, minRate);
+        //TwoCycles.generate(outputDir, minRate);
         Extensions.generate(outputDir, minRate);
 
         System.exit(0);
