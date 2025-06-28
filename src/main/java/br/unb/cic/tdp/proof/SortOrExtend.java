@@ -18,12 +18,11 @@ import java.util.stream.Stream;
 import static br.unb.cic.tdp.base.CommonOperations.pivots;
 import static br.unb.cic.tdp.base.CommonOperations.unorientedExtension;
 import static java.lang.String.format;
-import static java.util.stream.Stream.concat;
 
 @Slf4j
 public class SortOrExtend extends AbstractSortOrExtend {
 
-    private static int n = 0;
+    protected static int n = 0;
     private static final AtomicLong enqueued = new AtomicLong();
     private static final Timer timer = new Timer();
 
@@ -50,7 +49,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
     /*
      * Type 1 extension.
      */
-    static List<Pair<String, Configuration>> type1Extensions(Configuration configuration) {
+    protected List<Pair<String, Configuration>> type1Extensions(Configuration configuration) {
         return type1SubExtensions(configuration).stream()
                 .flatMap(firstPair -> type1SubExtensions(firstPair.getRight()).stream()
                         .map(secondPair -> Pair.of("%s; %s".formatted(firstPair.getLeft(), secondPair.getLeft()), secondPair.getRight())))
@@ -58,7 +57,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
                 .toList();
     }
 
-    static List<Pair<String, Configuration>> type1SubExtensions(final Configuration configuration) {
+    private List<Pair<String, Configuration>> type1SubExtensions(final Configuration configuration) {
         val result = new ArrayList<Pair<String, Configuration>>();
 
         val n = configuration.getPi().getSymbols().length;
@@ -126,11 +125,15 @@ public class SortOrExtend extends AbstractSortOrExtend {
         return result;
     }
 
-    private static Stream<Configuration> extensions(final Configuration configuration) {
+    protected Stream<Configuration> extensions(final Configuration configuration) {
+        return getConfigurationStream(configuration);
+    }
+
+    private Stream<Configuration> getConfigurationStream(Configuration configuration) {
         return type1Extensions(configuration).stream().map(Pair::getRight);
     }
 
-    private static boolean isValid(final Configuration configuration, final Configuration extension) {
+    protected boolean isValid(final Configuration configuration, final Configuration extension) {
         if (extension.isFull()) {
             val numOf2Cycles = configuration.getSpi().stream().filter(Cycle::isTwoCycle).count();
             return numOf2Cycles == 0 || extension.getSpi().stream().noneMatch(Cycle::isTwoCycle);

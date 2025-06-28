@@ -122,7 +122,7 @@ public class Extensions {
         out.println("  </tr>");
         out.println("  <tr>");
         out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-        renderExtensions(type1Extensions(configuration), out, storage);
+        //renderExtensions(type1Extensions(configuration), out, storage);
         out.println("    </td>");
         out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
         //renderExtensions(type1Extensions(configuration), out, storage);

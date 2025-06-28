@@ -136,4 +136,6 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
     protected abstract Set<Integer> sortingPivots(Configuration configuration);
 
     protected abstract void extend(Pair<Configuration, Set<Integer>> configurationPair);
+
+    protected abstract boolean isValid(final Configuration configuration, final Configuration extension);
 }
