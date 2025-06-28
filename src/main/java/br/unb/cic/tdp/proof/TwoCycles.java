@@ -45,7 +45,7 @@ public class TwoCycles {
         }
 
         @Override
-        protected Set<Integer> sortingPivots(final Configuration configuration) {
+        public Set<Integer> sortingPivots(final Configuration configuration) {
             return configuration.getSpi().stream()
                     .filter(not(Cycle::isTwoCycle))
                     .map(cycle -> rightMostSymbol(cycle, configuration.getPi()))

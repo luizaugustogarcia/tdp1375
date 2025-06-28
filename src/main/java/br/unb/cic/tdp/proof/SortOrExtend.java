@@ -15,8 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static br.unb.cic.tdp.base.CommonOperations.pivots;
-import static br.unb.cic.tdp.base.CommonOperations.unorientedExtension;
+import static br.unb.cic.tdp.base.CommonOperations.*;
 import static java.lang.String.format;
 
 @Slf4j
@@ -49,7 +48,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
     /*
      * Type 1 extension.
      */
-    protected List<Pair<String, Configuration>> type1Extensions(Configuration configuration) {
+    public List<Pair<String, Configuration>> type1Extensions(final Configuration configuration) {
         return type1SubExtensions(configuration).stream()
                 .flatMap(firstPair -> type1SubExtensions(firstPair.getRight()).stream()
                         .map(secondPair -> Pair.of("%s; %s".formatted(firstPair.getLeft(), secondPair.getLeft()), secondPair.getRight())))
@@ -125,24 +124,22 @@ public class SortOrExtend extends AbstractSortOrExtend {
         return result;
     }
 
-    protected Stream<Configuration> extensions(final Configuration configuration) {
-        return getConfigurationStream(configuration);
-    }
-
-    private Stream<Configuration> getConfigurationStream(Configuration configuration) {
+    public Stream<Configuration> extensions(final Configuration configuration) {
         return type1Extensions(configuration).stream().map(Pair::getRight);
     }
 
     protected boolean isValid(final Configuration configuration, final Configuration extension) {
-        if (extension.isFull()) {
-            val numOf2Cycles = configuration.getSpi().stream().filter(Cycle::isTwoCycle).count();
-            return numOf2Cycles == 0 || extension.getSpi().stream().noneMatch(Cycle::isTwoCycle);
-        }
-        return false;
+        val numOf2Cycles = configuration.getSpi().stream().filter(Cycle::isTwoCycle).count();
+        val thereWasNo2CyclesOrTheNumberDecreased = numOf2Cycles == 0 || extension.getSpi().stream().noneMatch(Cycle::isTwoCycle);
+
+        val numOfOpenGates = configuration.openGates().count();
+        val wasFullOrNumOfOpenGatesDecreased = numOfOpenGates == 0 || extension.openGates().count() < numOfOpenGates;
+
+        return extension.openGates().count() <= 2 && thereWasNo2CyclesOrTheNumberDecreased && wasFullOrNumOfOpenGatesDecreased;
     }
 
     @Override
-    protected Set<Integer> sortingPivots(final Configuration configuration) {
+    public Set<Integer> sortingPivots(final Configuration configuration) {
         return pivots(configuration);
     }
 
@@ -171,5 +168,9 @@ public class SortOrExtend extends AbstractSortOrExtend {
     protected void compute() {
         enqueued.decrementAndGet();
         super.compute();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(new Configuration("(7 2 0)(5 3 1)(8 6 4)").hashCode());
     }
 }

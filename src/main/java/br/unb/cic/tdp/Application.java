@@ -1,0 +1,20 @@
+package br.unb.cic.tdp;
+
+import br.unb.cic.tdp.proof.DerbyProofStorage;
+import br.unb.cic.tdp.proof.ProofStorage;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
+    @Bean
+    public ProofStorage proofStorage() {
+        return new DerbyProofStorage("C:\\Users\\laugu\\Temp\\proof 1.6", "extensions");
+    }
+}

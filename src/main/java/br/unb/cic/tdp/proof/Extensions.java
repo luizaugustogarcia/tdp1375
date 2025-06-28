@@ -8,8 +8,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
-import org.apache.velocity.VelocityContext;
-import org.apache.velocity.app.Velocity;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -31,6 +29,7 @@ public class Extensions {
         val parallelism = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 "%d".formatted(Runtime.getRuntime().availableProcessors())));
         try (val pool = new ForkJoinPool(parallelism)) {
+            pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0)", 0), storage, minRate));
             pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0 2 1)", 0), storage, minRate));
         }
 
@@ -193,13 +192,13 @@ public class Extensions {
     ) {
         try (val out = new PrintStream("%s/search/%s%s.html".formatted(outputDir, configuration.getSpi(), pivots));
              val writer = new PrintWriter(out)) {
-            val context = new VelocityContext();
-            context.put("spi", configuration.getSpi());
-            context.put("piSize", configuration.getPi().size());
-            context.put("jsSpi", permutationToJsArray(configuration.getSpi()));
-            context.put("jsPi", cycleToJsArray(configuration.getPi()));
-            context.put("sorting", sorting);
-            context.put("pivots", pivots);
+//            val context = new VelocityContext();
+//            context.put("spi", configuration.getSpi());
+//            context.put("piSize", configuration.getPi().size());
+//            context.put("jsSpi", permutationToJsArray(configuration.getSpi()));
+//            context.put("jsPi", cycleToJsArray(configuration.getPi()));
+//            context.put("sorting", sorting);
+//            context.put("pivots", pivots);
 
             val spis = new ArrayList<MulticyclePermutation>();
             val jsSpis = new ArrayList<String>();
@@ -211,12 +210,12 @@ public class Extensions {
                 jsSpis.add(permutationToJsArray(spi));
                 jsPis.add(cycleToJsArray(pi = computeProduct(move, pi).asNCycle()));
             }
-            context.put("spis", spis);
-            context.put("jsSpis", jsSpis);
-            context.put("jsPis", jsPis);
+//            context.put("spis", spis);
+//            context.put("jsSpis", jsSpis);
+//            context.put("jsPis", jsPis);
 
-            val template = Velocity.getTemplate("templates/sorting.html");
-            template.merge(context, writer);
+//            val template = Velocity.getTemplate("templates/sorting.html");
+//            template.merge(context, writer);
         }
     }
 }

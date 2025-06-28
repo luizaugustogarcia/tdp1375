@@ -1,0 +1,86 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css"
+          integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+    <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js"
+            integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"
+            integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo"
+            crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"
+            integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
+            crossorigin="anonymous"></script>
+    <script th:src="@{/js/draw-config.js}"></script>
+    <style>* { font-size: small; }</style>
+</head>
+<body>
+<div class="modal fade" id="modal" role="dialog">
+    <div class="modal-dialog" style="left: 25px; max-width: unset;">
+        <!-- Modal content-->
+        <div class="modal-content" style="width: fit-content;">
+            <div class="modal-header">
+                <h6 class="modal-title">--------</h6>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <canvas id="modalCanvas"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function updateCanvas(canvasId, spi) {
+	   var pi = []; for (var i = 0; i < spi.flatMap(c => c).length; i++) { pi.push(i); }
+	   var canvas = document.getElementById(canvasId);
+	   canvas.height = calcHeight(canvas, spi, pi);
+	   canvas.width = pi.length * padding;
+	   draw(canvas, spi, pi);
+	}
+</script>
+<div style="margin-top: 10px; margin-left: 10px">
+
+    <canvas id="canvas"></canvas>
+    <script th:inline="javascript">updateCanvas('canvas', [(${permutationToJsArray})])</script>
+
+    <h6>[(${spi})]</h6>
+
+    Pivots: [(${pivots})]<br>
+
+    <p style="margin-top: 10px;"></p>
+    THE EXTENSIONS ARE:
+
+    <table style="width:100%; border: 1px solid lightgray; border-collapse: collapse;">
+        <tr>
+            <th style="text-align: start; border: 1px solid lightgray;">New 2-cycle</th>
+            <th style="text-align: start; border: 1px solid lightgray;">Type 2</th>
+            <th style="text-align: start; border: 1px solid lightgray;">Type 3</th>
+        </tr>
+        <tr>
+            <td style="vertical-align: baseline; border: 1px solid lightgray;">
+                <div th:each="extension,iterStat : ${extensions}" th:style="'padding: 10px; margin-top: 10px; background-color: ' + ${extension.color}">
+                    [(${extension.description})]<br>
+                    [(${extension.goodOrBad})]<br>
+                    Hash code: [(${extension._hashCode})]<br>
+                    Pivots: [(${extension.pivots})]<br>
+                    Extension: <a href="" onclick="
+                                updateCanvas('modalCanvas', %s);
+                                $('h6.modal-title').text('%s');
+                                $('#modal').modal('show');
+                                return false;">[(${extension.extension})]<br></a>
+                    Canonical: [(${extension.canonical})]<br><br>
+                    <canvas style="background: white;" th:id="'canvas' + ${iterStat.index}"></canvas>
+                    <script th:inline="javascript">updateCanvas('canvas[(${iterStat.index})]', [(${extension.permutationToJsArray})])</script>
+                </div>
+            </td>
+            <td style="vertical-align: baseline; border: 1px solid lightgray;">
+                //renderExtensions(type1Extensions(configuration), out, storage
+            </td>
+            <td style="vertical-align: baseline; border: 1px solid lightgray;">
+                //renderExtensions(type3Extensions(configuration), out, storage
+            </td>
+        </tr>
+    </table>
+</div>
+</body>
+</html>
