@@ -52,13 +52,13 @@
 
     <table style="width:100%; border: 1px solid lightgray; border-collapse: collapse;">
         <tr>
-            <th style="text-align: start; border: 1px solid lightgray;">New 2-cycle</th>
-            <th style="text-align: start; border: 1px solid lightgray;">Type 2</th>
-            <th style="text-align: start; border: 1px solid lightgray;">Type 3</th>
+            <th style="text-align: start; border: 1px solid lightgray;">Extension</th>
+            <th style="text-align: start; border: 1px solid lightgray;">Cycle graph</th>
         </tr>
-        <tr>
+        <tr th:each="extension,iterStat : ${extensions}"
+            th:style="'padding: 10px; margin-top: 10px; background-color: ' + ${extension.color}">
             <td style="vertical-align: baseline; border: 1px solid lightgray;">
-                <div th:each="extension,iterStat : ${extensions}" th:style="'padding: 10px; margin-top: 10px; background-color: ' + ${extension.color}">
+                <div>
                     [(${extension.description})]<br>
                     [(${extension.goodOrBad})]<br>
                     Hash code: [(${extension._hashCode})]<br>
@@ -68,16 +68,16 @@
                                 $('h6.modal-title').text('%s');
                                 $('#modal').modal('show');
                                 return false;">[(${extension.extension})]<br></a>
-                    Canonical: [(${extension.canonical})]<br><br>
-                    <canvas style="background: white;" th:id="'canvas' + ${iterStat.index}"></canvas>
-                    <script th:inline="javascript">updateCanvas('canvas[(${iterStat.index})]', [(${extension.permutationToJsArray})])</script>
+                    Canonical: [(${extension.canonical})]<br>
                 </div>
             </td>
-            <td style="vertical-align: baseline; border: 1px solid lightgray;">
-                //renderExtensions(type1Extensions(configuration), out, storage
-            </td>
-            <td style="vertical-align: baseline; border: 1px solid lightgray;">
-                //renderExtensions(type3Extensions(configuration), out, storage
+            <td style="border: 1px solid lightgray;">
+                <div>
+                    <canvas th:id="'canvas' + ${iterStat.index}"></canvas>
+                    <script th:inline="javascript">
+                        updateCanvas('canvas[(${iterStat.index})]', [(${extension.permutationToJsArray})])
+                    </script>
+                </div>
             </td>
         </tr>
     </table>
