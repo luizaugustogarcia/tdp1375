@@ -55,13 +55,13 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                 } // else: another thread is already working on this canonical
             }
         } catch (final Exception e) {
+            e.printStackTrace();
             log.error(e.getMessage());
         }
     }
 
     protected Optional<List<Cycle>> searchForSorting(final Pair<Configuration, Set<Integer>> configurationPair) {
-        val pivots = sortingPivots(configurationPair.getLeft());
-        return CommonOperations.searchForSorting(storage, configurationPair.getLeft(), minRate, pivots);
+        return CommonOperations.searchForSorting(storage, configurationPair.getLeft(), minRate, configurationPair.getRight());
     }
 
     public static Pair<Configuration, Set<Integer>> configurationPair(final String spi, int... pivots) {
