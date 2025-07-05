@@ -63,7 +63,7 @@ public class TwoCycles {
             extensions(configurationPair.getLeft())
                     .map(Configuration::getSignature)
                     .distinct()
-                    .map(s -> Configuration.ofSignature(s.getContent())) // canonical computation rely on this instantiation from signature
+                    .map(s -> Configuration.ofSignature(s.get().getContent())) // canonical computation rely on this instantiation from signature
                     .map(extension -> new TwoCyclesSortOrExtend(
                             configurationPair,
                             Pair.of(extension, sortingPivots(extension)),

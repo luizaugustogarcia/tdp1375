@@ -12,7 +12,24 @@
             integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
             crossorigin="anonymous"></script>
     <script th:src="@{/js/draw-config.js}"></script>
-    <style>* { font-size: small; }</style>
+    <style>
+        * {
+         font-size: small;
+        }
+        .left-cell {
+            vertical-align: baseline;
+            border: 1px solid lightgray;
+        }
+        .right-cell {
+            border: 1px solid lightgray;
+        }
+        .red {
+            padding: 10px; margin-top: 10px; background-color: rgba(255, 0, 0, 0.05)
+        }
+        .green {
+            padding: 10px; margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)
+        }
+    </style>
 </head>
 <body>
 <div class="modal fade" id="modal" role="dialog">
@@ -56,8 +73,8 @@
             <th style="text-align: start; border: 1px solid lightgray;">Cycle graph</th>
         </tr>
         <tr th:each="extension,iterStat : ${extensions}"
-            th:style="'padding: 10px; margin-top: 10px; background-color: ' + ${extension.color}">
-            <td style="vertical-align: baseline; border: 1px solid lightgray;">
+            th:class="${extension.color}">
+            <td class="left-cell">
                 <div>
                     [(${extension.description})]<br>
                     [(${extension.goodOrBad})]<br>
@@ -71,7 +88,7 @@
                     Canonical: [(${extension.canonical})]<br>
                 </div>
             </td>
-            <td style="border: 1px solid lightgray;">
+            <td class="right-cell">
                 <div>
                     <canvas th:id="'canvas' + ${iterStat.index}"></canvas>
                     <script th:inline="javascript">

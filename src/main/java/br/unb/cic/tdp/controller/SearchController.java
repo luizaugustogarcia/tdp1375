@@ -1,5 +1,6 @@
 package br.unb.cic.tdp.controller;
 
+import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.proof.ProofStorage;
 import br.unb.cic.tdp.proof.SortOrExtend;
@@ -33,18 +34,18 @@ public class SearchController {
         model.addAttribute("pivots", pivots.replace("(", "").replace(")", "").replace(" ", ","));
 
         val sortOrExtend = new SortOrExtend(null, null, null, 0);
+
         val extensions = sortOrExtend
                 .type1Extensions(configuration)
-                .stream()
                 .map(pair -> {
-                    val extension = Configuration.ofSignature(pair.getRight().getSignature().getContent());
+                    val extension = Configuration.ofSignature(pair.getRight().getSignature().get().getContent());
                     val extensionPivots = sortOrExtend.sortingPivots(extension);
-                    val sorting = proofStorage.findSorting(Pair.of(extension, extensionPivots));
-                    val description = pair.getLeft();
-                    val color = sorting.isEmpty() ? "rgba(255, 0, 0, 0.05)" : "rgba(153, 255, 153, 0.15)";
-                    val goodOrBad = sorting.isEmpty() ? "BAD EXTENSION" : "GOOD EXTENSION";
                     val canonicalPair = sortOrExtend.canonicalize(Pair.of(extension, extensionPivots));
                     val canonical = canonicalPair.getLeft().getSpi() + "#" + canonicalPair.getRight();
+                    val sorting = proofStorage.findSorting(canonicalPair);
+                    val description = pair.getLeft();
+                    val color = sorting.isEmpty() ? "red" : "green";
+                    val goodOrBad = sorting.isEmpty() ? "BAD EXTENSION" : "GOOD EXTENSION";
                     return new Extension(
                             extension.getSpi().toString(),
                             extensionPivots.toString(),

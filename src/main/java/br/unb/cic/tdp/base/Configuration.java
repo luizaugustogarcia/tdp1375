@@ -2,6 +2,8 @@ package br.unb.cic.tdp.base;
 
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import lombok.Getter;
@@ -34,8 +36,10 @@ public class Configuration {
     private final Cycle pi;
 
     @Getter
-    private final Signature signature;
+    private final Supplier<Signature> signature =
+            Suppliers.memoize(() -> new Signature(this.getPi(), signature(this.getSpi(), this.getPi(), this.getCycleIndex()), false));
 
+    @Getter
     @ToString.Exclude
     private final Cycle[] cycleIndex;
 
@@ -46,7 +50,6 @@ public class Configuration {
         this.spi = spi;
         this.pi = pi;
         this.cycleIndex = cycleIndex(spi, pi);
-        this.signature = new Signature(pi, signature(spi, pi, cycleIndex), false);
     }
 
     public Configuration(final MulticyclePermutation spi) {
@@ -196,7 +199,7 @@ public class Configuration {
 
         val other = (Configuration) obj;
 
-        if (this.signature.content.length != other.signature.content.length ||
+        if (this.signature.get().content.length != other.signature.get().content.length ||
                 this.spi.size() != other.spi.size()) {
             return false;
         }
@@ -210,13 +213,13 @@ public class Configuration {
     }
 
     public Stream<Integer> openGates() {
-        val n = signature.getContent().length;
+        val n = signature.get().getContent().length;
 
         return IntStream.range(0, n)
                 .boxed()
                 .flatMap(i -> {
-                    val current = signature.getContent()[i];
-                    val next = signature.getContent()[(i + 1) % n];
+                    val current = signature.get().getContent()[i];
+                    val next = signature.get().getContent()[(i + 1) % n];
 
                     if (current == next) {
                         // open gate from unoriented cycle

@@ -30,7 +30,6 @@ public class Extensions {
                 "%d".formatted(Runtime.getRuntime().availableProcessors())));
         try (val pool = new ForkJoinPool(parallelism)) {
             pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0)", 0), storage, minRate));
-            pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0 2 1)", 0), storage, minRate));
         }
 
 //        storage.findAllNoSortings().stream()
@@ -142,7 +141,7 @@ public class Extensions {
             final ProofStorage storage
     ) {
         for (val extension : extensions) {
-            val configuration = Configuration.ofSignature(extension.getRight().getSignature().getContent());
+            val configuration = Configuration.ofSignature(extension.getRight().getSignature().get().getContent());
             val pivots = pivots(configuration);
 
             val canonical = getCanonical(Pair.of(configuration, pivots), c -> pivots);

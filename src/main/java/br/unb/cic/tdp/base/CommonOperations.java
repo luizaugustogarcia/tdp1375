@@ -105,50 +105,54 @@ public class CommonOperations implements Serializable {
 
     public static Optional<List<int[]>> searchForSorting(final Configuration initialConfiguration, final Set<Integer> pivots, final int[] spi, final int[] pi, final Stack<int[]> stack, final double minRate) {
         val movedSymbols = new HashSet<>();
-        val fixedSymbols = new HashSet<>();
+        val fixedSymbolsWithoutPivots = new HashSet<>();
         for (int i = 0; i < spi.length; i++) {
             if (i == spi[i]) {
                 if (!pivots.contains(i)) {
-                    fixedSymbols.add(i);
+                    fixedSymbolsWithoutPivots.add(i);
                 }
             } else {
                 movedSymbols.add(i);
             }
         }
 
-        val rate = (fixedSymbols.size()) / (double) stack.size();
-        if (!fixedSymbols.isEmpty()) {
-            if (rate >= minRate) {
-                if (rate < bestRate) {
-                    log.info("Lowest rate: {}", rate);
-                    bestRate = rate;
+        val currentRate = (fixedSymbolsWithoutPivots.size()) / (double) stack.size();
+        if (!fixedSymbolsWithoutPivots.isEmpty()) {
+            if (currentRate >= minRate) {
+                if (currentRate < bestRate) {
+                    log.info("Lowest currentRate: {}", currentRate);
+                    bestRate = currentRate;
                 }
                 return Optional.of(stack);
             }
         }
 
-        var movesLeft = Math.floor(movedSymbols.size() / 3.0); // each move can add up to 3 bonds
-        var totalMoves = stack.size() + movesLeft;
-        var globalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - pivots.size()) / totalMoves;
-        if (globalRate < minRate) {
+        var movesLeftBestCase = Math.ceil(movedSymbols.size() / 3.0); // each move can add up to 3 adjacencies
+        var totalMoves = stack.size() + movesLeftBestCase;
+        var maxGlobalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - pivots.size()) / totalMoves;
+        if (maxGlobalRate < minRate) {
             return Optional.empty();
         }
 
         var sorting = Optional.<List<int[]>>empty();
         for (var i = 0; i < pi.length - 2; i++) {
-            if (!fixedSymbols.contains(pi[i])) for (var j = i + 1; j < pi.length - 1; j++) {
-                if (!fixedSymbols.contains(pi[j])) for (var k = j + 1; k < pi.length; k++) {
-                    if (!fixedSymbols.contains(pi[k])) {
-                        int a = pi[i], b = pi[j], c = pi[k];
+            if (!fixedSymbolsWithoutPivots.contains(pi[i])) {
+                for (var j = i + 1; j < pi.length - 1; j++) {
+                    if (!fixedSymbolsWithoutPivots.contains(pi[j])) {
+                        for (var k = j + 1; k < pi.length; k++) {
+                            if (!fixedSymbolsWithoutPivots.contains(pi[k])) {
+                                int a = pi[i], b = pi[j], c = pi[k];
 
-                        int[] m = {a, b, c};
-                        stack.push(m);
+                                int[] m = {a, b, c};
+                                stack.push(m);
 
-                        sorting = searchForSorting(initialConfiguration, pivots, times(spi, m[0], m[1], m[2]), applyTranspositionOptimized(pi, m), stack, minRate);
-                        if (sorting.isPresent()) {
-                            return sorting;
+                                sorting = searchForSorting(initialConfiguration, pivots, times(spi, m[0], m[1], m[2]), applyTranspositionOptimized(pi, m), stack, minRate);
+                                if (sorting.isPresent()) {
+                                    return sorting;
+                                }
+                                stack.pop();
+                            }
                         }
-                        stack.pop();
                     }
                 }
             }

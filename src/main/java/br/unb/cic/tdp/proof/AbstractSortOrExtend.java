@@ -28,9 +28,6 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
     @Override
     protected void compute() {
         try {
-            if (configurationPair.getLeft().hashCode() == -2017750139) {
-                System.out.println();
-            }
             val canonical = canonicalize(this.configurationPair);
 
             if (storage.isAlreadySorted(canonical)) {
@@ -83,7 +80,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
             final Pair<Configuration, Set<Integer>> configurationPair,
             final Function<Configuration, Set<Integer>> pivotsFn
     ) {
-        val configuration = Configuration.ofSignature(configurationPair.getLeft().getSignature().getContent());
+        val configuration = Configuration.ofSignature(configurationPair.getLeft().getSignature().get().getContent());
         return canonical(Pair.of(configuration, pivotsFn.apply(configuration)));
     }
 

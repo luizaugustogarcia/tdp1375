@@ -216,4 +216,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     public List<Integer> getSymbolsAsList() {
         return Arrays.stream(this.symbols).boxed().collect(Collectors.toList());
     }
+
+    public boolean isTrivial() {
+        return size() == 1;
+    }
 }
