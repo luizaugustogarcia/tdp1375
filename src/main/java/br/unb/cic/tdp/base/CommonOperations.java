@@ -127,8 +127,7 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        var movesLeftBestCase = Math.ceil(movedSymbols.size() / 3.0); // each move can add up to 3 adjacencies
-        //var movesLeftBestCase = Math.floor(movedSymbols.size() / 3.0); // each move can add up to 3 adjacencies
+        var movesLeftBestCase = Math.floor(movedSymbols.size() / 3.0); // each move can add up to 3 adjacencies
         var totalMoves = stack.size() + movesLeftBestCase;
         var maxGlobalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - pivots.size()) / totalMoves;
         if (maxGlobalRate < minRate) {
