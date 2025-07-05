@@ -2,6 +2,8 @@ package br.unb.cic.tdp.permutation;
 
 import cc.redberry.core.utils.BitArray;
 import cern.colt.list.IntArrayList;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.val;
 
 import java.io.Serializable;
@@ -27,7 +29,17 @@ public class PermutationGroups implements Serializable {
         return computeProduct(include1Cycle, n + 1, p);
     }
 
+    private static Cache<MultiplicationKey, MulticyclePermutation> cache = Caffeine.newBuilder()
+            .maximumSize(1_000_000)
+            .build();
+
     public static MulticyclePermutation computeProduct(final boolean include1Cycle, final int n, final Permutation... permutations) {
+        val key = new MultiplicationKey(include1Cycle, n, permutations);
+        val cached = cache.getIfPresent(key);
+        if (cached != null) {
+            return cached;
+        }
+
         val functions = new int[permutations.length][n];
 
         // initializing
@@ -85,6 +97,8 @@ public class PermutationGroups implements Serializable {
             result.add(Cycle.of(Arrays.copyOfRange(cycle.elements(), 0, cycle.size())));
             cycle.clear();
         }
+
+        cache.put(key, result);
 
         return result;
     }

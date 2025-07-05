@@ -182,7 +182,15 @@ public class Configuration {
 
     @ToString.Include
     public boolean isFull() {
-        return openGates().findAny().isEmpty();
+        for (val cycle : this.getSpi()) {
+            for (val s : cycle.getSymbols()) {
+                val image = cycle.image(s);
+                if (pi.image(image) == s) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override
@@ -212,6 +220,7 @@ public class Configuration {
         return openGates().collect(Collectors.toCollection(TreeSet::new));
     }
 
+    /* Optimize using isFull approach */
     public Stream<Integer> openGates() {
         val n = signature.get().getContent().length;
 

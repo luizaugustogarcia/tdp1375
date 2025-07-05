@@ -142,10 +142,10 @@ public class SortOrExtend extends AbstractSortOrExtend {
                 .filter(Cycle::isTwoCycle)
                 .map(Cycle::getSymbols)
                 .toList();
-        if (symbolsList.size() < 4) {
+        val s = ArrayUtils.flatten(symbolsList);
+        if (s.length < 4) {
             return true;
         }
-        val s = ArrayUtils.flatten(symbolsList);
         return !isUnorderedSubsequence(s, extension.getPi());
     }
 
