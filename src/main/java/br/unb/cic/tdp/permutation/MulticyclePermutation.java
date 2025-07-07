@@ -164,6 +164,18 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
         return true;
     }
 
+    public boolean removeByReference(final Cycle cycle) {
+        val it = cycles.iterator();
+        while (it.hasNext()) {
+            val currentCycle = it.next();
+            if (currentCycle == cycle) {
+                it.remove();
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     public boolean remove(final Object o) {
         val cycle = (Cycle) o;

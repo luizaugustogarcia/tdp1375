@@ -4,7 +4,6 @@ import lombok.val;
 
 public final class SymbolInserter {
 
-
     public static int[] insertSymbols(final int[] p,
                                       final int[] s,
                                       final int[] symbols) {
@@ -38,5 +37,4 @@ public final class SymbolInserter {
         }
         return out;
     }
-
 }

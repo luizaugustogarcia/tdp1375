@@ -4,6 +4,7 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.proof.ProofStorage;
 import br.unb.cic.tdp.proof.SortOrExtend;
 import lombok.val;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 import static br.unb.cic.tdp.proof.Extensions.permutationToJsArray;
+import static br.unb.cic.tdp.proof.SortOrExtend.concatStreams;
 
 @Controller
 public class SearchController {
@@ -32,8 +34,35 @@ public class SearchController {
 
         val sortOrExtend = new SortOrExtend(null, null, null, 0);
 
-        val extensions = sortOrExtend
-                .type1Extensions(configuration)
+        val stopWatch = new StopWatch();
+        stopWatch.start();
+        val pairStream = concatStreams(
+                sortOrExtend.type1Extensions(configuration),
+                sortOrExtend.type2Extensions(configuration),
+                sortOrExtend.type3Extensions(configuration),
+                sortOrExtend.type4Extensions(configuration),
+                sortOrExtend.type5Extensions(configuration),
+                sortOrExtend.type6Extensions(configuration),
+                sortOrExtend.type7Extensions(configuration),
+                sortOrExtend.type8Extensions(configuration),
+                sortOrExtend.type9Extensions(configuration)
+        )
+                .toList();
+        stopWatch.stop();
+        System.out.println(pairStream.get(pairStream.size() - 1));
+        System.out.println("Time taken for type1Extensions: " + stopWatch.getTime() + " ms");
+
+        val extensions = concatStreams(
+                sortOrExtend.type1Extensions(configuration),
+                sortOrExtend.type2Extensions(configuration),
+                sortOrExtend.type3Extensions(configuration),
+                sortOrExtend.type4Extensions(configuration),
+                sortOrExtend.type5Extensions(configuration),
+                sortOrExtend.type6Extensions(configuration),
+                sortOrExtend.type7Extensions(configuration),
+                sortOrExtend.type8Extensions(configuration),
+                sortOrExtend.type9Extensions(configuration)
+        )
                 .map(pair -> {
                     val extension = Configuration.ofSignature(pair.getRight().getSignature().getContent());
                     val extensionPivots = sortOrExtend.sortingPivots(extension);

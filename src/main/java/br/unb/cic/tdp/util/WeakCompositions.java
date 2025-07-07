@@ -7,7 +7,7 @@ import java.util.List;
 
 public final class WeakCompositions {
 
-    public static List<int[]> generate(final int k, final int n) {
+    public static List<int[]> weakCompositions(final int k, final int n) {
         if (k < 0 || n <= 0)
             throw new IllegalArgumentException("k ≥ 0 and n > 0 required");
 
