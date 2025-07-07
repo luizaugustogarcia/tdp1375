@@ -141,7 +141,7 @@ public class Extensions {
             final ProofStorage storage
     ) {
         for (val extension : extensions) {
-            val configuration = Configuration.ofSignature(extension.getRight().getSignature().get().getContent());
+            val configuration = Configuration.ofSignature(extension.getRight().getSignature().getContent());
             val pivots = pivots(configuration);
 
             val canonical = getCanonical(Pair.of(configuration, pivots), c -> pivots);

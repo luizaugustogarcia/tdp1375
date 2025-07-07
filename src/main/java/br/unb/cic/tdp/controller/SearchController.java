@@ -1,6 +1,5 @@
 package br.unb.cic.tdp.controller;
 
-import br.unb.cic.tdp.base.CommonOperations;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.proof.ProofStorage;
 import br.unb.cic.tdp.proof.SortOrExtend;
@@ -11,8 +10,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-
-import java.util.Set;
 
 import static br.unb.cic.tdp.proof.Extensions.permutationToJsArray;
 
@@ -38,7 +35,7 @@ public class SearchController {
         val extensions = sortOrExtend
                 .type1Extensions(configuration)
                 .map(pair -> {
-                    val extension = Configuration.ofSignature(pair.getRight().getSignature().get().getContent());
+                    val extension = Configuration.ofSignature(pair.getRight().getSignature().getContent());
                     val extensionPivots = sortOrExtend.sortingPivots(extension);
                     val canonicalPair = sortOrExtend.canonicalize(Pair.of(extension, extensionPivots));
                     val canonical = canonicalPair.getLeft().getSpi() + "#" + canonicalPair.getRight();

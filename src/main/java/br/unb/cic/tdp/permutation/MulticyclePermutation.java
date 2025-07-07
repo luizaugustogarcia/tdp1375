@@ -22,17 +22,6 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
     public MulticyclePermutation() {
     }
 
-    public MulticyclePermutation(final String permutation, final boolean include1Cycles) {
-        of(permutation);
-        if (include1Cycles) {
-            for (var i = 0; i <= getMaxSymbol(); i++) {
-                if (!getSymbols().contains(i)) {
-                    this.add(Cycle.of(i));
-                }
-            }
-        }
-    }
-
     public MulticyclePermutation(final String permutation) {
         of(permutation);
     }
@@ -66,7 +55,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
     @Override
     public int hashCode() {
-        return Objects.hash(cycles);
+        return cycles.stream().mapToInt(Cycle::hashCode).sum();
     }
 
     @Override

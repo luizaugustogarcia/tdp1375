@@ -108,7 +108,7 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     @Override
     public int hashCode() {
         if (hashCode == null) {
-            hashCode = Arrays.hashCode(startingBy(getMinSymbol()).getSymbols());
+            hashCode = Arrays.hashCode(RingKey.canonicalRotation(symbols));
         }
         return hashCode;
     }

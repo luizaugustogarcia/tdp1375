@@ -35,7 +35,7 @@ public class Configuration {
     @Getter
     private final Cycle pi;
 
-    @Getter
+    @ToString.Exclude
     private final Supplier<Signature> signature =
             Suppliers.memoize(() -> new Signature(this.getPi(), signature(this.getSpi(), this.getPi(), this.getCycleIndex()), false));
 
@@ -160,6 +160,11 @@ public class Configuration {
         return canonical;
     }
 
+    @ToString.Include
+    public Signature getSignature() {
+        return signature.get();
+    }
+
     private static float[] least(final float[] signature1, final float[] signature2) {
         return Arrays.compare(signature1, signature2) == -1 ? signature1 : signature2;
     }
@@ -196,7 +201,7 @@ public class Configuration {
     @Override
     @ToString.Include
     public int hashCode() {
-        return getCanonical().signature.hashCode();
+        return getCanonical().signature.get().hashCode();
     }
 
     @Override

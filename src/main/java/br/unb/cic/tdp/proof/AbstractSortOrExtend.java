@@ -80,7 +80,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
             final Pair<Configuration, Set<Integer>> configurationPair,
             final Function<Configuration, Set<Integer>> pivotsFn
     ) {
-        val configuration = Configuration.ofSignature(configurationPair.getLeft().getSignature().get().getContent());
+        val configuration = Configuration.ofSignature(configurationPair.getLeft().getSignature().getContent());
         return canonical(Pair.of(configuration, pivotsFn.apply(configuration)));
     }
 

@@ -10,7 +10,7 @@ public class RingKey {
     }
 
     // Booth’s algorithm – O(n)
-    private static int[] canonicalRotation(final int[] a) {
+    public static int[] canonicalRotation(final int[] a) {
         int n = a.length;
         if (n == 0) return a.clone();
         int i = 0, j = 1, k = 0;
