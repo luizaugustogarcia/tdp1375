@@ -60,7 +60,7 @@ public class TwoCycles {
                 n = maxSymbol;
             }
 
-            extensions(configurationPair.getLeft())
+            allExtensions(configurationPair.getLeft())
                     .map(Configuration::getSignature)
                     .distinct()
                     .map(s -> Configuration.ofSignature(s.getContent())) // canonical computation rely on this instantiation from signature

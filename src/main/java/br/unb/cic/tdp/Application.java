@@ -15,6 +15,6 @@ public class Application {
 
     @Bean
     public ProofStorage proofStorage() {
-        return new DerbyProofStorage("C:\\Users\\laugu\\Temp\\proof\\", "extensions");
+        return new DerbyProofStorage("C:\\SAPDevelop\\Temp", "extensions");
     }
 }

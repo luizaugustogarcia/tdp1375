@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -60,73 +61,45 @@ public class SortOrExtend extends AbstractSortOrExtend {
     // type 8: MG
     // type 9: MM
 
-    // optimize by checking if the multiplying the 2-cycles of each step we obtain the same product, and avoiding generating the same product
     // optimize by caching isValid results
 
     public Stream<Pair<String, Configuration>> type1Extensions(final Configuration configuration) {
-        return add2Cycle(configuration)
-                .flatMap(extension -> add2Cycle(extension.getRight())
-                        .map(pair -> Pair.of(extension.getLeft() + ", " + pair.getLeft(), pair.getRight())))
-                .filter(pair -> isValid(configuration, pair.getRight()));
+        return chain(this::add2Cycle, this::add2Cycle, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type2Extensions(final Configuration configuration) {
-        return add2Cycle(configuration)
-                .flatMap(extension -> growOneCycle(extension.getRight())
-                        .map(pair -> Pair.of(extension.getLeft() + ", " + pair.getLeft(), pair.getRight())))
-                .filter(pair -> isValid(configuration, pair.getRight()));
+        return chain(this::add2Cycle, this::growOneCycle, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type3Extensions(final Configuration configuration) {
-        return add2Cycle(configuration)
-                .flatMap(extension -> mergeTwoCycles(extension.getRight())
-                        .map(pair -> Pair.of(extension.getLeft() + ", " + pair.getLeft(), pair.getRight())))
-                .filter(pair -> isValid(configuration, pair.getRight()));
+        return chain(this::add2Cycle, this::mergeTwoCycles, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type4Extensions(final Configuration configuration) {
-        return growOneCycle(configuration)
-                .flatMap(extension -> add2Cycle(extension.getRight())
-                        .map(pair -> Pair.of(extension.getLeft() + ", " + pair.getLeft(), pair.getRight())))
-                .filter(pair -> isValid(configuration, pair.getRight()));
+        return chain(this::growOneCycle, this::add2Cycle, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type5Extensions(final Configuration configuration) {
-        return growOneCycle(configuration)
-                .flatMap(extension -> growOneCycle(extension.getRight())
-                        .map(pair -> Pair.of(extension.getLeft() + ", " + pair.getLeft(), pair.getRight())))
-                .filter(pair -> isValid(configuration, pair.getRight()));
+        return chain(this::growOneCycle, this::growOneCycle, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type6Extensions(final Configuration configuration) {
-        return growOneCycle(configuration)
-                .flatMap(extension -> mergeTwoCycles(extension.getRight())
-                        .map(pair -> Pair.of(extension.getLeft() + ", " + pair.getLeft(), pair.getRight())))
-                .filter(pair -> isValid(configuration, pair.getRight()));
+        return chain(this::growOneCycle, this::mergeTwoCycles, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type7Extensions(final Configuration configuration) {
-        return mergeTwoCycles(configuration)
-                .flatMap(extension -> add2Cycle(extension.getRight())
-                        .map(pair -> Pair.of(extension.getLeft() + ", " + pair.getLeft(), pair.getRight())))
-                .filter(pair -> isValid(configuration, pair.getRight()));
+        return chain(this::mergeTwoCycles, this::add2Cycle, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type8Extensions(final Configuration configuration) {
-        return mergeTwoCycles(configuration)
-                .flatMap(extension -> growOneCycle(extension.getRight())
-                        .map(pair -> Pair.of(extension.getLeft() + ", " + pair.getLeft(), pair.getRight())))
-                .filter(pair -> isValid(configuration, pair.getRight()));
+        return chain(this::mergeTwoCycles, this::growOneCycle, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type9Extensions(final Configuration configuration) {
-        return mergeTwoCycles(configuration)
-                .flatMap(extension -> mergeTwoCycles(extension.getRight())
-                        .map(pair -> Pair.of(extension.getLeft() + ", " + pair.getLeft(), pair.getRight())))
-                .filter(pair -> isValid(configuration, pair.getRight()));
+        return chain(this::mergeTwoCycles, this::mergeTwoCycles, configuration);
     }
 
-    public Stream<Pair<String, Configuration>> mergeTwoCycles(final Configuration configuration) {
+    private Stream<Pair<String, Configuration>> mergeTwoCycles(final Configuration configuration) {
         return Generator.combination(configuration.getSpi())
                 .simple(2)
                 .stream()
@@ -137,7 +110,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
                                 .map(b -> Pair.of(format("joined=[%s, %s], a=%d, b=%d", pair.get(0), pair.get(1), a, b), new Configuration(configuration.getSpi().times(Cycle.of(a, b)), configuration.getPi())))));
     }
 
-    public Stream<Pair<String, Configuration>> growOneCycle(final Configuration configuration) {
+    private Stream<Pair<String, Configuration>> growOneCycle(final Configuration configuration) {
         val n = configuration.getPi().size() - 1;
         val result = new ArrayList<Pair<String, Configuration>>();
 
@@ -158,7 +131,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
         return result.stream();
     }
 
-    public Stream<Pair<String, Configuration>> add2Cycle(final Configuration configuration) {
+    private Stream<Pair<String, Configuration>> add2Cycle(final Configuration configuration) {
         val n = configuration.getPi().size() - 1;
         val result = new ArrayList<Pair<String, Configuration>>();
 
@@ -175,7 +148,18 @@ public class SortOrExtend extends AbstractSortOrExtend {
         return result.stream();
     }
 
-    public Stream<Configuration> extensions(final Configuration configuration) {
+    private Stream<Pair<String, Configuration>> chain(
+            final Function<Configuration, Stream<Pair<String, Configuration>>> op1,
+            final Function<Configuration, Stream<Pair<String, Configuration>>> op2,
+            final Configuration configuration
+    ) {
+        return op1.apply(configuration)
+                .flatMap(extension -> op2.apply(extension.getRight())
+                        .map(pair -> Pair.of(extension.getLeft() + ", " + pair.getLeft(), pair.getRight())))
+                .filter(pair -> isValid(configuration, pair.getRight()));
+    }
+
+    public Stream<Configuration> allExtensions(final Configuration configuration) {
         return concatStreams(
                 type1Extensions(configuration).map(Pair::getRight),
                 type2Extensions(configuration).map(Pair::getRight),
@@ -237,16 +221,11 @@ public class SortOrExtend extends AbstractSortOrExtend {
             n = maxSymbol;
         }
 
-        extensions(configurationPair.getLeft())
+        allExtensions(configurationPair.getLeft())
                 .map(Configuration::getSignature)
-                .distinct()
+                .distinct() // de-duplicate extensions
                 .map(s -> Configuration.ofSignature(s.getContent())) // canonical computation rely on this instantiation from signature
-                .map(extension -> new SortOrExtend(
-                        configurationPair,
-                        Pair.of(extension, sortingPivots(extension)),
-                        storage,
-                        minRate)
-                )
+                .map(extension -> new SortOrExtend(configurationPair, Pair.of(extension, sortingPivots(extension)), storage, minRate))
                 .forEach(ForkJoinTask::fork);
     }
 
@@ -254,16 +233,5 @@ public class SortOrExtend extends AbstractSortOrExtend {
     protected void compute() {
         enqueued.decrementAndGet();
         super.compute();
-    }
-
-    public static void main(String[] args) {
-        val configuration = new Configuration("(0 1)(2 3)");
-        val sortOrExtend = new SortOrExtend(null, Pair.of(configuration, Set.of()), null, 0.0);
-
-        System.out.println("Type 1 Extensions:");
-        sortOrExtend.type1Extensions(configuration).forEach(pair -> System.out.println(pair.getLeft() + " -> " + pair.getRight()));
-
-        System.out.println("Type 2 Extensions:");
-        sortOrExtend.type2Extensions(configuration).forEach(pair -> System.out.println(pair.getLeft() + " -> " + pair.getRight()));
     }
 }

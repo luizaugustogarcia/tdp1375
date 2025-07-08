@@ -34,24 +34,6 @@ public class SearchController {
 
         val sortOrExtend = new SortOrExtend(null, null, null, 0);
 
-        val stopWatch = new StopWatch();
-        stopWatch.start();
-        val pairStream = concatStreams(
-                sortOrExtend.type1Extensions(configuration),
-                sortOrExtend.type2Extensions(configuration),
-                sortOrExtend.type3Extensions(configuration),
-                sortOrExtend.type4Extensions(configuration),
-                sortOrExtend.type5Extensions(configuration),
-                sortOrExtend.type6Extensions(configuration),
-                sortOrExtend.type7Extensions(configuration),
-                sortOrExtend.type8Extensions(configuration),
-                sortOrExtend.type9Extensions(configuration)
-        )
-                .toList();
-        stopWatch.stop();
-        System.out.println(pairStream.get(pairStream.size() - 1));
-        System.out.println("Time taken for type1Extensions: " + stopWatch.getTime() + " ms");
-
         val extensions = concatStreams(
                 sortOrExtend.type1Extensions(configuration),
                 sortOrExtend.type2Extensions(configuration),

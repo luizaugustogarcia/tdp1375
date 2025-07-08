@@ -11,6 +11,10 @@ import java.util.Arrays;
 
 public class PermutationGroups implements Serializable {
 
+    private static final Cache<MultiplicationKey, MulticyclePermutation> CACHE = Caffeine.newBuilder()
+            .maximumSize(Integer.parseInt(System.getProperty("permutation.multiplication.cache.size", "1000000")))
+            .build();
+
     public static MulticyclePermutation computeProduct(final Permutation... permutations) {
         return computeProduct(true, permutations);
     }
@@ -29,13 +33,9 @@ public class PermutationGroups implements Serializable {
         return computeProduct(include1Cycle, n + 1, p);
     }
 
-    private static Cache<MultiplicationKey, MulticyclePermutation> cache = Caffeine.newBuilder()
-            .maximumSize(1_000_000)
-            .build();
-
     public static MulticyclePermutation computeProduct(final boolean include1Cycle, final int n, final Permutation... permutations) {
         val key = new MultiplicationKey(include1Cycle, n, permutations);
-        val cached = cache.getIfPresent(key);
+        val cached = CACHE.getIfPresent(key);
         if (cached != null) {
             return cached;
         }
@@ -98,7 +98,7 @@ public class PermutationGroups implements Serializable {
             cycle.clear();
         }
 
-        cache.put(key, result);
+        CACHE.put(key, result);
 
         return result;
     }
