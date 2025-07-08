@@ -99,6 +99,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
         return chain(this::mergeTwoCycles, this::mergeTwoCycles, configuration);
     }
 
+    // TODO optimization: if there is a opengate, it has to be closed
     private Stream<Pair<String, Configuration>> mergeTwoCycles(final Configuration configuration) {
         return Generator.combination(configuration.getSpi())
                 .simple(2)
@@ -110,6 +111,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
                                 .map(b -> Pair.of(format("joined=[%s, %s], a=%d, b=%d", pair.get(0), pair.get(1), a, b), new Configuration(configuration.getSpi().times(Cycle.of(a, b)), configuration.getPi())))));
     }
 
+    // TODO optimization: if there is a opengate, it has to be closed
     private Stream<Pair<String, Configuration>> growOneCycle(final Configuration configuration) {
         val n = configuration.getPi().size() - 1;
         val result = new ArrayList<Pair<String, Configuration>>();
@@ -131,6 +133,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
         return result.stream();
     }
 
+    // TODO optimization: if there is a opengate, it has to be closed
     private Stream<Pair<String, Configuration>> add2Cycle(final Configuration configuration) {
         val n = configuration.getPi().size() - 1;
         val result = new ArrayList<Pair<String, Configuration>>();
