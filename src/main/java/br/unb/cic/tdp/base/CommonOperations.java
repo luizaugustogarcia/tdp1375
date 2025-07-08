@@ -7,14 +7,17 @@ import cern.colt.list.IntArrayList;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
+import org.jooq.impl.QOM;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
 public class CommonOperations implements Serializable {
 
+    public static final Function<Integer, Double> DEFAULT_LOWER_BOUND_FUNCTION = movedSymbols -> Math.floor(movedSymbols / 3.0);
     public static final Cycle[] CANONICAL_PI;
 
     static {
@@ -103,7 +106,15 @@ public class CommonOperations implements Serializable {
         return !areSymbolsInCyclicOrder(pi.getInverse(), cycle.getSymbols());
     }
 
-    public static Optional<List<int[]>> searchForSorting(final Configuration initialConfiguration, final Set<Integer> pivots, final int[] spi, final int[] pi, final Stack<int[]> stack, final double minRate) {
+    public static Optional<List<int[]>> searchForSorting(
+            final Configuration initialConfiguration,
+            final Set<Integer> pivots,
+            final int[] spi,
+            final int[] pi,
+            final Stack<int[]> stack,
+            final double minRate,
+            final Function<Integer, Double> lowerBoundFunction
+    ) {
         val movedSymbols = new HashSet<>();
         val fixedSymbolsWithoutPivots = new HashSet<>();
         for (int i = 0; i < spi.length; i++) {
@@ -127,9 +138,9 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        var movesLeftBestCase = Math.floor(movedSymbols.size() / 3.0); // each move can add up to 3 adjacencies
-        var totalMoves = stack.size() + movesLeftBestCase;
-        var maxGlobalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - pivots.size()) / totalMoves;
+        val movesLeftBestCase = lowerBoundFunction.apply(movedSymbols.size()); // each move can add up to 3 adjacencies
+        val totalMoves = stack.size() + movesLeftBestCase;
+        val maxGlobalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - pivots.size()) / totalMoves;
         if (maxGlobalRate < minRate) {
             return Optional.empty();
         }
@@ -146,7 +157,7 @@ public class CommonOperations implements Serializable {
                                 int[] m = {a, b, c};
                                 stack.push(m);
 
-                                sorting = searchForSorting(initialConfiguration, pivots, times(spi, m[0], m[1], m[2]), applyTranspositionOptimized(pi, m), stack, minRate);
+                                sorting = searchForSorting(initialConfiguration, pivots, times(spi, m[0], m[1], m[2]), applyTranspositionOptimized(pi, m), stack, minRate, lowerBoundFunction);
                                 if (sorting.isPresent()) {
                                     return sorting;
                                 }
@@ -204,12 +215,18 @@ public class CommonOperations implements Serializable {
             return _2move;
         }
 
-        var sorting = searchForSorting(configuration, pivots, twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate).map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
+        val spi = configuration.getSpi();
+        val pi = configuration.getPi().getSymbols();
+        var sorting = searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, DEFAULT_LOWER_BOUND_FUNCTION)
+                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor((movedSymbols - 1) / 3.0)))
+                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor((movedSymbols - 2) / 3.0)))
+                .map(moves -> moves.stream().map(Cycle::of).toList());
 
         if (sorting.isEmpty() && configuration.isFull()) {
-            val sigma = configuration.getSpi().times(configuration.getPi());
+            val sigma = spi.times(configuration.getPi());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
-                sorting = searchForSorting(configuration, Set.of(), twoLinesNotation(configuration.getSpi()), configuration.getPi().getSymbols(), new Stack<>(), minRate).map(moves -> moves.stream().map(Cycle::of).collect(Collectors.toList()));
+                sorting = searchForSorting(configuration, Set.of(), twoLinesNotation(spi), pi, new Stack<>(), minRate, DEFAULT_LOWER_BOUND_FUNCTION)
+                        .map(moves -> moves.stream().map(Cycle::of).toList());
                 if (sorting.isEmpty()) {
                     log.error("bad component {}", configuration);
                 } else if (proofStorage != null) {
