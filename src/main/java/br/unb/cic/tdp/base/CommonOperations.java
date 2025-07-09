@@ -7,7 +7,6 @@ import cern.colt.list.IntArrayList;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
-import org.jooq.impl.QOM;
 
 import java.io.Serializable;
 import java.util.*;
@@ -17,7 +16,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CommonOperations implements Serializable {
 
-    public static final Function<Integer, Double> DEFAULT_LOWER_BOUND_FUNCTION = movedSymbols -> Math.floor(movedSymbols / 3.0);
+    public static final Function<Integer, Double> DEFAULT_LOWER_BOUND_FUNCTION = movedSymbols -> movedSymbols / 3.0;
     public static final Cycle[] CANONICAL_PI;
 
     static {
@@ -218,8 +217,9 @@ public class CommonOperations implements Serializable {
         val spi = configuration.getSpi();
         val pi = configuration.getPi().getSymbols();
         var sorting = searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, DEFAULT_LOWER_BOUND_FUNCTION)
+                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor(movedSymbols / 3.0)))
+                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> (movedSymbols - 1) / 3.0))
                 .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor((movedSymbols - 1) / 3.0)))
-                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor((movedSymbols - 2) / 3.0)))
                 .map(moves -> moves.stream().map(Cycle::of).toList());
 
         if (sorting.isEmpty() && configuration.isFull()) {
