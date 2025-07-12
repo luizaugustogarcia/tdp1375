@@ -1,6 +1,7 @@
 package br.unb.cic.tdp.proof;
 
 import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.base.PivotedConfiguration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.util.ArrayUtils;
@@ -18,6 +19,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.base.CommonOperations.pivots;
+import static br.unb.cic.tdp.base.PivotedConfiguration.of;
 import static br.unb.cic.tdp.util.CircularMatcher.isUnorderedSubsequence;
 import static br.unb.cic.tdp.util.SymbolInserter.insertSymbols;
 import static br.unb.cic.tdp.util.WeakCompositions.weakCompositions;
@@ -41,12 +43,12 @@ public class SortOrExtend extends AbstractSortOrExtend {
     }
 
     public SortOrExtend(
-            final Pair<Configuration, Set<Integer>> parent,
-            final Pair<Configuration, Set<Integer>> configurationPair,
+            final PivotedConfiguration parent,
+            final PivotedConfiguration pivotedConfiguration,
             final ProofStorage storage,
             final double minRate
     ) {
-        super(parent, configurationPair, storage, minRate);
+        super(parent, pivotedConfiguration, storage, minRate);
         enqueued.incrementAndGet();
     }
 
@@ -209,23 +211,23 @@ public class SortOrExtend extends AbstractSortOrExtend {
 
 
     @Override
-    public Set<Integer> sortingPivots(final Configuration configuration) {
+    public TreeSet<Integer> sortingPivots(final Configuration configuration) {
         return pivots(configuration);
     }
 
     @Override
-    protected void extend(final Pair<Configuration, Set<Integer>> configurationPair) {
-        val maxSymbol = configurationPair.getLeft().getPi().getMaxSymbol();
+    protected void extend(final PivotedConfiguration pivotedConfiguration) {
+        val maxSymbol = pivotedConfiguration.getConfiguration().getPi().getMaxSymbol();
 
         if (maxSymbol > n) {
             n = maxSymbol;
         }
 
-        allExtensions(configurationPair.getLeft())
+        allExtensions(pivotedConfiguration.getConfiguration())
                 .map(Configuration::getSignature)
                 .distinct() // de-duplicate extensions
                 .map(s -> Configuration.ofSignature(s.getContent())) // canonical computation rely on this instantiation from signature
-                .map(extension -> new SortOrExtend(configurationPair, Pair.of(extension, sortingPivots(extension)), storage, minRate))
+                .map(extension -> new SortOrExtend(pivotedConfiguration, of(extension, sortingPivots(extension)), storage, minRate))
                 .forEach(ForkJoinTask::fork);
     }
 

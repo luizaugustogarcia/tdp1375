@@ -3,7 +3,6 @@ package br.unb.cic.tdp.base;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.ProofStorage;
-import cern.colt.list.IntArrayList;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
@@ -16,7 +15,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CommonOperations implements Serializable {
 
-    public static final Function<Integer, Double> DEFAULT_LOWER_BOUND_FUNCTION = movedSymbols -> movedSymbols / 3.0;
     public static final Cycle[] CANONICAL_PI;
 
     static {
@@ -114,6 +112,11 @@ public class CommonOperations implements Serializable {
             final double minRate,
             final Function<Integer, Double> lowerBoundFunction
     ) {
+        if (Thread.currentThread().isInterrupted()) {
+            log.info("Thread interrupted, returning empty optional");
+            return Optional.empty();
+        }
+
         val movedSymbols = new HashSet<>();
         val fixedSymbolsWithoutPivots = new HashSet<>();
         for (int i = 0; i < spi.length; i++) {
@@ -216,16 +219,19 @@ public class CommonOperations implements Serializable {
 
         val spi = configuration.getSpi();
         val pi = configuration.getPi().getSymbols();
-        var sorting = searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, DEFAULT_LOWER_BOUND_FUNCTION)
+        var sorting = searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.ceil((movedSymbols + 1) / 3.0))
+                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.ceil(movedSymbols / 3.0)))
+                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> movedSymbols / 3.0))
                 .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor(movedSymbols / 3.0)))
                 .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> (movedSymbols - 1) / 3.0))
                 .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor((movedSymbols - 1) / 3.0)))
+                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor((movedSymbols - 2) / 3.0)))
                 .map(moves -> moves.stream().map(Cycle::of).toList());
 
         if (sorting.isEmpty() && configuration.isFull()) {
             val sigma = spi.times(configuration.getPi());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
-                sorting = searchForSorting(configuration, Set.of(), twoLinesNotation(spi), pi, new Stack<>(), minRate, DEFAULT_LOWER_BOUND_FUNCTION)
+                sorting = searchForSorting(configuration, Set.of(), twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor(movedSymbols / 3.0))
                         .map(moves -> moves.stream().map(Cycle::of).toList());
                 if (sorting.isEmpty()) {
                     log.error("bad component {}", configuration);
@@ -267,34 +273,18 @@ public class CommonOperations implements Serializable {
         return result;
     }
 
-    public static int[] insertAtPosition(final int[] array, final int value, final int index) {
-        val newArray = new int[array.length + 1];
-        System.arraycopy(array, 0, newArray, 0, index);
-        newArray[index] = value;
-        System.arraycopy(array, index, newArray, index + 1, array.length - index);
-        return newArray;
-    }
-
-    public static IntArrayList unorientedExtension(final int[] pi, final int n, final int... positions) {
-        Arrays.sort(positions);
-        val extension = new IntArrayList(pi);
-        for (var i = 0; i < positions.length; i++) {
-            extension.beforeInsert(positions[i] + i, n + i);
-        }
-        extension.trimToSize();
-        return extension;
-    }
-
-    public static Set<Integer> pivots(final Configuration configuration) {
+    public static TreeSet<Integer> pivots(final Configuration configuration) {
         return configuration.getSpi().stream()
                 .map(cycle -> rightMostSymbol(cycle, configuration.getPi()))
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
+    // zero is the left most
     public static Integer rightMostSymbol(final Cycle cycle, final Cycle pi) {
+        val canonicalPi = pi.startingBy(0);
         return Arrays.stream(cycle.getSymbols())
                 .boxed()
-                .map(s -> Pair.of(s, s == 0 ? pi.size() : pi.indexOf(s))) // zero is the rightmost symbol
+                .map(s -> Pair.of(s, canonicalPi.indexOf(s)))
                 .max(Comparator.comparing(Pair::getRight)).get().getLeft();
     }
 }

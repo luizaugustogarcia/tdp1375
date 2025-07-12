@@ -12,13 +12,16 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.pivots;
+import static br.unb.cic.tdp.base.PivotedConfiguration.of;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
-import static br.unb.cic.tdp.proof.SortOrExtend.*;
+import static br.unb.cic.tdp.proof.SortOrExtend.getCanonical;
 
 @Slf4j
 public class Extensions {
@@ -29,7 +32,7 @@ public class Extensions {
         val parallelism = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",
                 "%d".formatted(Runtime.getRuntime().availableProcessors())));
         try (val pool = new ForkJoinPool(parallelism)) {
-            pool.execute(new SortOrExtend(configurationPair("(0)", 0), configurationPair("(0)", 0), storage, minRate));
+            pool.execute(new SortOrExtend(of("(0)", 0), of("(0)", 0), storage, minRate));
         }
 
 //        storage.findAllNoSortings().stream()
@@ -144,7 +147,7 @@ public class Extensions {
             val configuration = Configuration.ofSignature(extension.getRight().getSignature().getContent());
             val pivots = pivots(configuration);
 
-            val canonical = getCanonical(Pair.of(configuration, pivots), c -> pivots);
+            val canonical = getCanonical(of(configuration, pivots), c -> pivots);
 
             val hasSorting = storage.findSorting(canonical);
             out.println(hasSorting.isPresent() ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
@@ -162,7 +165,7 @@ public class Extensions {
                             $('#modal').modal('show'); \
                             return false;">%s</a><br>%n""",
                     jsSpi, label, configuration.getSpi().toString());
-            out.printf("View canonical extension: <a href=\"%s.html\">%s</a>%n", "%s%s".formatted(canonical.getLeft().getSpi(), canonical.getRight()), canonical.getLeft().getSpi());
+            out.printf("View canonical extension: <a href=\"%s.html\">%s</a>%n", "%s%s".formatted(canonical.getConfiguration().getSpi(), canonical.getConfiguration()), canonical.getConfiguration().getSpi());
             out.println("</div>");
         }
     }

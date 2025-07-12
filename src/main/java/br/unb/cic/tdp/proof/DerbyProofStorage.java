@@ -1,8 +1,10 @@
 package br.unb.cic.tdp.proof;
 
 import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.base.PivotedConfiguration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.util.SingleConnectionDataSource;
+import com.google.common.collect.Sets;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.SneakyThrows;
@@ -11,7 +13,6 @@ import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.AbstractListHandler;
 import org.apache.commons.dbutils.handlers.MapListHandler;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.Cursor;
 import org.jooq.Record2;
 import org.jooq.impl.DSL;
@@ -22,6 +23,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static br.unb.cic.tdp.base.PivotedConfiguration.of;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.table;
 
@@ -71,27 +73,27 @@ public class DerbyProofStorage implements ProofStorage {
         runner.update("DELETE FROM bad_case");
     }
 
-    private static String getId(final Pair<Configuration, Set<Integer>> configurationPair) {
-        return "%s#%s".formatted(configurationPair.getLeft().getSpi(), configurationPair.getRight());
+    private static String getId(final PivotedConfiguration pivotedConfiguration) {
+        return pivotedConfiguration.toString();
     }
 
     @SneakyThrows
     @Override
-    public boolean isAlreadySorted(final Pair<Configuration, Set<Integer>> configurationPair) {
+    public boolean isAlreadySorted(final PivotedConfiguration pivotedConfiguration) {
         return getQueryRunner().query(
                 "SELECT COUNT(1) FROM sorting WHERE config = ?",
                 new ScalarHandler<Integer>(1),
-                getId(configurationPair)
+                getId(pivotedConfiguration)
         ) > 0;
     }
 
     @SneakyThrows
     @Override
-    public boolean isBadCase(final Pair<Configuration, Set<Integer>> configurationPair) {
+    public boolean isBadCase(final PivotedConfiguration pivotedConfiguration) {
         return getQueryRunner().query(
                 "SELECT 1 FROM bad_case WHERE config = ?",
                 new ScalarHandler<Object>(),
-                getId(configurationPair)
+                getId(pivotedConfiguration)
         ) != null;
     }
 
@@ -112,28 +114,28 @@ public class DerbyProofStorage implements ProofStorage {
 
     @SneakyThrows
     @Override
-    public boolean tryLock(final Pair<Configuration, Set<Integer>> configurationPair) {
-        return working.putIfAbsent(getId(configurationPair), Boolean.TRUE) == null;
+    public boolean tryLock(final PivotedConfiguration pivotedConfiguration) {
+        return working.putIfAbsent(getId(pivotedConfiguration), Boolean.TRUE) == null;
     }
 
     @SneakyThrows
     @Override
-    public void unlock(final Pair<Configuration, Set<Integer>> configurationPair) {
-        working.remove(getId(configurationPair));
+    public void unlock(final PivotedConfiguration pivotedConfiguration) {
+        working.remove(getId(pivotedConfiguration));
     }
 
     @SneakyThrows
     @Override
-    public void markBadCase(final Pair<Configuration, Set<Integer>> configuration) {
+    public void markBadCase(final PivotedConfiguration configuration) {
         getQueryRunner().update("INSERT INTO bad_case(config) VALUES (?)", getId(configuration));
     }
 
     @SneakyThrows
     @Override
-    public void saveSorting(final Pair<Configuration, Set<Integer>> configurationPair, Pair<Configuration, Set<Integer>> parent, final List<Cycle> sorting) {
+    public void saveSorting(final PivotedConfiguration pivotedConfiguration, PivotedConfiguration parent, final List<Cycle> sorting) {
         try {
             getQueryRunner().update("INSERT INTO sorting(config, parent, sorting) VALUES (?, ?, ?)",
-                    getId(configurationPair), getId(parent), sorting.toString());
+                    getId(pivotedConfiguration), getId(parent), sorting.toString());
         } catch (SQLException e) {
             if (!"23505".equals(e.getSQLState())) throw e;
         }
@@ -141,10 +143,10 @@ public class DerbyProofStorage implements ProofStorage {
 
     @SneakyThrows
     @Override
-    public void markNoSorting(final Pair<Configuration, Set<Integer>> configurationPair, final Pair<Configuration, Set<Integer>> parent) {
+    public void markNoSorting(final PivotedConfiguration pivotedConfiguration, final PivotedConfiguration parent) {
         try {
             getQueryRunner().update("INSERT INTO no_sorting(config, parent) VALUES (?, ?)",
-                    getId(configurationPair), getId(parent));
+                    getId(pivotedConfiguration), getId(parent));
         } catch (SQLException e) {
             if (!"23505".equals(e.getSQLState())) throw e;
         }
@@ -152,11 +154,11 @@ public class DerbyProofStorage implements ProofStorage {
 
     @SneakyThrows
     @Override
-    public boolean markedNoSorting(final Pair<Configuration, Set<Integer>> configurationPair) {
+    public boolean markedNoSorting(final PivotedConfiguration pivotedConfiguration) {
         return getQueryRunner().query(
                 "SELECT 1 FROM no_sorting WHERE config = ?",
                 new ScalarHandler<>(),
-                getId(configurationPair)
+                getId(pivotedConfiguration)
         ) != null;
     }
 
@@ -165,7 +167,7 @@ public class DerbyProofStorage implements ProofStorage {
     public void saveComponentSorting(final Configuration configuration, final List<Cycle> sorting) {
         try {
             getQueryRunner().update("INSERT INTO comp_sorting(config, sorting) VALUES (?, ?)",
-                    getId(Pair.of(configuration, Set.of())), sorting.toString());
+                    getId(of(configuration, Sets.newTreeSet())), sorting.toString());
         } catch (SQLException e) {
             if (!"23505".equals(e.getSQLState())) throw e;
         }
@@ -173,8 +175,8 @@ public class DerbyProofStorage implements ProofStorage {
 
     @SneakyThrows
     @Override
-    public Optional<List<Cycle>> findSorting(final Pair<Configuration, Set<Integer>> configurationPair) {
-        return findSorting("SELECT * FROM sorting WHERE config = ?", getId(configurationPair));
+    public Optional<List<Cycle>> findSorting(final PivotedConfiguration pivotedConfiguration) {
+        return findSorting("SELECT * FROM sorting WHERE config = ?", getId(pivotedConfiguration));
     }
 
     private Optional<List<Cycle>> findSorting(String query, String spi) throws SQLException {
@@ -194,15 +196,15 @@ public class DerbyProofStorage implements ProofStorage {
     }
 
     @Override
-    public List<Pair<Configuration, Set<Integer>>> findAllNoSortings() throws SQLException {
+    public List<PivotedConfiguration> findAllNoSortings() throws SQLException {
         return getQueryRunner().query(
                 "SELECT config FROM no_sorting",
                 new AbstractListHandler<>() {
 
                     @Override
-                    protected Pair<Configuration, Set<Integer>> handleRow(final ResultSet resultSet) throws SQLException {
+                    protected PivotedConfiguration handleRow(final ResultSet resultSet) throws SQLException {
                         val config = resultSet.getString("config").split("#");
-                        return Pair.of(
+                        return of(
                                 new Configuration(config[0]),
                                 Arrays.stream(config[1].replaceAll("[\\[\\]\\s]", "").split(","))
                                         .map(Integer::parseInt)

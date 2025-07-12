@@ -1,16 +1,19 @@
 package br.unb.cic.tdp.controller;
 
 import br.unb.cic.tdp.base.Configuration;
+import br.unb.cic.tdp.base.PivotedConfiguration;
 import br.unb.cic.tdp.proof.ProofStorage;
 import br.unb.cic.tdp.proof.SortOrExtend;
 import lombok.val;
-import org.apache.commons.lang3.time.StopWatch;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+
+import java.util.Arrays;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.proof.Extensions.permutationToJsArray;
 import static br.unb.cic.tdp.proof.SortOrExtend.concatStreams;
@@ -30,7 +33,7 @@ public class SearchController {
 
         model.addAttribute("permutationToJsArray", permutationToJsArray(configuration.getSpi()));
         model.addAttribute("spi", configuration.getSpi());
-        model.addAttribute("pivots", pivots.replace("(", "").replace(")", "").replace(" ", ","));
+        model.addAttribute("pivots", Arrays.stream(pivots.split(",")).map(Integer::parseInt).collect(Collectors.toCollection(TreeSet::new)));
 
         val sortOrExtend = new SortOrExtend(null, null, null, 0);
 
@@ -48,9 +51,9 @@ public class SearchController {
                 .map(pair -> {
                     val extension = Configuration.ofSignature(pair.getRight().getSignature().getContent());
                     val extensionPivots = sortOrExtend.sortingPivots(extension);
-                    val canonicalPair = sortOrExtend.canonicalize(Pair.of(extension, extensionPivots));
-                    val canonical = canonicalPair.getLeft().getSpi() + "#" + canonicalPair.getRight();
-                    val sorting = proofStorage.findSorting(canonicalPair);
+                    val canonical = PivotedConfiguration.of(extension, extensionPivots).getCanonical();
+                    val canonicalLabel = canonical.toString();
+                    val sorting = proofStorage.findSorting(canonical);
                     val description = pair.getLeft();
                     val color = sorting.isEmpty() ? "red" : "green";
                     val goodOrBad = sorting.isEmpty() ? "BAD EXTENSION" : "GOOD EXTENSION";
@@ -62,7 +65,7 @@ public class SearchController {
                             goodOrBad,
                             extension.hashCode(),
                             permutationToJsArray(extension.getSpi()),
-                            canonical
+                            canonicalLabel
                     );
                 })
                 .toList();

@@ -26,7 +26,8 @@ var metrics = ctx.measureText("0");
 var charWidth = metrics.width * 2;
 var offset = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent + 6;
 
-function draw(canvas, spi, pi) {
+function draw(canvas, spi, pi, pvts) {
+  var pivots = new Set(pvts);
   var ctx = canvas.getContext("2d");
 
   var height = calcHeight(canvas, spi, pi);
@@ -38,6 +39,10 @@ function draw(canvas, spi, pi) {
 
   for (var i = 0; i < pi.length; i++) {
     ctx.fillText(pi[i], x, y);
+    if (pivots.has(pi[i])) {
+        let { width } = ctx.measureText(pi[i]);
+        ctx.fillRect(x, y + 1, width, 1);
+    }
     x = x + padding;
   }
 
@@ -94,5 +99,5 @@ function calcHeight(canvas, spi, pi) {
     }
   }
 
-  return maxHeight + offset + 10;
+  return maxHeight + offset + 15;
 }
