@@ -26,6 +26,7 @@ public class PivotedConfiguration {
     }
 
     public PivotedConfiguration getCanonical() {
+        // TODO cache
         var canonical = this;
         var canonicalStr = this.toString();
 
@@ -36,12 +37,7 @@ public class PivotedConfiguration {
                 canonical = rotation;
                 canonicalStr = rotationStr;
             }
-            val reflection = mirror(rotation.getConfiguration().getSpi(), rotation.getPivots());
-            val reflectionStr = reflection.toString();
-            if (reflectionStr.compareTo(canonicalStr) < 0) {
-                canonical = reflection;
-                canonicalStr = reflectionStr;
-            }
+            // TODO mirror?
         }
         return canonical;
     }
@@ -78,12 +74,13 @@ public class PivotedConfiguration {
 
     private PivotedConfiguration mirror(final MulticyclePermutation spi, final Set<Integer> pivots) {
         val pi = CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()];
-        val conjugator = new MulticyclePermutation();
+        val gamma = new MulticyclePermutation();
         for (var i = 0; i < pi.size() / 2; i++) {
-            conjugator.add(Cycle.of(pi.get(i), pi.get(pi.size() - 1 - i)));
+            gamma.add(Cycle.of(pi.get(i), pi.get(pi.size() - 1 - i)));
         }
-        return of(new Configuration(spi.getInverse().conjugateBy(conjugator)), pivots.stream()
-                .map(conjugator::image)
+        val delta = gamma;
+        return of(new Configuration(spi.getInverse().conjugateBy(delta)), pivots.stream()
+                .map(delta::image)
                 .collect(Collectors.toCollection(TreeSet::new)));
     }
 }

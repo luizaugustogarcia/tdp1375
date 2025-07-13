@@ -12,7 +12,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.RecursiveAction;
-import java.util.function.Function;
 
 @AllArgsConstructor
 @Slf4j
@@ -25,7 +24,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
     @Override
     protected void compute() {
         try {
-            val canonical = canonicalize(this.pivotedConfiguration);
+            val canonical = this.pivotedConfiguration.getCanonical();
 
             if (storage.isAlreadySorted(canonical)) {
                 return;
@@ -36,7 +35,7 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                     try {
                         if (!storage.markedNoSorting(canonical)) {
                             val sorting = searchForSorting(canonical);
-                            val parent = canonicalize(this.parent);
+                            val parent = this.parent.getCanonical();
                             if (sorting.isPresent()) {
                                 storage.saveSorting(canonical, parent, sorting.get());
                                 return;
@@ -58,26 +57,6 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
 
     protected Optional<List<Cycle>> searchForSorting(final PivotedConfiguration pivotedConfiguration) {
         return CommonOperations.searchForSorting(storage, pivotedConfiguration.getConfiguration(), minRate, pivotedConfiguration.getPivots());
-    }
-
-    public static PivotedConfiguration pivotedConfiguration(final String spi, int... pivots) {
-        val pivotSet = new TreeSet<Integer>();
-        for (int pivot : pivots) {
-            pivotSet.add(pivot);
-        }
-        return PivotedConfiguration.of(new Configuration(spi), pivotSet);
-    }
-
-    public PivotedConfiguration canonicalize(final PivotedConfiguration pivotedConfiguration) {
-        return getCanonical(pivotedConfiguration, this::sortingPivots);
-    }
-
-    public static PivotedConfiguration getCanonical(
-            final PivotedConfiguration pivotedConfiguration,
-            final Function<Configuration, TreeSet<Integer>> pivotsFn
-    ) {
-        val configuration = Configuration.ofSignature(pivotedConfiguration.getConfiguration().getSignature().getContent());
-        return PivotedConfiguration.of(configuration, pivotsFn.apply(configuration)).getCanonical();
     }
 
     public abstract TreeSet<Integer> sortingPivots(Configuration configuration);
