@@ -9,7 +9,9 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.function.Function;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -110,21 +112,26 @@ public class CommonOperations implements Serializable {
             final int[] pi,
             final Stack<int[]> stack,
             final double minRate,
-            final Function<Integer, Double> lowerBoundFunction
+            final AtomicBoolean cancelRequested,
+            final int maxDepth
     ) {
-        if (Thread.currentThread().isInterrupted()) {
-            log.info("Thread interrupted, returning empty optional");
-            return Optional.empty();
+        if (cancelRequested.get()) {
+            log.info("Search cancelled for " + initialConfiguration.getSpi() + "#" + pivots);
+            throw new RuntimeException("Thread interrupted, returning empty optional");
         }
 
         val movedSymbols = new HashSet<>();
         val fixedSymbolsWithoutPivots = new HashSet<>();
+        val movedSymbolsWithoutPivots = new HashSet<>();
         for (int i = 0; i < spi.length; i++) {
             if (i == spi[i]) {
                 if (!pivots.contains(i)) {
                     fixedSymbolsWithoutPivots.add(i);
                 }
             } else {
+                if (!pivots.contains(i)) {
+                    movedSymbolsWithoutPivots.add(i);
+                }
                 movedSymbols.add(i);
             }
         }
@@ -140,7 +147,11 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        val movesLeftBestCase = lowerBoundFunction.apply(movedSymbols.size()); // each move can add up to 3 adjacencies
+        if (stack.size() == maxDepth) {
+            return Optional.empty();
+        }
+
+        val movesLeftBestCase = Math.ceil(movedSymbolsWithoutPivots.size() / 3.0); // each move can add up to 3 adjacencies
         val totalMoves = stack.size() + movesLeftBestCase;
         val maxGlobalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - pivots.size()) / totalMoves;
         if (maxGlobalRate < minRate) {
@@ -159,7 +170,7 @@ public class CommonOperations implements Serializable {
                                 int[] m = {a, b, c};
                                 stack.push(m);
 
-                                sorting = searchForSorting(initialConfiguration, pivots, times(spi, m[0], m[1], m[2]), applyTranspositionOptimized(pi, m), stack, minRate, lowerBoundFunction);
+                                sorting = searchForSorting(initialConfiguration, pivots, times(spi, m[0], m[1], m[2]), applyTranspositionOptimized(pi, m), stack, minRate, cancelRequested, maxDepth);
                                 if (sorting.isPresent()) {
                                     return sorting;
                                 }
@@ -219,20 +230,32 @@ public class CommonOperations implements Serializable {
 
         val spi = configuration.getSpi();
         val pi = configuration.getPi().getSymbols();
-        var sorting = searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.ceil((movedSymbols + 1) / 3.0))
-                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.ceil(movedSymbols / 3.0)))
-                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> movedSymbols / 3.0))
-                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor(movedSymbols / 3.0)))
-                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> (movedSymbols - 1) / 3.0))
-                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor((movedSymbols - 1) / 3.0)))
-                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor((movedSymbols - 2) / 3.0)))
+
+        var sorting = searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 3)
                 .map(moves -> moves.stream().map(Cycle::of).toList());
+        if (sorting.isPresent()) {
+            return sorting;
+        }
+
+        val cancelRequested = new AtomicBoolean(false);
+        var future = CompletableFuture.supplyAsync(() ->
+                searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, cancelRequested, Integer.MAX_VALUE)
+                        .map(moves -> moves.stream().map(Cycle::of).toList()));
+
+        try {
+            sorting = future.get(10, TimeUnit.MINUTES);
+        } catch (final Exception e) {
+            future.cancel(true);
+            cancelRequested.set(true);
+            sorting = Optional.empty();
+        }
 
         if (sorting.isEmpty() && configuration.isFull()) {
             val sigma = spi.times(configuration.getPi());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
-                sorting = searchForSorting(configuration, Set.of(), twoLinesNotation(spi), pi, new Stack<>(), minRate, movedSymbols -> Math.floor(movedSymbols / 3.0))
+                sorting = searchForSorting(configuration, Set.of(), twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), Integer.MAX_VALUE)
                         .map(moves -> moves.stream().map(Cycle::of).toList());
+
                 if (sorting.isEmpty()) {
                     log.error("bad component {}", configuration);
                 } else if (proofStorage != null) {
