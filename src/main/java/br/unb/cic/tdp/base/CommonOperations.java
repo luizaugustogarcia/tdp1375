@@ -5,11 +5,11 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.ProofStorage;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -27,6 +27,18 @@ public class CommonOperations implements Serializable {
                 pi[j] = j;
             }
             CANONICAL_PI[i] = Cycle.of(pi);
+        }
+    }
+
+    public static void main(String[] args) {
+        for (int i = 0; i < 10; i++) {
+            val stopWatch = new StopWatch();
+            stopWatch.start();
+            System.out.println(searchForSorting(null,
+                    new Configuration("(0 10 1 12 9 2 11 7 5 3 8 6 4)"),
+                    1.6, Set.of(11)));
+            stopWatch.stop();
+            System.out.println("Time taken: " + stopWatch.getTime(TimeUnit.MILLISECONDS) + " ms");
         }
     }
 
@@ -223,34 +235,19 @@ public class CommonOperations implements Serializable {
     private static double bestRate = Double.MAX_VALUE;
 
     public static Optional<List<Cycle>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate, final Set<Integer> pivots) {
-        val _2move = lookFor2Move(configuration, pivots);
-        if (_2move.isPresent()) {
-            return _2move;
-        }
-
         val spi = configuration.getSpi();
         val pi = configuration.getPi().getSymbols();
 
-        var sorting = searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 3)
+        var sorting = searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 1)
+                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 3))
+                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 5))
+                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), Integer.MAX_VALUE))
                 .map(moves -> moves.stream().map(Cycle::of).toList());
         if (sorting.isPresent()) {
             return sorting;
         }
 
-        val cancelRequested = new AtomicBoolean(false);
-        var future = CompletableFuture.supplyAsync(() ->
-                searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, cancelRequested, Integer.MAX_VALUE)
-                        .map(moves -> moves.stream().map(Cycle::of).toList()));
-
-        try {
-            sorting = future.get(10, TimeUnit.MINUTES);
-        } catch (final Exception e) {
-            future.cancel(true);
-            cancelRequested.set(true);
-            sorting = Optional.empty();
-        }
-
-        if (sorting.isEmpty() && configuration.isFull()) {
+        if (configuration.isFull()) {
             val sigma = spi.times(configuration.getPi());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
                 sorting = searchForSorting(configuration, Set.of(), twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), Integer.MAX_VALUE)
