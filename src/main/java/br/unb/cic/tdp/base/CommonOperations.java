@@ -35,8 +35,8 @@ public class CommonOperations implements Serializable {
             val stopWatch = new StopWatch();
             stopWatch.start();
             System.out.println(searchForSorting(null,
-                    new Configuration("(0 10 1 12 9 2 11 7 5 3 8 6 4)"),
-                    1.6, Set.of(11)));
+                    new Configuration("(0 10 3)(1 11 5 12 8)(2 7)(4 13)(6 14 9)"),
+                    1.6, Set.of(3, 4, 6, 7, 8)));
             stopWatch.stop();
             System.out.println("Time taken: " + stopWatch.getTime(TimeUnit.MILLISECONDS) + " ms");
         }
@@ -119,7 +119,8 @@ public class CommonOperations implements Serializable {
 
     public static Optional<List<int[]>> searchForSorting(
             final Configuration initialConfiguration,
-            final Set<Integer> pivots,
+            final int[] pivots,
+            final int pivotsCount,
             final int[] spi,
             final int[] pi,
             final Stack<int[]> stack,
@@ -132,24 +133,26 @@ public class CommonOperations implements Serializable {
             throw new RuntimeException("Thread interrupted, returning empty optional");
         }
 
-        val movedSymbols = new HashSet<>();
-        val fixedSymbolsWithoutPivots = new HashSet<>();
-        val movedSymbolsWithoutPivots = new HashSet<>();
+        val symbolsAttrs = new byte[initialConfiguration.getPi().size()];
+        var fixedSymbolsWithoutPivots = 0;
+        var movedSymbolsWithoutPivots = 0;
         for (int i = 0; i < spi.length; i++) {
             if (i == spi[i]) {
-                if (!pivots.contains(i)) {
-                    fixedSymbolsWithoutPivots.add(i);
+                if (pivots[i] == 0) {
+                    symbolsAttrs[i] |= 1;
+                    fixedSymbolsWithoutPivots++;
                 }
             } else {
-                if (!pivots.contains(i)) {
-                    movedSymbolsWithoutPivots.add(i);
+                if (pivots[i] == 0) {
+                    symbolsAttrs[i] |= 2;
+                    movedSymbolsWithoutPivots++;
                 }
-                movedSymbols.add(i);
+                symbolsAttrs[i] |= 4;
             }
         }
 
-        val currentRate = (fixedSymbolsWithoutPivots.size()) / (double) stack.size();
-        if (!fixedSymbolsWithoutPivots.isEmpty()) {
+        val currentRate = (fixedSymbolsWithoutPivots) / (double) stack.size();
+        if (fixedSymbolsWithoutPivots > 0) {
             if (currentRate >= minRate) {
                 if (currentRate < bestRate) {
                     log.info("Lowest currentRate: {}", currentRate);
@@ -163,26 +166,26 @@ public class CommonOperations implements Serializable {
             return Optional.empty();
         }
 
-        val movesLeftBestCase = Math.ceil(movedSymbolsWithoutPivots.size() / 3.0); // each move can add up to 3 adjacencies
+        val movesLeftBestCase = Math.ceil(movedSymbolsWithoutPivots / 3.0); // each move can add up to 3 adjacencies
         val totalMoves = stack.size() + movesLeftBestCase;
-        val maxGlobalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - pivots.size()) / totalMoves;
+        val maxGlobalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - pivotsCount) / totalMoves;
         if (maxGlobalRate < minRate) {
             return Optional.empty();
         }
 
         var sorting = Optional.<List<int[]>>empty();
         for (var i = 0; i < pi.length - 2; i++) {
-            if (!fixedSymbolsWithoutPivots.contains(pi[i])) {
+            if ((symbolsAttrs[pi[i]] & 1) == 0) {
                 for (var j = i + 1; j < pi.length - 1; j++) {
-                    if (!fixedSymbolsWithoutPivots.contains(pi[j])) {
+                    if ((symbolsAttrs[pi[j]] & 1) == 0) {
                         for (var k = j + 1; k < pi.length; k++) {
-                            if (!fixedSymbolsWithoutPivots.contains(pi[k])) {
+                            if ((symbolsAttrs[pi[k]] & 1) == 0) {
                                 int a = pi[i], b = pi[j], c = pi[k];
 
                                 int[] m = {a, b, c};
                                 stack.push(m);
 
-                                sorting = searchForSorting(initialConfiguration, pivots, times(spi, m[0], m[1], m[2]), applyTranspositionOptimized(pi, m), stack, minRate, cancelRequested, maxDepth);
+                                sorting = searchForSorting(initialConfiguration, pivots, pivotsCount, times(spi, m[0], m[1], m[2]), applyTranspositionOptimized(pi, m), stack, minRate, cancelRequested, maxDepth);
                                 if (sorting.isPresent()) {
                                     return sorting;
                                 }
@@ -238,10 +241,17 @@ public class CommonOperations implements Serializable {
         val spi = configuration.getSpi();
         val pi = configuration.getPi().getSymbols();
 
-        var sorting = searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 1)
-                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 3))
-                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 5))
-                .or(() -> searchForSorting(configuration, pivots, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), Integer.MAX_VALUE))
+        val pivotsArray = new int[configuration.getPi().size()];
+        for (int i = 0; i < pivotsArray.length; i++) {
+            if (pivots.contains(i)) {
+                pivotsArray[i] = 1; // mark as pivot
+            }
+        }
+
+        var sorting = searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 1)
+                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 3))
+                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 5))
+                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), Integer.MAX_VALUE))
                 .map(moves -> moves.stream().map(Cycle::of).toList());
         if (sorting.isPresent()) {
             return sorting;
@@ -250,7 +260,7 @@ public class CommonOperations implements Serializable {
         if (configuration.isFull()) {
             val sigma = spi.times(configuration.getPi());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
-                sorting = searchForSorting(configuration, Set.of(), twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), Integer.MAX_VALUE)
+                sorting = searchForSorting(configuration, new int[configuration.getPi().size()], 0, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), Integer.MAX_VALUE)
                         .map(moves -> moves.stream().map(Cycle::of).toList());
 
                 if (sorting.isEmpty()) {
