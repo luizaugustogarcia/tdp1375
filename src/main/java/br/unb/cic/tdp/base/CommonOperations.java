@@ -35,34 +35,11 @@ public class CommonOperations implements Serializable {
             val stopWatch = new StopWatch();
             stopWatch.start();
             System.out.println(searchForSorting(null,
-                    new Configuration("(0 10 3)(1 11 5 12 8)(2 7)(4 13)(6 14 9)"),
-                    1.6, Set.of(3, 4, 6, 7, 8)));
+                    new Configuration("(0 10 3)(1 6 4 11 8 5)(2 9 7 12)"),
+                    1.6, Set.of(2, 3, 6)));
             stopWatch.stop();
             System.out.println("Time taken: " + stopWatch.getTime(TimeUnit.MILLISECONDS) + " ms");
         }
-    }
-
-    public static Cycle applyTranspositionOptimized(final Cycle pi, final Cycle move) {
-        val a = move.get(0);
-        val b = move.get(1);
-        val c = move.get(2);
-
-        val indexes = new int[3];
-        for (var i = 0; i < pi.size(); i++) {
-            if (pi.get(i) == a) indexes[0] = i;
-            if (pi.get(i) == b) indexes[1] = i;
-            if (pi.get(i) == c) indexes[2] = i;
-        }
-
-        Arrays.sort(indexes);
-
-        val result = new int[pi.size()];
-        System.arraycopy(pi.getSymbols(), 0, result, 0, indexes[0]);
-        System.arraycopy(pi.getSymbols(), indexes[1], result, indexes[0], indexes[2] - indexes[1]);
-        System.arraycopy(pi.getSymbols(), indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
-        System.arraycopy(pi.getSymbols(), indexes[2], result, indexes[2], pi.size() - indexes[2]);
-
-        return Cycle.of(result);
     }
 
     public static int mod(final int a, final int b) {
@@ -110,13 +87,6 @@ public class CommonOperations implements Serializable {
         return true;
     }
 
-    /**
-     * Tells if a <code>cycle</code> is oriented or not having <code>pi</code> as reference.
-     */
-    public static boolean isOriented(final Cycle pi, final Cycle cycle) {
-        return !areSymbolsInCyclicOrder(pi.getInverse(), cycle.getSymbols());
-    }
-
     public static Optional<List<int[]>> searchForSorting(
             final Configuration initialConfiguration,
             final int[] pivots,
@@ -162,14 +132,10 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        if (stack.size() == maxDepth) {
-            return Optional.empty();
-        }
-
-        val movesLeftBestCase = Math.ceil(movedSymbolsWithoutPivots / 3.0); // each move can add up to 3 adjacencies
+        val movesLeftBestCase = Math.min(maxDepth - stack.size(), Math.ceil(movedSymbolsWithoutPivots / 3.0)); // each move can add up to 3 adjacencies
         val totalMoves = stack.size() + movesLeftBestCase;
-        val maxGlobalRate = (initialConfiguration.getSpi().getNumberOfSymbols() - pivotsCount) / totalMoves;
-        if (maxGlobalRate < minRate) {
+        val fixedSymbolsBestCase = Math.min(fixedSymbolsWithoutPivots + (movesLeftBestCase * 3), initialConfiguration.getSpi().getNumberOfSymbols() - pivotsCount);
+        if (fixedSymbolsBestCase < totalMoves * minRate) {
             return Optional.empty();
         }
 
