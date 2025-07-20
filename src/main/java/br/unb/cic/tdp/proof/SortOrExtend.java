@@ -182,7 +182,8 @@ public class SortOrExtend extends AbstractSortOrExtend {
     }
 
     protected boolean isValid(final Configuration configuration, final Configuration extension) {
-        return extension.isFull() &&
+        return (configuration.getSpi().stream().noneMatch(Cycle::isTwoCycle) || extension.getSpi().stream().noneMatch(Cycle::isTwoCycle)) &&
+                extension.isFull() &&
                 extension.getSpi().stream().filter(Cycle::isTwoCycle).count() <= 2 &&
                 onlyOneComponent(extension);
     }

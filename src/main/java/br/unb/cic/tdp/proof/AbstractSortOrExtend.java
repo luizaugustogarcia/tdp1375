@@ -23,6 +23,11 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
 
     @Override
     protected void compute() {
+        if (this.pivotedConfiguration.getConfiguration().getSpi().stream().anyMatch(Cycle::isTwoCycle)) {
+            extend(this.pivotedConfiguration);
+            return; // no two-cycles allowed
+        }
+
         try {
             val canonical = this.pivotedConfiguration.getCanonical();
 
