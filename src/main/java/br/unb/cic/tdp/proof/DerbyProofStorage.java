@@ -87,16 +87,6 @@ public class DerbyProofStorage implements ProofStorage {
         ) > 0;
     }
 
-    @SneakyThrows
-    @Override
-    public boolean isBadCase(final PivotedConfiguration pivotedConfiguration) {
-        return getQueryRunner().query(
-                "SELECT 1 FROM bad_case WHERE config = ?",
-                new ScalarHandler<Object>(),
-                getId(pivotedConfiguration)
-        ) != null;
-    }
-
     private QueryRunner getQueryRunner() throws SQLException {
         if (CONNECTION.get() == null) {
             CONNECTION.set(new HashMap<>());

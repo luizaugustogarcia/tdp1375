@@ -14,8 +14,6 @@ public interface ProofStorage {
 
     boolean isAlreadySorted(PivotedConfiguration pivotedConfiguration);
 
-    boolean isBadCase(PivotedConfiguration pivotedConfiguration);
-
     boolean tryLock(PivotedConfiguration pivotedConfiguration);
 
     void unlock(PivotedConfiguration pivotedConfiguration);

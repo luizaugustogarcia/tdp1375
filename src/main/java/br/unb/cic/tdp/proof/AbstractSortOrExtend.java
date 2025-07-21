@@ -31,29 +31,28 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
         try {
             val canonical = this.pivotedConfiguration.getCanonical();
 
-            if (storage.isAlreadySorted(canonical)) {
-                return;
-            }
-
-            if (!storage.isBadCase(canonical)) {
+            try {
                 if (storage.tryLock(canonical)) {
-                    try {
-                        if (!storage.markedNoSorting(canonical)) {
-                            val sorting = searchForSorting(canonical);
-                            val parent = this.parent.getCanonical();
-                            if (sorting.isPresent()) {
-                                storage.saveSorting(canonical, parent, sorting.get());
-                                return;
-                            } else {
-                                storage.markNoSorting(canonical, parent);
-                                storage.markBadCase(canonical);
-                            }
-                        }
-                        extend(this.pivotedConfiguration);
-                    } finally {
-                        storage.unlock(canonical);
+                    if (storage.isAlreadySorted(canonical)) {
+                        return;
                     }
+
+                    if (!storage.markedNoSorting(canonical)) {
+                        val sorting = searchForSorting(canonical);
+                        val parent = this.parent.getCanonical();
+                        if (sorting.isPresent()) {
+                            storage.saveSorting(canonical, parent, sorting.get());
+                            return;
+                        } else {
+                            storage.markNoSorting(canonical, parent);
+                            storage.markBadCase(canonical);
+                        }
+                    }
+
+                    extend(this.pivotedConfiguration);
                 } // else: another thread is already working on this canonical
+            } finally {
+                storage.unlock(canonical);
             }
         } catch (final Exception e) {
             log.error(e.getMessage());
