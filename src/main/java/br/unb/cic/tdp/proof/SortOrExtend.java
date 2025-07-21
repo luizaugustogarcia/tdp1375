@@ -31,7 +31,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
     protected static int n = 0;
     private static final AtomicLong enqueued = new AtomicLong();
     private static final Timer timer = new Timer();
-    private static final ThreadLocal<Boolean> EXTENDING_TWO_CYCLES = ThreadLocal.withInitial(() -> false);
+    private static final ThreadLocal<Boolean> EXTENDING_CONTAINS_TWO_CYCLES = ThreadLocal.withInitial(() -> false);
 
     static {
         timer.schedule(new TimerTask() {
@@ -67,28 +67,28 @@ public class SortOrExtend extends AbstractSortOrExtend {
     // optimize by caching isValid results
 
     public Stream<Pair<String, Configuration>> type1Extensions(final Configuration configuration) {
-        if (EXTENDING_TWO_CYCLES.get()) {
+        if (EXTENDING_CONTAINS_TWO_CYCLES.get()) {
             return Stream.empty();
         }
         return chain(this::add2Cycle, this::add2Cycle, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type2Extensions(final Configuration configuration) {
-        if (EXTENDING_TWO_CYCLES.get()) {
+        if (EXTENDING_CONTAINS_TWO_CYCLES.get()) {
             return Stream.empty();
         }
         return chain(this::add2Cycle, this::growOneCycle, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type3Extensions(final Configuration configuration) {
-        if (EXTENDING_TWO_CYCLES.get()) {
+        if (EXTENDING_CONTAINS_TWO_CYCLES.get()) {
             return Stream.empty();
         }
         return chain(this::add2Cycle, this::mergeTwoCycles, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type4Extensions(final Configuration configuration) {
-        if (EXTENDING_TWO_CYCLES.get()) {
+        if (EXTENDING_CONTAINS_TWO_CYCLES.get()) {
             return Stream.empty();
         }
         return chain(this::growOneCycle, this::add2Cycle, configuration);
@@ -103,7 +103,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
     }
 
     public Stream<Pair<String, Configuration>> type7Extensions(final Configuration configuration) {
-        if (EXTENDING_TWO_CYCLES.get()) {
+        if (EXTENDING_CONTAINS_TWO_CYCLES.get()) {
             return Stream.empty();
         }
         return chain(this::mergeTwoCycles, this::add2Cycle, configuration);
@@ -121,8 +121,8 @@ public class SortOrExtend extends AbstractSortOrExtend {
         val twoCycles = configuration.getSpi().stream()
                 .filter(Cycle::isTwoCycle)
                 .toList();
-        if (EXTENDING_TWO_CYCLES.get() && !twoCycles.isEmpty()) {
-            twoCycles.stream().flatMap(c1 -> configuration.getSpi().stream()
+        if (EXTENDING_CONTAINS_TWO_CYCLES.get() && !twoCycles.isEmpty()) {
+            return twoCycles.stream().flatMap(c1 -> configuration.getSpi().stream()
                     .flatMap(c2 -> {
                         if (c1 == c2) {
                             return Stream.empty();
@@ -152,7 +152,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
         for (val composition : weakCompositions(1, n + 1)) {
             val newPi = Cycle.of(insertSymbols(configuration.getPi().getSymbols(), composition, new int[]{n + 1}));
 
-            val spi = EXTENDING_TWO_CYCLES.get() ? configuration.getSpi().stream().filter(Cycle::isTwoCycle).toList() : configuration.getSpi();
+            val spi = EXTENDING_CONTAINS_TWO_CYCLES.get() ? configuration.getSpi().stream().filter(Cycle::isTwoCycle).toList() : configuration.getSpi();
             for (val cycle : spi) {
                 for (val comp : weakCompositions(1, cycle.size())) {
                     var newSpi = new MulticyclePermutation(configuration.getSpi());
@@ -198,7 +198,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
     public Stream<Configuration> allExtensions(final Configuration configuration) {
         try {
             if (configuration.getSpi().stream().anyMatch(Cycle::isTwoCycle)) {
-                EXTENDING_TWO_CYCLES.set(true);
+                EXTENDING_CONTAINS_TWO_CYCLES.set(true);
             }
 
             return concatStreams(
@@ -213,7 +213,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
                     type9Extensions(configuration).map(Pair::getRight)
             );
         } finally {
-            EXTENDING_TWO_CYCLES.set(false);
+            EXTENDING_CONTAINS_TWO_CYCLES.set(false);
         }
     }
 

@@ -23,20 +23,15 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
 
     @Override
     protected void compute() {
-        if (this.pivotedConfiguration.getConfiguration().getSpi().stream().anyMatch(Cycle::isTwoCycle)) {
-            extend(this.pivotedConfiguration);
-            return; // no two-cycles allowed
-        }
-
         try {
             val canonical = this.pivotedConfiguration.getCanonical();
 
-            try {
-                if (storage.tryLock(canonical)) {
-                    if (storage.isAlreadySorted(canonical)) {
-                        return;
-                    }
+            if (storage.isAlreadySorted(canonical)) {
+                return;
+            }
 
+            if (storage.tryLock(canonical)) {
+                try {
                     if (!storage.markedNoSorting(canonical)) {
                         val sorting = searchForSorting(canonical);
                         val parent = this.parent.getCanonical();
@@ -45,15 +40,13 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                             return;
                         } else {
                             storage.markNoSorting(canonical, parent);
-                            storage.markBadCase(canonical);
                         }
                     }
-
                     extend(this.pivotedConfiguration);
-                } // else: another thread is already working on this canonical
-            } finally {
-                storage.unlock(canonical);
-            }
+                } finally {
+                    storage.unlock(canonical);
+                }
+            } // else: another thread is already working on this canonical
         } catch (final Exception e) {
             log.error(e.getMessage());
         }
