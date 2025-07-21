@@ -15,6 +15,8 @@ import static br.unb.cic.tdp.base.PivotedConfiguration.of;
 public class Extensions {
 
     public static void generate(final String outputDir, final double minRate) throws SQLException {
+        System.setProperty("derby.system.durability", "test");
+
         val storage = new DerbyProofStorage(outputDir, "extensions");
 
         val parallelism = Integer.parseInt(System.getProperty("java.util.concurrent.ForkJoinPool.common.parallelism",

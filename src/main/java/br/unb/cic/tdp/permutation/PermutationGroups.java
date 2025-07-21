@@ -34,11 +34,11 @@ public class PermutationGroups implements Serializable {
     }
 
     public static MulticyclePermutation computeProduct(final boolean include1Cycle, final int n, final Permutation... permutations) {
-        val key = new MultiplicationKey(include1Cycle, n, permutations);
-        val cached = CACHE.getIfPresent(key);
-        if (cached != null) {
-            return cached;
-        }
+//        val key = new MultiplicationKey(include1Cycle, n, permutations);
+//        val cached = CACHE.getIfPresent(key);
+//        if (cached != null) {
+//            return cached;
+//        }
 
         val functions = new int[permutations.length][n];
 
@@ -98,7 +98,7 @@ public class PermutationGroups implements Serializable {
             cycle.clear();
         }
 
-        CACHE.put(key, result);
+        //CACHE.put(key, result);
 
         return result;
     }
