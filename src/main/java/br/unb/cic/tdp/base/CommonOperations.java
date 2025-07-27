@@ -103,23 +103,36 @@ public class CommonOperations implements Serializable {
             throw new RuntimeException("Thread interrupted, returning empty optional");
         }
 
-        val symbolsAttrs = new byte[initialConfiguration.getPi().size()];
-        var fixedSymbolsWithoutPivots = 0;
-        var movedSymbolsWithoutPivots = 0;
-        for (int i = 0; i < spi.length; i++) {
-            if (i == spi[i]) {
-                if (pivots[i] == 0) {
-                    symbolsAttrs[i] |= 1;
-                    fixedSymbolsWithoutPivots++;
-                }
-            } else {
-                if (pivots[i] == 0) {
-                    symbolsAttrs[i] |= 2;
-                    movedSymbolsWithoutPivots++;
-                }
-                symbolsAttrs[i] |= 4;
-            }
-        }
+        for (var i = 0; i < pi.length - 2; i++) {
+            if (spi[pi[i]] != pi[i]) {
+                for (var j = i + 1; j < pi.length - 1; j++) {
+                    if (spi[pi[j]] != pi[j]) {
+                        for (var k = j + 1; k < pi.length; k++) {
+                            if (spi[pi[k]] != pi[k]) {
+                                int a = pi[i], b = pi[j], c = pi[k];
+
+                                int[] m = {a, b, c};
+
+                                val newSpi = times(spi, m[0], m[1], m[2]);
+                                val newPi = applyTranspositionOptimized(pi, m);
+
+                                var fixedSymbolsWithoutPivots = 0;
+                                var movedSymbolsWithoutPivots = 0;
+                                for (int l = 0; l < newSpi.length; l++) {
+                                    if (pivots[l] == 0) {
+                                        if (l == newSpi[l]) {
+                                            fixedSymbolsWithoutPivots++;
+                                        } else {
+                                            movedSymbolsWithoutPivots++;
+                                        }
+                                    }
+                                }
+
+                                val newStackSize = stack.size() + 1;
+                                if (newStackSize > maxStackSize) {
+                                    maxStackSize = newStackSize;
+                                    log.info("New max stack size: {}", maxStackSize);
+                                }
 
         val currentRate = (fixedSymbolsWithoutPivots) / (double) stack.size();
         if (fixedSymbolsWithoutPivots > 0) {
@@ -163,7 +176,7 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        return sorting;
+        return Optional.empty();
     }
 
     private static int[] times(final int[] spi, final int a, final int b, final int c) {
