@@ -35,8 +35,8 @@ public class CommonOperations implements Serializable {
             val stopWatch = new StopWatch();
             stopWatch.start();
             System.out.println(searchForSorting(null,
-                    new Configuration("(0 10 3)(1 6 4 11 8 5)(2 9 7 12)"),
-                    1.6, Set.of(2, 3, 6)));
+                    new Configuration("(0 10 6)(1 8 2 14 3)(4 13)(5 12 9)(7 11)"),
+                    1.6, Set.of(10, 11, 12, 13, 14)));
             stopWatch.stop();
             System.out.println("Time taken: " + stopWatch.getTime(TimeUnit.MILLISECONDS) + " ms");
         }
@@ -129,46 +129,31 @@ public class CommonOperations implements Serializable {
                                 }
 
                                 val newStackSize = stack.size() + 1;
-                                if (newStackSize > maxStackSize) {
-                                    maxStackSize = newStackSize;
-                                    log.info("New max stack size: {}", maxStackSize);
+
+                                val currentRate = (fixedSymbolsWithoutPivots) / (double) newStackSize;
+                                if (fixedSymbolsWithoutPivots > 0) {
+                                    if (currentRate >= minRate) {
+                                        if (currentRate < bestRate) {
+                                            log.info("Lowest currentRate: {}", currentRate);
+                                            bestRate = currentRate;
+                                        }
+                                        stack.push(m);
+                                        return Optional.of(stack);
+                                    }
                                 }
 
-        val currentRate = (fixedSymbolsWithoutPivots) / (double) stack.size();
-        if (fixedSymbolsWithoutPivots > 0) {
-            if (currentRate >= minRate) {
-                if (currentRate < bestRate) {
-                    log.info("Lowest currentRate: {}", currentRate);
-                    bestRate = currentRate;
-                }
-                return Optional.of(stack);
-            }
-        }
+                                val movesLeftBestCase = Math.min(maxDepth - newStackSize, Math.ceil(movedSymbolsWithoutPivots / 3.0)); // each move can add up to 3 adjacencies
+                                val totalMoves = newStackSize + movesLeftBestCase;
+                                val fixedSymbolsBestCase = Math.min(fixedSymbolsWithoutPivots + (movesLeftBestCase * 3), initialConfiguration.getSpi().getNumberOfSymbols() - pivotsCount);
 
-        val movesLeftBestCase = Math.min(maxDepth - stack.size(), Math.ceil(movedSymbolsWithoutPivots / 3.0)); // each move can add up to 3 adjacencies
-        val totalMoves = stack.size() + movesLeftBestCase;
-        val fixedSymbolsBestCase = Math.min(fixedSymbolsWithoutPivots + (movesLeftBestCase * 3), initialConfiguration.getSpi().getNumberOfSymbols() - pivotsCount);
-        if (fixedSymbolsBestCase < totalMoves * minRate) {
-            return Optional.empty();
-        }
-
-        var sorting = Optional.<List<int[]>>empty();
-        for (var i = 0; i < pi.length - 2; i++) {
-            if ((symbolsAttrs[pi[i]] & 1) == 0) {
-                for (var j = i + 1; j < pi.length - 1; j++) {
-                    if ((symbolsAttrs[pi[j]] & 1) == 0) {
-                        for (var k = j + 1; k < pi.length; k++) {
-                            if ((symbolsAttrs[pi[k]] & 1) == 0) {
-                                int a = pi[i], b = pi[j], c = pi[k];
-
-                                int[] m = {a, b, c};
-                                stack.push(m);
-
-                                sorting = searchForSorting(initialConfiguration, pivots, pivotsCount, times(spi, m[0], m[1], m[2]), applyTranspositionOptimized(pi, m), stack, minRate, cancelRequested, maxDepth);
-                                if (sorting.isPresent()) {
-                                    return sorting;
+                                if (fixedSymbolsBestCase >= totalMoves * minRate) {
+                                    stack.push(m);
+                                    val sorting = searchForSorting(initialConfiguration, pivots, pivotsCount, newSpi, newPi, stack, minRate, cancelRequested, maxDepth);
+                                    if (sorting.isPresent()) {
+                                        return sorting;
+                                    }
+                                    stack.pop();
                                 }
-                                stack.pop();
                             }
                         }
                     }
