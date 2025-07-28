@@ -111,10 +111,8 @@ public class CommonOperations implements Serializable {
                             if (spi[pi[k]] != pi[k]) {
                                 int a = pi[i], b = pi[j], c = pi[k];
 
-                                int[] m = {a, b, c};
-
-                                val newSpi = times(spi, m[0], m[1], m[2]);
-                                val newPi = applyTranspositionOptimized(pi, m);
+                                val newSpi = times(spi, a, b, c);
+                                val newPi = applyTranspositionOptimized(pi, a, b, c);
 
                                 var fixedSymbolsWithoutPivots = 0;
                                 var movedSymbolsWithoutPivots = 0;
@@ -137,6 +135,7 @@ public class CommonOperations implements Serializable {
                                             log.info("Lowest currentRate: {}", currentRate);
                                             bestRate = currentRate;
                                         }
+                                        int[] m = {a, b, c};
                                         stack.push(m);
                                         return Optional.of(stack);
                                     }
@@ -147,6 +146,7 @@ public class CommonOperations implements Serializable {
                                 val fixedSymbolsBestCase = Math.min(fixedSymbolsWithoutPivots + (movesLeftBestCase * 3), initialConfiguration.getSpi().getNumberOfSymbols() - pivotsCount);
 
                                 if (fixedSymbolsBestCase >= totalMoves * minRate) {
+                                    int[] m = {a, b, c};
                                     stack.push(m);
                                     val sorting = searchForSorting(initialConfiguration, pivots, pivotsCount, newSpi, newPi, stack, minRate, cancelRequested, maxDepth);
                                     if (sorting.isPresent()) {
@@ -176,25 +176,26 @@ public class CommonOperations implements Serializable {
         return result;
     }
 
-    public static int[] applyTranspositionOptimized(final int[] pi, final int[] move) {
-        val a = move[0];
-        val b = move[1];
-        val c = move[2];
-
-        val indexes = new int[3];
-        for (var i = 0; i < pi.length; i++) {
-            if (pi[i] == a) indexes[0] = i;
-            if (pi[i] == b) indexes[1] = i;
-            if (pi[i] == c) indexes[2] = i;
+    public static int[] applyTranspositionOptimized(final int[] pi, final int a, final int b, final int c) {
+        // Find positions of a, b, and c in pi
+        int ia = -1, ib = -1, ic = -1;
+        for (int i = 0; i < pi.length; i++) {
+            if (pi[i] == a) ia = i;
+            else if (pi[i] == b) ib = i;
+            else if (pi[i] == c) ic = i;
         }
 
-        Arrays.sort(indexes);
+        // Sort the positions
+        int i1 = ia, i2 = ib, i3 = ic;
+        if (i1 > i2) { int tmp = i1; i1 = i2; i2 = tmp; }
+        if (i2 > i3) { int tmp = i2; i2 = i3; i3 = tmp; }
+        if (i1 > i2) { int tmp = i1; i1 = i2; i2 = tmp; }
 
-        val result = new int[pi.length];
-        System.arraycopy(pi, 0, result, 0, indexes[0]);
-        System.arraycopy(pi, indexes[1], result, indexes[0], indexes[2] - indexes[1]);
-        System.arraycopy(pi, indexes[0], result, indexes[0] + (indexes[2] - indexes[1]), indexes[1] - indexes[0]);
-        System.arraycopy(pi, indexes[2], result, indexes[2], pi.length - indexes[2]);
+        int[] result = new int[pi.length];
+        System.arraycopy(pi, 0, result, 0, i1);
+        System.arraycopy(pi, i2, result, i1, i3 - i2);
+        System.arraycopy(pi, i1, result, i1 + (i3 - i2), i2 - i1);
+        System.arraycopy(pi, i3, result, i3, pi.length - i3);
 
         return result;
     }
