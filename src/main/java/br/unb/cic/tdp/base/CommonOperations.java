@@ -104,16 +104,16 @@ public class CommonOperations implements Serializable {
             throw new RuntimeException("Thread interrupted, returning empty optional");
         }
 
-        for (var i = 0; i < pi.length - 2; i++) {
+        for (byte i = 0; i < pi.length - 2; i++) {
             if (spi[pi[i]] != pi[i]) {
-                for (var j = i + 1; j < pi.length - 1; j++) {
+                for (byte j = (byte) (i + 1); j < pi.length - 1; j++) {
                     if (spi[pi[j]] != pi[j]) {
-                        for (var k = j + 1; k < pi.length; k++) {
+                        for (byte k = (byte) (j + 1); k < pi.length; k++) {
                             if (spi[pi[k]] != pi[k]) {
                                 final byte a = pi[i], b = pi[j], c = pi[k];
 
                                 val newSpi = times(spi, a, b, c);
-                                val newPi = VectorizedByteTransposition.applyTransposition(pi, a, b, c);
+                                val newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
 
                                 var fixedSymbolsWithoutPivots = 0;
                                 var movedSymbolsWithoutPivots = 0;
@@ -166,14 +166,10 @@ public class CommonOperations implements Serializable {
     }
 
     private static int[] times(final int[] spi, final int a, final int b, final int c) {
-        val result = new int[spi.length];
-        for (var i = 0; i < result.length; i++) {
-            var newIndex = i;
-            if (i == a) newIndex = c;
-            else if (i == b) newIndex = a;
-            else if (i == c) newIndex = b;
-            result[i] = spi[newIndex];
-        }
+        val result = Arrays.copyOf(spi, spi.length);
+        result[a] = result[c];
+        result[c] = result[b];
+        result[b] = spi[a];
         return result;
     }
 
