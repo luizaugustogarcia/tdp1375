@@ -3,6 +3,7 @@ package br.unb.cic.tdp.base;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.ProofStorage;
+import br.unb.cic.tdp.util.VectorizedByteTransposition;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.time.StopWatch;
@@ -31,7 +32,7 @@ public class CommonOperations implements Serializable {
     }
 
     public static void main(String[] args) {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 100; i++) {
             val stopWatch = new StopWatch();
             stopWatch.start();
             System.out.println(searchForSorting(null,
@@ -92,7 +93,7 @@ public class CommonOperations implements Serializable {
             final int[] pivots,
             final int pivotsCount,
             final int[] spi,
-            final int[] pi,
+            final byte[] pi,
             final Stack<int[]> stack,
             final double minRate,
             final AtomicBoolean cancelRequested,
@@ -109,10 +110,10 @@ public class CommonOperations implements Serializable {
                     if (spi[pi[j]] != pi[j]) {
                         for (var k = j + 1; k < pi.length; k++) {
                             if (spi[pi[k]] != pi[k]) {
-                                int a = pi[i], b = pi[j], c = pi[k];
+                                final byte a = pi[i], b = pi[j], c = pi[k];
 
                                 val newSpi = times(spi, a, b, c);
-                                val newPi = applyTranspositionOptimized(pi, a, b, c);
+                                val newPi = VectorizedByteTransposition.applyTransposition(pi, a, b, c);
 
                                 var fixedSymbolsWithoutPivots = 0;
                                 var movedSymbolsWithoutPivots = 0;
@@ -191,7 +192,7 @@ public class CommonOperations implements Serializable {
         if (i2 > i3) { int tmp = i2; i2 = i3; i3 = tmp; }
         if (i1 > i2) { int tmp = i1; i1 = i2; i2 = tmp; }
 
-        int[] result = new int[pi.length];
+        int[] result = pi.clone();
         System.arraycopy(pi, 0, result, 0, i1);
         System.arraycopy(pi, i2, result, i1, i3 - i2);
         System.arraycopy(pi, i1, result, i1 + (i3 - i2), i2 - i1);
@@ -202,9 +203,17 @@ public class CommonOperations implements Serializable {
 
     private static double bestRate = Double.MAX_VALUE;
 
+    public static byte[] toByteArray(int[] input) {
+        byte[] result = new byte[input.length];
+        for (int i = 0; i < input.length; i++) {
+            result[i] = (byte) input[i]; // truncates to lower 8 bits
+        }
+        return result;
+    }
+
     public static Optional<List<Cycle>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate, final Set<Integer> pivots) {
         val spi = configuration.getSpi();
-        val pi = configuration.getPi().getSymbols();
+        val pi = toByteArray(configuration.getPi().getSymbols());
 
         val pivotsArray = new int[configuration.getPi().size()];
         for (int i = 0; i < pivotsArray.length; i++) {
