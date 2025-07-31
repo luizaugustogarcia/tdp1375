@@ -113,7 +113,6 @@ public class CommonOperations implements Serializable {
                                 final byte a = pi[i], b = pi[j], c = pi[k];
 
                                 val newSpi = times(spi, a, b, c);
-                                val newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
 
                                 var fixedSymbolsWithoutPivots = 0;
                                 var movedSymbolsWithoutPivots = 0;
@@ -147,6 +146,7 @@ public class CommonOperations implements Serializable {
                                 val fixedSymbolsBestCase = Math.min(fixedSymbolsWithoutPivots + (movesLeftBestCase * 3), initialConfiguration.getSpi().getNumberOfSymbols() - pivotsCount);
 
                                 if (fixedSymbolsBestCase >= totalMoves * minRate) {
+                                    val newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
                                     int[] m = {a, b, c};
                                     stack.push(m);
                                     val sorting = searchForSorting(initialConfiguration, pivots, pivotsCount, newSpi, newPi, stack, minRate, cancelRequested, maxDepth);
