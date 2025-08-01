@@ -112,13 +112,17 @@ public class CommonOperations implements Serializable {
                             if (spi[pi[k]] != pi[k]) {
                                 final byte a = pi[i], b = pi[j], c = pi[k];
 
-                                val newSpi = times(spi, a, b, c);
+                                int aVal = spi[a];
+                                int bVal = spi[b];
+                                int cVal = spi[c];
+                                // side effect
+                                times(spi, a, b, c, aVal, bVal, cVal);
 
                                 var fixedSymbolsWithoutPivots = 0;
                                 var movedSymbolsWithoutPivots = 0;
-                                for (int l = 0; l < newSpi.length; l++) {
+                                for (int l = 0; l < spi.length; l++) {
                                     if (pivots[l] == 0) {
-                                        if (l == newSpi[l]) {
+                                        if (l == spi[l]) {
                                             fixedSymbolsWithoutPivots++;
                                         } else {
                                             movedSymbolsWithoutPivots++;
@@ -149,12 +153,17 @@ public class CommonOperations implements Serializable {
                                     val newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
                                     int[] m = {a, b, c};
                                     stack.push(m);
-                                    val sorting = searchForSorting(initialConfiguration, pivots, pivotsCount, newSpi, newPi, stack, minRate, cancelRequested, maxDepth);
+                                    val sorting = searchForSorting(initialConfiguration, pivots, pivotsCount, spi, newPi, stack, minRate, cancelRequested, maxDepth);
                                     if (sorting.isPresent()) {
                                         return sorting;
                                     }
                                     stack.pop();
                                 }
+
+                                // undo side effect
+                                spi[a] = aVal;
+                                spi[b] = bVal;
+                                spi[c] = cVal;
                             }
                         }
                     }
@@ -165,12 +174,10 @@ public class CommonOperations implements Serializable {
         return Optional.empty();
     }
 
-    private static int[] times(final int[] spi, final int a, final int b, final int c) {
-        val result = Arrays.copyOf(spi, spi.length);
-        result[a] = result[c];
-        result[c] = result[b];
-        result[b] = spi[a];
-        return result;
+    private static void times(final int[] spi, final int a, final int b, final int c, final int aVal, final int bVal, final int cVal) {
+        spi[a] = cVal;
+        spi[c] = bVal;
+        spi[b] = aVal;
     }
 
     public static int[] applyTranspositionOptimized(final int[] pi, final int a, final int b, final int c) {
