@@ -147,7 +147,7 @@ public class CommonOperations implements Serializable {
 
                                 val movesLeftBestCase = Math.min(maxDepth - newStackSize, Math.ceil(movedSymbolsWithoutPivots / 3.0)); // each move can add up to 3 adjacencies
                                 val totalMoves = newStackSize + movesLeftBestCase;
-                                val fixedSymbolsBestCase = Math.min(fixedSymbolsWithoutPivots + (movesLeftBestCase * 3), initialConfiguration.getSpi().getNumberOfSymbols() - pivotsCount);
+                                val fixedSymbolsBestCase = Math.min(fixedSymbolsWithoutPivots + (movesLeftBestCase * 3), spi.length - pivotsCount);
 
                                 if (fixedSymbolsBestCase >= totalMoves * minRate) {
                                     val newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
