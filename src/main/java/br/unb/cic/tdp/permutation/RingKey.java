@@ -1,21 +1,25 @@
 package br.unb.cic.tdp.permutation;
 
+import lombok.val;
+
 import java.util.Arrays;
 
 public class RingKey {
     private final int[] canon;
 
-    RingKey(int[] a) {
+    RingKey(final int[] a) {
         canon = canonicalRotation(a);
     }
 
-    // Booth’s algorithm – O(n)
     public static int[] canonicalRotation(final int[] a) {
-        int n = a.length;
+        val n = a.length;
         if (n == 0) return a.clone();
-        int i = 0, j = 1, k = 0;
+        var i = 0;
+        var j = 1;
+        var k = 0;
         while (i < n && j < n && k < n) {
-            int ai = a[(i + k) % n], aj = a[(j + k) % n];
+            val ai = a[(i + k) % n];
+            val aj = a[(j + k) % n];
             if (ai == aj) {
                 k++;
                 continue;
@@ -25,14 +29,14 @@ public class RingKey {
             if (i == j) ++j;
             k = 0;
         }
-        int start = Math.min(i, j) % n;
-        int[] out = new int[n];
-        for (int t = 0; t < n; ++t) out[t] = a[(start + t) % n];
+        val start = Math.min(i, j) % n;
+        val out = new int[n];
+        for (var t = 0; t < n; ++t) out[t] = a[(start + t) % n];
         return out;
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         return o instanceof RingKey rk && Arrays.equals(canon, rk.canon);
     }
 

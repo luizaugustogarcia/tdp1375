@@ -3,11 +3,9 @@ package br.unb.cic.tdp.permutation;
 import cern.colt.list.IntArrayList;
 import lombok.Getter;
 import lombok.val;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.mod;
 
@@ -83,10 +81,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
             inverse = Cycle.of(symbolsCopy);
         }
         return inverse;
-    }
-
-    public int getNorm() {
-        return this.size() - 1;
     }
 
     private String defaultStringRepresentation() {
@@ -174,11 +168,6 @@ public class Cycle implements Permutation, Comparable<Cycle> {
     }
 
     @Override
-    public int getNumberOfEvenCycles() {
-        return size() % 2;
-    }
-
-    @Override
     public int compareTo(final Cycle o) {
         return this.defaultStringRepresentation().compareTo(o.defaultStringRepresentation());
     }
@@ -205,16 +194,8 @@ public class Cycle implements Permutation, Comparable<Cycle> {
         return this;
     }
 
-    public boolean isLong() {
-        return this.size() > 3;
-    }
-
     public boolean isTwoCycle() {
         return size() == 2;
-    }
-
-    public List<Integer> getSymbolsAsList() {
-        return Arrays.stream(this.symbols).boxed().collect(Collectors.toList());
     }
 
     public boolean isTrivial() {

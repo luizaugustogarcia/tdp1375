@@ -47,8 +47,9 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                     storage.unlock(canonical);
                 }
             } // else: another thread is already working on this canonical
-        } catch (final Exception e) {
+        } catch (final Throwable e) {
             log.error(e.getMessage());
+            System.exit(1);
         }
     }
 

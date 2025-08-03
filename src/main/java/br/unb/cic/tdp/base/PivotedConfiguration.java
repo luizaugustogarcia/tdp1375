@@ -1,12 +1,14 @@
 package br.unb.cic.tdp.base;
 
-import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -37,7 +39,7 @@ public class PivotedConfiguration {
                 canonical = rotation;
                 canonicalStr = rotationStr;
             }
-            // TODO mirror?
+            // TODO reflection?
         }
         return canonical;
     }
@@ -47,9 +49,7 @@ public class PivotedConfiguration {
         for (int i = 0; i < this.getConfiguration().getPi().size(); i++) {
             val rotation = rotate(i, this.getConfiguration().getSpi(), this.getPivots());
             equivalent.add(rotation);
-            // TODO: it is unclear why reflection does not preserve pivoting under the application of moves
-            //val reflection = mirror(rotation.getConfiguration().getSpi(), rotation.getPivots());
-            //equivalent.add(reflection);
+            // TODO reflection?
         }
         return equivalent;
     }
@@ -70,17 +70,5 @@ public class PivotedConfiguration {
         }
 
         return of(new Configuration(spi), pivots);
-    }
-
-    private PivotedConfiguration mirror(final MulticyclePermutation spi, final Set<Integer> pivots) {
-        val pi = CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()];
-        val gamma = new MulticyclePermutation();
-        for (var i = 0; i < pi.size() / 2; i++) {
-            gamma.add(Cycle.of(pi.get(i), pi.get(pi.size() - 1 - i)));
-        }
-        val delta = gamma;
-        return of(new Configuration(spi.getInverse().conjugateBy(delta)), pivots.stream()
-                .map(delta::image)
-                .collect(Collectors.toCollection(TreeSet::new)));
     }
 }

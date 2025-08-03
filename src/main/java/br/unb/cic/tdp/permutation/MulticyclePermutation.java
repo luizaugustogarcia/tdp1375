@@ -2,13 +2,12 @@ package br.unb.cic.tdp.permutation;
 
 import lombok.Getter;
 import lombok.val;
-import org.apache.commons.lang.NotImplementedException;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
@@ -16,8 +15,6 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
     @Getter
     private final Set<Integer> symbols = new HashSet<>();
-
-    private int numberOfEvenCycles;
 
     public MulticyclePermutation() {
     }
@@ -96,21 +93,12 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
         return this.isEmpty() || (stream().filter((cycle) -> cycle.size() == 1).count() == this.size());
     }
 
-    @Override
-    public int getNumberOfEvenCycles() {
-        return numberOfEvenCycles;
-    }
-
     public int getNumberOfSymbols() {
         return symbols.size();
     }
 
     public int getMaxSymbol() {
         return getSymbols().stream().max(Comparator.comparing(Function.identity())).orElse(-1);
-    }
-
-    public List<Cycle> getNonTrivialCycles() {
-        return this.stream().filter(c -> c.size() > 1).collect(Collectors.toList());
     }
 
     @Override
@@ -150,7 +138,6 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
     @Override
     public boolean add(final Cycle cycle) {
-        numberOfEvenCycles += cycle.size() % 2;
         val symbols = cycle.getSymbols();
         for (int s : symbols) {
             this.symbols.add(s);
@@ -179,7 +166,6 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
     @Override
     public boolean remove(final Object o) {
         val cycle = (Cycle) o;
-        if (cycle.isEven()) numberOfEvenCycles--;
         Arrays.stream(cycle.getSymbols()).forEach(symbols::remove);
         return cycles.remove(o);
     }
@@ -188,7 +174,6 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
     public boolean removeAll(final Collection<?> c) {
         c.forEach(o -> {
             val cycle = (Cycle) o;
-            if (cycle.isEven()) numberOfEvenCycles--;
             Arrays.stream(cycle.getSymbols()).forEach(symbols::remove);
         });
         return cycles.removeAll(c);

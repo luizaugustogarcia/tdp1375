@@ -19,7 +19,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.zip.CRC32;
 
-import static br.unb.cic.tdp.base.CommonOperations.*;
+import static br.unb.cic.tdp.base.CommonOperations.CANONICAL_PI;
+import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toCollection;
 
@@ -60,10 +61,6 @@ public class Configuration {
         this(new MulticyclePermutation(spi));
     }
 
-    public Configuration(final String spi, final String pi) {
-        this(new MulticyclePermutation(spi), Cycle.of(pi));
-    }
-
     public static float[] signature(final Collection<Cycle> spi, final Cycle pi) {
         return signature(spi, pi, cycleIndex(spi, pi));
     }
@@ -100,6 +97,23 @@ public class Configuration {
         }
 
         return signature;
+    }
+
+    public static boolean areSymbolsInCyclicOrder(final Cycle cycle, int... symbols) {
+        val symbolIndexes = cycle.getSymbolIndexes();
+
+        var leap = false;
+        for (int i = 0; i < symbols.length; i++) {
+            if (symbolIndexes[symbols[i]] > symbolIndexes[symbols[(i + 1) % symbols.length]]) {
+                if (!leap) {
+                    leap = true;
+                } else {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     public static Configuration ofSignature(final float[] signature) {
@@ -206,11 +220,9 @@ public class Configuration {
 
     @Override
     public boolean equals(final Object obj) {
-        if (!(obj instanceof Configuration)) {
+        if (!(obj instanceof Configuration other)) {
             return false;
         }
-
-        val other = (Configuration) obj;
 
         if (this.signature.get().content.length != other.signature.get().content.length ||
                 this.spi.size() != other.spi.size()) {
@@ -218,43 +230,6 @@ public class Configuration {
         }
 
         return getCanonical().signature.equals(other.getCanonical().signature);
-    }
-
-    @ToString.Include
-    public Set<Integer> getOpenGates() {
-        return openGates().collect(Collectors.toCollection(TreeSet::new));
-    }
-
-    /* Optimize using isFull approach */
-    public Stream<Integer> openGates() {
-        val n = signature.get().getContent().length;
-
-        return IntStream.range(0, n)
-                .boxed()
-                .flatMap(i -> {
-                    val current = signature.get().getContent()[i];
-                    val next = signature.get().getContent()[(i + 1) % n];
-
-                    if (current == next) {
-                        // open gate from unoriented cycle
-                        return Stream.of(i);
-                    } else {
-                        val currentLabel = Math.floor(current);
-                        val nextLabel = Math.floor(next);
-                        if (currentLabel == nextLabel) {
-                            val orientedCycle = cycleIndex[pi.get(i)];
-                            int currentIndex = (int) Math.round(current * 100F - currentLabel * 100);
-                            int nextIndex = (int) Math.round(next * 100F - nextLabel * 100F);
-                            if (currentIndex % orientedCycle.size() == (nextIndex + 1) % orientedCycle.size()) {
-                                // open gate from oriented cycle
-                                return Stream.of(i);
-                            }
-                        }
-                    }
-
-                    return Stream.empty();
-                })
-                .map(og -> (og + 1) % n);
     }
 
     public static class Signature implements Comparable<Signature> {

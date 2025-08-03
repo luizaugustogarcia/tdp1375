@@ -12,7 +12,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -71,23 +70,6 @@ public class CommonOperations implements Serializable {
         return index;
     }
 
-    public static boolean areSymbolsInCyclicOrder(final Cycle cycle, int... symbols) {
-        val symbolIndexes = cycle.getSymbolIndexes();
-
-        var leap = false;
-        for (int i = 0; i < symbols.length; i++) {
-            if (symbolIndexes[symbols[i]] > symbolIndexes[symbols[(i + 1) % symbols.length]]) {
-                if (!leap) {
-                    leap = true;
-                } else {
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
-
     public static Optional<List<int[]>> searchForSorting(
             final Configuration initialConfiguration,
             final int[] pivots,
@@ -96,14 +78,8 @@ public class CommonOperations implements Serializable {
             final byte[] pi,
             final Stack<int[]> stack,
             final double minRate,
-            final AtomicBoolean cancelRequested,
             final int maxDepth
     ) {
-        if (cancelRequested.get()) {
-            log.info("Search cancelled for " + initialConfiguration.getSpi() + "#" + pivots);
-            throw new RuntimeException("Thread interrupted, returning empty optional");
-        }
-
         for (byte i = 0; i < pi.length - 2; i++) {
             if (spi[pi[i]] != pi[i]) {
                 for (byte j = (byte) (i + 1); j < pi.length - 1; j++) {
@@ -115,8 +91,11 @@ public class CommonOperations implements Serializable {
                                 int aVal = spi[a];
                                 int bVal = spi[b];
                                 int cVal = spi[c];
-                                // side effect
-                                times(spi, a, b, c, aVal, bVal, cVal);
+
+                                // apply move on spi
+                                spi[a] = cVal;
+                                spi[c] = bVal;
+                                spi[b] = aVal;
 
                                 var fixedSymbolsWithoutPivots = 0;
                                 var movedSymbolsWithoutPivots = 0;
@@ -139,8 +118,7 @@ public class CommonOperations implements Serializable {
                                             log.info("Lowest currentRate: {}", currentRate);
                                             bestRate = currentRate;
                                         }
-                                        int[] m = {a, b, c};
-                                        stack.push(m);
+                                        stack.push(new int[]{a, b, c});
                                         return Optional.of(stack);
                                     }
                                 }
@@ -151,9 +129,8 @@ public class CommonOperations implements Serializable {
 
                                 if (fixedSymbolsBestCase >= totalMoves * minRate) {
                                     val newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
-                                    int[] m = {a, b, c};
-                                    stack.push(m);
-                                    val sorting = searchForSorting(initialConfiguration, pivots, pivotsCount, spi, newPi, stack, minRate, cancelRequested, maxDepth);
+                                    stack.push(new int[]{a, b, c});
+                                    val sorting = searchForSorting(initialConfiguration, pivots, pivotsCount, spi, newPi, stack, minRate, maxDepth);
                                     if (sorting.isPresent()) {
                                         return sorting;
                                     }
@@ -172,36 +149,6 @@ public class CommonOperations implements Serializable {
         }
 
         return Optional.empty();
-    }
-
-    private static void times(final int[] spi, final int a, final int b, final int c, final int aVal, final int bVal, final int cVal) {
-        spi[a] = cVal;
-        spi[c] = bVal;
-        spi[b] = aVal;
-    }
-
-    public static int[] applyTranspositionOptimized(final int[] pi, final int a, final int b, final int c) {
-        // Find positions of a, b, and c in pi
-        int ia = -1, ib = -1, ic = -1;
-        for (int i = 0; i < pi.length; i++) {
-            if (pi[i] == a) ia = i;
-            else if (pi[i] == b) ib = i;
-            else if (pi[i] == c) ic = i;
-        }
-
-        // Sort the positions
-        int i1 = ia, i2 = ib, i3 = ic;
-        if (i1 > i2) { int tmp = i1; i1 = i2; i2 = tmp; }
-        if (i2 > i3) { int tmp = i2; i2 = i3; i3 = tmp; }
-        if (i1 > i2) { int tmp = i1; i1 = i2; i2 = tmp; }
-
-        int[] result = pi.clone();
-        System.arraycopy(pi, 0, result, 0, i1);
-        System.arraycopy(pi, i2, result, i1, i3 - i2);
-        System.arraycopy(pi, i1, result, i1 + (i3 - i2), i2 - i1);
-        System.arraycopy(pi, i3, result, i3, pi.length - i3);
-
-        return result;
     }
 
     private static double bestRate = Double.MAX_VALUE;
@@ -225,10 +172,10 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        var sorting = searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 1)
-                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 3))
-                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), 5))
-                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), Integer.MAX_VALUE))
+        var sorting = searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 1)
+                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 3))
+                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 5))
+                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, Integer.MAX_VALUE))
                 .map(moves -> moves.stream().map(Cycle::of).toList());
         if (sorting.isPresent()) {
             return sorting;
@@ -237,7 +184,7 @@ public class CommonOperations implements Serializable {
         if (configuration.isFull()) {
             val sigma = spi.times(configuration.getPi());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
-                sorting = searchForSorting(configuration, new int[configuration.getPi().size()], 0, twoLinesNotation(spi), pi, new Stack<>(), minRate, new AtomicBoolean(), Integer.MAX_VALUE)
+                sorting = searchForSorting(configuration, new int[configuration.getPi().size()], 0, twoLinesNotation(spi), pi, new Stack<>(), minRate, Integer.MAX_VALUE)
                         .map(moves -> moves.stream().map(Cycle::of).toList());
 
                 if (sorting.isEmpty()) {
@@ -250,26 +197,6 @@ public class CommonOperations implements Serializable {
         }
 
         return sorting;
-    }
-
-    public static Optional<List<Cycle>> lookFor2Move(final Configuration configuration, final Set<Integer> pivots) {
-        val pi = configuration.getPi().getSymbols();
-
-        for (var i = 0; i < pi.length - 2; i++) {
-            for (var j = i + 1; j < pi.length - 1; j++) {
-                for (var k = j + 1; k < pi.length; k++) {
-                    int a = pi[i], b = pi[j], c = pi[k];
-
-                    val move = Cycle.of(a, b, c);
-                    val spi = configuration.getSpi().times(move.getInverse());
-                    if (spi.stream().filter(cycle -> cycle.size() == 1 && !pivots.contains(cycle.get(0))).count() == 2) {
-                        return Optional.of(List.of(move));
-                    }
-                }
-            }
-        }
-
-        return Optional.empty();
     }
 
     public static int[] twoLinesNotation(final MulticyclePermutation spi) {

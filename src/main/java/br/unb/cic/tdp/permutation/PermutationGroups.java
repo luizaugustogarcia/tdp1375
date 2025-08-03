@@ -2,22 +2,12 @@ package br.unb.cic.tdp.permutation;
 
 import cc.redberry.core.utils.BitArray;
 import cern.colt.list.IntArrayList;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.val;
 
 import java.io.Serializable;
 import java.util.Arrays;
 
 public class PermutationGroups implements Serializable {
-
-    private static final Cache<MultiplicationKey, MulticyclePermutation> CACHE = Caffeine.newBuilder()
-            .maximumSize(Integer.parseInt(System.getProperty("permutation.multiplication.cache.size", "1000000")))
-            .build();
-
-    public static MulticyclePermutation computeProduct(final Permutation... permutations) {
-        return computeProduct(true, permutations);
-    }
 
     public static MulticyclePermutation computeProduct(final boolean include1Cycle, final Permutation... p) {
         var n = 0;
@@ -34,12 +24,6 @@ public class PermutationGroups implements Serializable {
     }
 
     public static MulticyclePermutation computeProduct(final boolean include1Cycle, final int n, final Permutation... permutations) {
-//        val key = new MultiplicationKey(include1Cycle, n, permutations);
-//        val cached = CACHE.getIfPresent(key);
-//        if (cached != null) {
-//            return cached;
-//        }
-
         val functions = new int[permutations.length][n];
 
         // initializing
@@ -97,9 +81,7 @@ public class PermutationGroups implements Serializable {
             result.add(Cycle.of(Arrays.copyOfRange(cycle.elements(), 0, cycle.size())));
             cycle.clear();
         }
-
-        //CACHE.put(key, result);
-
+        
         return result;
     }
 }

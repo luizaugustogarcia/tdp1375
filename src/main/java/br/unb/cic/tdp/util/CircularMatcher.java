@@ -6,10 +6,10 @@ import lombok.val;
 public final class CircularMatcher {
 
     public static boolean isUnorderedSubsequence(final int[] s, final Cycle pi) {
-        outer: for (int i = 0; i < pi.size(); i++) {
+        outer: for (var i = 0; i < pi.size(); i++) {
             val first = pi.get(i);
             if (contains(s, first)) {
-                for (int j = 0; j < s.length; j++) {
+                for (var j = 0; j < s.length; j++) {
                     if (!contains(s, pi.pow(first, j))) {
                         continue outer;
                     }
@@ -21,7 +21,7 @@ public final class CircularMatcher {
     }
 
     private static boolean contains(final int[] array, final int s) {
-        for (int i = 0; i < array.length; i++) {
+        for (var i = 0; i < array.length; i++) {
             if (array[i] == s) {
                 return true;
             }

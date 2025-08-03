@@ -1,22 +1,21 @@
 package br.unb.cic.tdp.util;
 
+import lombok.val;
+
 import java.util.List;
 
 public final class ArrayUtils {
 
     public static int[] flatten(final List<int[]> list) {
-        // First, compute the total size
-        int totalLength = 0;
+        var totalLength = 0;
         for (final int[] arr : list) {
             totalLength += arr.length;
         }
 
-        // Allocate result array
-        final int[] result = new int[totalLength];
-        int destPos = 0;
+        val result = new int[totalLength];
+        var destPos = 0;
 
-        // Copy each sub-array
-        for (final int[] arr : list) {
+        for (val arr : list) {
             System.arraycopy(arr, 0, result, destPos, arr.length);
             destPos += arr.length;
         }

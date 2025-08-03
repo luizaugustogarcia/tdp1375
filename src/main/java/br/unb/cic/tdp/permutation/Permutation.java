@@ -6,8 +6,6 @@ public interface Permutation extends Serializable {
 
     Permutation getInverse();
 
-    int getNumberOfEvenCycles();
-
     int size();
 
     Cycle asNCycle();

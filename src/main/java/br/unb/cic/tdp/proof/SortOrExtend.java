@@ -31,7 +31,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
     protected static int n = 0;
     private static final AtomicLong enqueued = new AtomicLong();
     private static final Timer timer = new Timer();
-    private static final ThreadLocal<Boolean> EXTENDING_CONTAINS_TWO_CYCLES = ThreadLocal.withInitial(() -> false);
+    private static final ThreadLocal<Boolean> SHOULD_NOT_EXTEND_BY_ADDING_TWO_CYCLES = ThreadLocal.withInitial(() -> false);
 
     static {
         timer.schedule(new TimerTask() {
@@ -47,10 +47,8 @@ public class SortOrExtend extends AbstractSortOrExtend {
             final PivotedConfiguration parent,
             final PivotedConfiguration pivotedConfiguration,
             final ProofStorage storage,
-            final double minRate
-    ) {
+            final double minRate) {
         super(parent, pivotedConfiguration, storage, minRate);
-        enqueued.incrementAndGet();
     }
 
     // Model: G-grow one cycle, A-add a 2-cycle, M-merge two cycles
@@ -67,28 +65,28 @@ public class SortOrExtend extends AbstractSortOrExtend {
     // optimize by caching isValid results
 
     public Stream<Pair<String, Configuration>> type1Extensions(final Configuration configuration) {
-        if (EXTENDING_CONTAINS_TWO_CYCLES.get()) {
+        if (SHOULD_NOT_EXTEND_BY_ADDING_TWO_CYCLES.get()) {
             return Stream.empty();
         }
         return chain(this::add2Cycle, this::add2Cycle, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type2Extensions(final Configuration configuration) {
-        if (EXTENDING_CONTAINS_TWO_CYCLES.get()) {
+        if (SHOULD_NOT_EXTEND_BY_ADDING_TWO_CYCLES.get()) {
             return Stream.empty();
         }
         return chain(this::add2Cycle, this::growOneCycle, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type3Extensions(final Configuration configuration) {
-        if (EXTENDING_CONTAINS_TWO_CYCLES.get()) {
+        if (SHOULD_NOT_EXTEND_BY_ADDING_TWO_CYCLES.get()) {
             return Stream.empty();
         }
         return chain(this::add2Cycle, this::mergeTwoCycles, configuration);
     }
 
     public Stream<Pair<String, Configuration>> type4Extensions(final Configuration configuration) {
-        if (EXTENDING_CONTAINS_TWO_CYCLES.get()) {
+        if (SHOULD_NOT_EXTEND_BY_ADDING_TWO_CYCLES.get()) {
             return Stream.empty();
         }
         return chain(this::growOneCycle, this::add2Cycle, configuration);
@@ -103,7 +101,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
     }
 
     public Stream<Pair<String, Configuration>> type7Extensions(final Configuration configuration) {
-        if (EXTENDING_CONTAINS_TWO_CYCLES.get()) {
+        if (SHOULD_NOT_EXTEND_BY_ADDING_TWO_CYCLES.get()) {
             return Stream.empty();
         }
         return chain(this::mergeTwoCycles, this::add2Cycle, configuration);
@@ -121,7 +119,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
         val twoCycles = configuration.getSpi().stream()
                 .filter(Cycle::isTwoCycle)
                 .toList();
-        if (EXTENDING_CONTAINS_TWO_CYCLES.get() && !twoCycles.isEmpty()) {
+        if (SHOULD_NOT_EXTEND_BY_ADDING_TWO_CYCLES.get() && !twoCycles.isEmpty()) {
             return twoCycles.stream().flatMap(c1 -> configuration.getSpi().stream()
                     .flatMap(c2 -> {
                         if (c1 == c2) {
@@ -152,7 +150,8 @@ public class SortOrExtend extends AbstractSortOrExtend {
         for (val composition : weakCompositions(1, n + 1)) {
             val newPi = Cycle.of(insertSymbols(configuration.getPi().getSymbols(), composition, new int[]{n + 1}));
 
-            val spi = EXTENDING_CONTAINS_TWO_CYCLES.get() ? configuration.getSpi().stream().filter(Cycle::isTwoCycle).toList() : configuration.getSpi();
+            // TODO: why this test?
+            val spi = SHOULD_NOT_EXTEND_BY_ADDING_TWO_CYCLES.get() ? configuration.getSpi().stream().filter(Cycle::isTwoCycle).toList() : configuration.getSpi();
             for (val cycle : spi) {
                 for (val comp : weakCompositions(1, cycle.size())) {
                     var newSpi = new MulticyclePermutation(configuration.getSpi());
@@ -195,10 +194,10 @@ public class SortOrExtend extends AbstractSortOrExtend {
                 .filter(pair -> isValid(configuration, pair.getRight()));
     }
 
-    public Stream<Configuration> allExtensions(final Configuration configuration) {
+    public List<Configuration> allExtensions(final Configuration configuration) {
         try {
             if (configuration.getSpi().stream().anyMatch(Cycle::isTwoCycle)) {
-                EXTENDING_CONTAINS_TWO_CYCLES.set(true);
+                SHOULD_NOT_EXTEND_BY_ADDING_TWO_CYCLES.set(true);
             }
 
             return concatStreams(
@@ -211,9 +210,9 @@ public class SortOrExtend extends AbstractSortOrExtend {
                     type7Extensions(configuration).map(Pair::getRight),
                     type8Extensions(configuration).map(Pair::getRight),
                     type9Extensions(configuration).map(Pair::getRight)
-            );
+            ).toList();
         } finally {
-            EXTENDING_CONTAINS_TWO_CYCLES.set(false);
+            SHOULD_NOT_EXTEND_BY_ADDING_TWO_CYCLES.set(false);
         }
     }
 
@@ -224,14 +223,18 @@ public class SortOrExtend extends AbstractSortOrExtend {
     }
 
     protected boolean isValid(final Configuration configuration, final Configuration extension) {
-        return (configuration.getSpi().stream().noneMatch(Cycle::isTwoCycle) || extension.getSpi().stream().noneMatch(Cycle::isTwoCycle)) &&
-                extension.isFull() &&
+        val isValid = extension.isFull() &&
                 extension.getSpi().stream().filter(Cycle::isTwoCycle).count() <= 2 &&
                 onlyOneComponent(extension);
+        return isValid;
     }
 
-    private static boolean onlyOneComponent(final Configuration extension) {
-        return extension.getPi().size() < 5 || (noSingleOriented3CycleComponent(extension) && noIntersecting2CyclesComponent(extension));
+    protected static boolean onlyOneComponent(final Configuration extension) {
+        return noTrivialComponent(extension) && (extension.getPi().size() < 5 || (noSingleOriented3CycleComponent(extension) && noIntersecting2CyclesComponent(extension)));
+    }
+
+    private static boolean noTrivialComponent(final Configuration extension) {
+        return extension.getSpi().stream().noneMatch(Cycle::isTrivial);
     }
 
     private static boolean noIntersecting2CyclesComponent(final Configuration extension) {
@@ -267,6 +270,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
         }
 
         allExtensions(pivotedConfiguration.getConfiguration())
+                .stream()
                 .map(Configuration::getSignature)
                 .distinct() // de-duplicate extensions
                 .map(s -> Configuration.ofSignature(s.getContent())) // canonical computation rely on this instantiation from signature
