@@ -49,6 +49,7 @@ public class SortOrExtend extends AbstractSortOrExtend {
             final ProofStorage storage,
             final double minRate) {
         super(parent, pivotedConfiguration, storage, minRate);
+        enqueued.incrementAndGet();
     }
 
     // Model: G-grow one cycle, A-add a 2-cycle, M-merge two cycles
