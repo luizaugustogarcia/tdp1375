@@ -31,8 +31,6 @@ public class DerbyProofStorage implements ProofStorage {
 
     private final String dbPath;
 
-    private static final Backup backup = new Backup("C:\\Users\\laugu\\Temp\\proof - Copy", "");
-
     @SneakyThrows
     public DerbyProofStorage(final String dbPath, final String tablePrefix) {
         this.tablePrefix = tablePrefix;
@@ -132,10 +130,6 @@ public class DerbyProofStorage implements ProofStorage {
     @SneakyThrows
     @Override
     public boolean markedNoSorting(final PivotedConfiguration pivotedConfiguration) {
-        val backup = DerbyProofStorage.backup.markedNoSorting(pivotedConfiguration);
-        if (backup)
-            return backup;
-
         return getQueryRunner().query(
                 "SELECT 1 FROM %sno_sorting WHERE config = ?".formatted(tablePrefix),
                 new ScalarHandler<>(),
@@ -157,10 +151,6 @@ public class DerbyProofStorage implements ProofStorage {
     @SneakyThrows
     @Override
     public Optional<List<Cycle>> findSorting(final PivotedConfiguration pivotedConfiguration) {
-        val backup = DerbyProofStorage.backup.findSorting(pivotedConfiguration);
-        if (backup.isPresent())
-            return backup;
-
         return findSorting("SELECT * FROM %ssorting WHERE config = ?".formatted(tablePrefix), getId(pivotedConfiguration));
     }
 

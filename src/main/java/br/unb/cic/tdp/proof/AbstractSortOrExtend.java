@@ -41,6 +41,8 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                         } else {
                             storage.markNoSorting(canonical, parent);
                         }
+                    } else {
+                        storage.markNoSorting(canonical, parent);
                     }
                     extend(this.pivotedConfiguration);
                 } finally {
