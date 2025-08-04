@@ -1,12 +1,8 @@
 package br.unb.cic.tdp.util;
 
-import br.unb.cic.tdp.base.CommonOperations;
 import jdk.incubator.vector.ByteVector;
 import jdk.incubator.vector.VectorSpecies;
 import lombok.val;
-import org.apache.commons.lang3.time.StopWatch;
-
-import java.util.concurrent.TimeUnit;
 
 public class VectorizedByteTransposition {
 
