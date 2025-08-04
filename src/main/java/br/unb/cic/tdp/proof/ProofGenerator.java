@@ -17,8 +17,10 @@ public class ProofGenerator {
         val minRate = Double.parseDouble(args[1]);
         log.info("Min rate: {}", minRate);
 
+        log.info("Generating extensions containing 2-cycles...");
         TwoCycles.generate(outputDir, minRate);
-        //Extensions.generate(outputDir, minRate);
+        log.info("Generating regular extensions...");
+        Extensions.generate(outputDir, minRate);
 
         System.exit(0);
     }
