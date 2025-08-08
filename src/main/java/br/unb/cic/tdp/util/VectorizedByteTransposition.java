@@ -1,12 +1,9 @@
 package br.unb.cic.tdp.util;
 
 import jdk.incubator.vector.ByteVector;
-import jdk.incubator.vector.VectorSpecies;
 import lombok.val;
 
 public class VectorizedByteTransposition {
-
-    private static final VectorSpecies<Byte> SPECIES = ByteVector.SPECIES_128;
 
     public static byte[] applyTransposition(final byte[] pi, final byte i, final byte j, final byte k) {
         val clone = pi.clone();  // Snapshot to allow safe overwrite
@@ -22,12 +19,20 @@ public class VectorizedByteTransposition {
 
     private static void vectorCopy(final byte[] src, final int srcPos, final byte[] dst, final int dstPos, final int length) {
         var i = 0;
-        val upperBound = SPECIES.loopBound(length);
+
+        var species = ByteVector.SPECIES_64;
+
+        var upperBound = ByteVector.SPECIES_128.loopBound(length);
+        if (upperBound > 0) {
+            species = ByteVector.SPECIES_128;
+        } else {
+            upperBound = ByteVector.SPECIES_64.loopBound(length);
+        }
 
         while (i < upperBound) {
-            val v = ByteVector.fromArray(SPECIES, src, srcPos + i);
+            val v = ByteVector.fromArray(species, src, srcPos + i);
             v.intoArray(dst, dstPos + i);
-            i += SPECIES.length();
+            i += species.length();
         }
         for (; i < length; i++) {
             dst[dstPos + i] = src[srcPos + i];
