@@ -1,6 +1,5 @@
 package br.unb.cic.tdp.util;
 
-import jdk.incubator.vector.ByteVector;
 import lombok.val;
 
 public class VectorizedByteTransposition {
@@ -17,27 +16,60 @@ public class VectorizedByteTransposition {
         return clone;
     }
 
-    private static void vectorCopy(final byte[] src, final int srcPos, final byte[] dst, final int dstPos, final int length) {
-        var i = 0;
+    public static void vectorCopy(final byte[] src, final int srcPos,
+                                  final byte[] dst, final int dstPos,
+                                  final int length) {
+        if (length <= 0) return;
 
-        var species = ByteVector.SPECIES_64;
+        // One-shot bounds checks so the JIT can hoist them
+        java.util.Objects.checkFromIndexSize(srcPos, length, src.length);
+        java.util.Objects.checkFromIndexSize(dstPos, length, dst.length);
 
-        var upperBound = ByteVector.SPECIES_128.loopBound(length);
-        if (upperBound > 0) {
-            species = ByteVector.SPECIES_128;
-        } else {
-            upperBound = ByteVector.SPECIES_64.loopBound(length);
+        // Tunable threshold: sized to cover your "≈20, sometimes a bit more" case
+        // Raise/lower after JMH: 24–40 are typical crossover points.
+        final int TINY_MAX = 32;
+        if (length >= TINY_MAX) {
+            System.arraycopy(src, srcPos, dst, dstPos, length);
+            return;
         }
 
-        while (i < upperBound) {
-            val v = ByteVector.fromArray(species, src, srcPos + i);
-            v.intoArray(dst, dstPos + i);
-            i += species.length();
+        int s = srcPos, d = dstPos, n = length;
+
+        // Copy 8, then 4, then 2, then 1 — minimal branches for n ≤ 31
+        while (n >= 8) {
+            dst[d] = src[s];
+            dst[d + 1] = src[s + 1];
+            dst[d + 2] = src[s + 2];
+            dst[d + 3] = src[s + 3];
+            dst[d + 4] = src[s + 4];
+            dst[d + 5] = src[s + 5];
+            dst[d + 6] = src[s + 6];
+            dst[d + 7] = src[s + 7];
+            d += 8;
+            s += 8;
+            n -= 8;
         }
-        for (; i < length; i++) {
-            dst[dstPos + i] = src[srcPos + i];
+        if (n >= 4) {
+            dst[d] = src[s];
+            dst[d + 1] = src[s + 1];
+            dst[d + 2] = src[s + 2];
+            dst[d + 3] = src[s + 3];
+            d += 4;
+            s += 4;
+            n -= 4;
+        }
+        if (n >= 2) {
+            dst[d] = src[s];
+            dst[d + 1] = src[s + 1];
+            d += 2;
+            s += 2;
+            n -= 2;
+        }
+        if (n == 1) {
+            dst[d] = src[s];
         }
     }
+
 
     public static byte[] toByteArray(int[] input) {
         byte[] result = new byte[input.length];

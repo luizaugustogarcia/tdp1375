@@ -71,7 +71,6 @@ public class CommonOperations implements Serializable {
     }
 
     public static Optional<List<int[]>> searchForSorting(
-            final Configuration initialConfiguration,
             final int[] pivots,
             final int pivotsCount,
             final int[] spi,
@@ -130,7 +129,7 @@ public class CommonOperations implements Serializable {
                                 if (fixedSymbolsBestCase >= totalMoves * minRate) {
                                     val newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
                                     stack.push(new int[]{a, b, c});
-                                    val sorting = searchForSorting(initialConfiguration, pivots, pivotsCount, spi, newPi, stack, minRate, maxDepth);
+                                    val sorting = searchForSorting(pivots, pivotsCount, spi, newPi, stack, minRate, maxDepth);
                                     if (sorting.isPresent()) {
                                         return sorting;
                                     }
@@ -172,10 +171,10 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        var sorting = searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 1)
-                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 3))
-                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 5))
-                .or(() -> searchForSorting(configuration, pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, Integer.MAX_VALUE))
+        var sorting = searchForSorting(pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 1)
+                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 3))
+                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 5))
+                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, Integer.MAX_VALUE))
                 .map(moves -> moves.stream().map(Cycle::of).toList());
         if (sorting.isPresent()) {
             return sorting;
@@ -184,7 +183,7 @@ public class CommonOperations implements Serializable {
         if (configuration.isFull()) {
             val sigma = spi.times(configuration.getPi());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
-                sorting = searchForSorting(configuration, new int[configuration.getPi().size()], 0, twoLinesNotation(spi), pi, new Stack<>(), minRate, Integer.MAX_VALUE)
+                sorting = searchForSorting(new int[configuration.getPi().size()], 0, twoLinesNotation(spi), pi, new Stack<>(), minRate, Integer.MAX_VALUE)
                         .map(moves -> moves.stream().map(Cycle::of).toList());
 
                 if (sorting.isEmpty()) {
