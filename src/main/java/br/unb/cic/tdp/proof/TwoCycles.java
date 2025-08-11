@@ -4,14 +4,15 @@ import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.base.PivotedConfiguration;
 import br.unb.cic.tdp.permutation.Cycle;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.util.List;
-import java.util.Optional;
-import java.util.TreeSet;
+import java.time.Instant;
+import java.util.*;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.rightMostSymbol;
@@ -33,13 +34,32 @@ public class TwoCycles {
         }
     }
 
+    @Slf4j
     private static class TwoCyclesSortOrExtend extends SortOrExtend {
+
+        protected static int n = 0;
+        private static final AtomicLong enqueued = new AtomicLong();
+        private static final Timer timer = new Timer();
+
+        static {
+            timer.schedule(new TimerTask() {
+
+                @Override
+                public void run() {
+                    if (enqueued.get() == 0) {
+                        return;
+                    }
+                    log.info("{}, max n: {}, queue size: {}", Instant.now(), n, enqueued.get());
+                }
+            }, 60_000, 60_000);
+        }
 
         public TwoCyclesSortOrExtend(final PivotedConfiguration parent,
                                      final PivotedConfiguration pivotedConfiguration,
                                      final ProofStorage storage,
                                      final double minRate) {
             super(parent, pivotedConfiguration, storage, minRate);
+            enqueued.incrementAndGet();
         }
 
         protected Optional<List<Cycle>> searchForSorting(final PivotedConfiguration pivotedConfiguration) {
@@ -74,6 +94,12 @@ public class TwoCycles {
 
         @Override
         protected void extend(final PivotedConfiguration pivotedConfiguration) {
+            val maxSymbol = pivotedConfiguration.getConfiguration().getPi().getMaxSymbol();
+
+            if (maxSymbol > n) {
+                n = maxSymbol;
+            }
+
             allExtensions(pivotedConfiguration.getConfiguration())
                     .stream()
                     .map(Configuration::getSignature)
@@ -91,6 +117,11 @@ public class TwoCycles {
         @Override
         protected boolean isValid(final Configuration configuration, final Configuration extension) {
             return extension.isFull() && onlyOneComponent(extension);
+        }
+
+        protected void compute() {
+            enqueued.decrementAndGet();
+            super.compute();
         }
     }
 }

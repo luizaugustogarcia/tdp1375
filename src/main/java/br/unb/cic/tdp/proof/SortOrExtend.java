@@ -38,6 +38,9 @@ public class SortOrExtend extends AbstractSortOrExtend {
 
             @Override
             public void run() {
+                if (n == 0) {
+                    return;
+                }
                 log.info("{}, max n: {}, queue size: {}", Instant.now(), n, enqueued.get());
             }
         }, 60_000, 60_000);
