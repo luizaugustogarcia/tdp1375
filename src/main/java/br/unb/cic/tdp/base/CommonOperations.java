@@ -6,6 +6,7 @@ import br.unb.cic.tdp.proof.ProofStorage;
 import br.unb.cic.tdp.util.VectorizedByteTransposition;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -39,6 +40,61 @@ public class CommonOperations implements Serializable {
                     1.6, Set.of(10, 11, 12, 13, 14)));
             stopWatch.stop();
             System.out.println("Time taken: " + stopWatch.getTime(TimeUnit.MILLISECONDS) + " ms");
+        }
+    }
+
+    private static void verify_ijk(List<int[]> sorting, double rate, Configuration configuration, Set<Integer> pivots) {
+        var pi = toByteArray(configuration.getPi().getSymbols());
+        var spi = configuration.getSpi();
+
+        log.info("Pi0: {}", pi);
+        log.info("Spi0: {}\n", Arrays.toString(twoLinesNotation(spi)));
+
+        for (val m : sorting) {
+            byte a = pi[m[0]];
+            byte b = pi[m[1]];
+            byte c = pi[m[2]];
+            spi = spi.times(Cycle.of(a, b, c).getInverse());
+            log.info("Spi: {}", Arrays.toString(twoLinesNotation(spi)));
+            // print pi and spi
+            pi = VectorizedByteTransposition.applyTransposition(pi, (byte) m[0], (byte) m[1], (byte) m[2]);
+            log.info("Pi: {}", pi);
+            log.info("i,j,k: {}", Arrays.toString(m));
+            log.info("move: {}", Cycle.of(a, b, c));
+            System.out.println();
+        }
+        val fixedNonPivot = spi.stream()
+                .filter(Cycle::isTrivial)
+                .map(c -> c.getSymbols()[0])
+                .filter(s -> !pivots.contains(s))
+                .count();
+
+        if ((fixedNonPivot / (double) sorting.size()) < rate) {
+            throw new RuntimeException("Sorting does not meet the rate requirement: " + rate);
+        }
+    }
+
+    private static void verify(List<Cycle> sorting, double rate, Configuration configuration, Set<Integer> pivots) {
+        var pi = toByteArray(configuration.getPi().getSymbols());
+        var spi = configuration.getSpi();
+        for (val m : sorting) {
+            pi = VectorizedByteTransposition.applyTransposition(pi, (byte) ArrayUtils.indexOf(pi, (byte) m.get(0)),
+                    (byte) ArrayUtils.indexOf(pi, (byte) m.get(1)),
+                    (byte) ArrayUtils.indexOf(pi, (byte) m.get(2)));
+            spi = spi.times(m.getInverse());
+            // print pi and spi
+            log.info("Pi: {}", pi);
+            log.info("Spi: {}", Arrays.toString(twoLinesNotation(spi)));
+            System.out.println();
+        }
+        val fixedNonPivot = spi.stream()
+                .filter(Cycle::isTrivial)
+                .map(c -> c.getSymbols()[0])
+                .filter(s -> !pivots.contains(s))
+                .count();
+
+        if ((fixedNonPivot / (double) sorting.size()) < rate) {
+            throw new RuntimeException("Sorting does not meet the rate requirement: " + rate);
         }
     }
 
@@ -79,69 +135,94 @@ public class CommonOperations implements Serializable {
             final double minRate,
             final int maxDepth
     ) {
+        final int n = spi.length;
+        final int nonPivot = n - pivotsCount;
+        final int newStackSize = stack.size() + 1;  // depth + 1 for this candidate layer
+
+        // Build masks and baseline fixed count ONCE (O(n))
+        int npMask = 0;         // 1 where NOT a pivot
+        int fixedAllMask = 0;   // 1 where spi[l] == l (regardless of pivot)
+        int fixedNPmask = 0;    // 1 where NOT pivot AND spi[l] == l
+        for (int l = 0; l < n; ++l) {
+            final boolean np = (pivots[l] == 0);
+            final boolean fix = (spi[l] == l);
+            if (np) npMask |= (1 << l);
+            if (fix) fixedAllMask |= (1 << l);
+            if (np && fix) fixedNPmask |= (1 << l);
+        }
+        final int fixed0 = Integer.bitCount(fixedNPmask);
+
+// Optional: precompute the RHS factor to avoid redo in the loop
+        final double needEarly = minRate * newStackSize;
+
         for (byte i = 0; i < pi.length - 2; i++) {
-            if (spi[pi[i]] != pi[i]) {
-                for (byte j = (byte) (i + 1); j < pi.length - 1; j++) {
-                    if (spi[pi[j]] != pi[j]) {
-                        for (byte k = (byte) (j + 1); k < pi.length; k++) {
-                            if (spi[pi[k]] != pi[k]) {
-                                final byte a = pi[i], b = pi[j], c = pi[k];
+            final int a = pi[i] & 0xFF; // widen to int index
+            if (((fixedAllMask >>> a) & 1) != 0) continue; // was: if (spi[pi[i]] != pi[i]) ...
 
-                                int aVal = spi[a];
-                                int bVal = spi[b];
-                                int cVal = spi[c];
+            for (byte j = (byte) (i + 1); j < pi.length - 1; j++) {
+                final int b = pi[j] & 0xFF;
+                if (((fixedAllMask >>> b) & 1) != 0) continue;
 
-                                // apply move on spi
-                                spi[a] = cVal;
-                                spi[c] = bVal;
-                                spi[b] = aVal;
+                for (byte k = (byte) (j + 1); k < pi.length; k++) {
+                    final int c = pi[k] & 0xFF;
+                    if (((fixedAllMask >>> c) & 1) != 0) continue;
 
-                                var fixedSymbolsWithoutPivots = 0;
-                                var movedSymbolsWithoutPivots = 0;
-                                for (int l = 0; l < spi.length; l++) {
-                                    if (pivots[l] == 0) {
-                                        if (l == spi[l]) {
-                                            fixedSymbolsWithoutPivots++;
-                                        } else {
-                                            movedSymbolsWithoutPivots++;
-                                        }
-                                    }
-                                }
+                    // Values currently at those symbols
+                    final int av = spi[a];
+                    final int bv = spi[b];
+                    final int cv = spi[c];
 
-                                val newStackSize = stack.size() + 1;
+                    // PRE fixed contribution among {a,b,c} over NON-pivots
+                    int pre = 0;
+                    if (((npMask >>> a) & 1) != 0 && av == a) pre++;
+                    if (((npMask >>> b) & 1) != 0 && bv == b) pre++;
+                    if (((npMask >>> c) & 1) != 0 && cv == c) pre++;
 
-                                val currentRate = (fixedSymbolsWithoutPivots) / (double) newStackSize;
-                                if (fixedSymbolsWithoutPivots > 0) {
-                                    if (currentRate >= minRate) {
-                                        if (currentRate < bestRate) {
-                                            log.info("Lowest currentRate: {}", currentRate);
-                                            bestRate = currentRate;
-                                        }
-                                        stack.push(new int[]{a, b, c});
-                                        return Optional.of(stack);
-                                    }
-                                }
+                    // POST after 3-cycle (a b c): spi[a]=cv, spi[b]=av, spi[c]=bv
+                    int post = 0;
+                    if (((npMask >>> a) & 1) != 0 && cv == a) post++;
+                    if (((npMask >>> b) & 1) != 0 && av == b) post++;
+                    if (((npMask >>> c) & 1) != 0 && bv == c) post++;
 
-                                val movesLeftBestCase = Math.min(maxDepth - newStackSize, Math.ceil(movedSymbolsWithoutPivots / 3.0)); // each move can add up to 3 adjacencies
-                                val totalMoves = newStackSize + movesLeftBestCase;
-                                val fixedSymbolsBestCase = Math.min(fixedSymbolsWithoutPivots + (movesLeftBestCase * 3), spi.length - pivotsCount);
+                    final int fixed = fixed0 + (post - pre);
+                    final int moved = nonPivot - fixed;
 
-                                if (fixedSymbolsBestCase >= totalMoves * minRate) {
-                                    val newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
-                                    stack.push(new int[]{a, b, c});
-                                    val sorting = searchForSorting(pivots, pivotsCount, spi, newPi, stack, minRate, maxDepth);
-                                    if (sorting.isPresent()) {
-                                        return sorting;
-                                    }
-                                    stack.pop();
-                                }
-
-                                // undo side effect
-                                spi[a] = aVal;
-                                spi[b] = bVal;
-                                spi[c] = cVal;
-                            }
+                    // Early-solution check: avoid division
+                    if (fixed > 0 && fixed >= needEarly) {
+                        final double currentRate = fixed / (double) newStackSize;
+                        if (currentRate < bestRate) {
+                            log.info("Lowest currentRate: {}", currentRate);
+                            bestRate = currentRate;
                         }
+                        stack.push(new int[]{a, b, c});
+                        return Optional.of(stack);
+                    }
+
+                    // Bound: max remaining moves each adds up to 3 fixed non-pivots
+                    final int movesLeftBestCase = Math.min(maxDepth - newStackSize, (moved + 2) / 3);
+                    final int totalMoves = newStackSize + movesLeftBestCase;
+                    final int fixedBestCase = Math.min(fixed + 3 * movesLeftBestCase, nonPivot);
+
+                    if (fixedBestCase >= (int) Math.ceil(minRate * totalMoves)) {
+                        // Proceed: actually apply the transposition only now
+                        // mutate spi in-place for recursion, and undo on backtrack
+                        // Save originals (we already have av,bv,cv)
+                        spi[a] = cv;
+                        spi[b] = av;
+                        spi[c] = bv;
+
+                        final byte[] newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
+                        stack.push(new int[]{a, b, c});
+                        final var sorting = searchForSorting(pivots, pivotsCount, spi, newPi, stack, minRate, maxDepth);
+                        if (sorting.isPresent()) {
+                            return sorting;
+                        }
+                        stack.pop();
+
+                        // Undo side effect
+                        spi[a] = av;
+                        spi[b] = bv;
+                        spi[c] = cv;
                     }
                 }
             }
@@ -171,10 +252,11 @@ public class CommonOperations implements Serializable {
             }
         }
 
-        var sorting = searchForSorting(pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 1)
-                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 3))
-                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, 5))
-                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation(spi), pi, new Stack<>(), minRate, Integer.MAX_VALUE))
+        int[] twoLinesNotation = twoLinesNotation(spi);
+        var sorting = searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 1)
+                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 3))
+                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 5))
+                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, Integer.MAX_VALUE))
                 .map(moves -> moves.stream().map(Cycle::of).toList());
         if (sorting.isPresent()) {
             return sorting;
@@ -183,7 +265,7 @@ public class CommonOperations implements Serializable {
         if (configuration.isFull()) {
             val sigma = spi.times(configuration.getPi());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
-                sorting = searchForSorting(new int[configuration.getPi().size()], 0, twoLinesNotation(spi), pi, new Stack<>(), minRate, Integer.MAX_VALUE)
+                sorting = searchForSorting(new int[configuration.getPi().size()], 0, twoLinesNotation, pi, new Stack<>(), minRate, Integer.MAX_VALUE)
                         .map(moves -> moves.stream().map(Cycle::of).toList());
 
                 if (sorting.isEmpty()) {
