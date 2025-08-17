@@ -4,9 +4,6 @@ import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.ProofStorage;
 import br.unb.cic.tdp.util.VectorizedByteTransposition;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
@@ -15,7 +12,6 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.Serializable;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -35,11 +31,6 @@ public class CommonOperations implements Serializable {
         }
     }
 
-
-    static final Cache<StateKey, Boolean> NO_SOLUTION_CACHE = Caffeine.newBuilder()
-            .maximumSize(1_000_000)
-            .build();
-
     public static void main(String[] args) {
         for (int i = 0; i < 100; i++) {
             val stopWatch = new StopWatch();
@@ -50,7 +41,6 @@ public class CommonOperations implements Serializable {
             stopWatch.stop();
             System.out.println("Time taken: " + stopWatch.getTime(TimeUnit.MILLISECONDS) + " ms");
         }
-
     }
 
     private static void verify_ijk(List<int[]> sorting, double rate, Configuration configuration, Set<Integer> pivots) {
@@ -127,7 +117,7 @@ public class CommonOperations implements Serializable {
 
         components.forEach(component -> {
             for (val cycle : component) {
-                for (val symbol : cycle.getSymbols()) {
+                for (final int symbol : cycle.getSymbols()) {
                     index[symbol] = cycle;
                 }
             }
@@ -137,9 +127,9 @@ public class CommonOperations implements Serializable {
     }
 
     public static Optional<List<int[]>> searchForSorting(
-            final byte[] pivots,
+            final int[] pivots,
             final int pivotsCount,
-            final byte[] spi,
+            final int[] spi,
             final byte[] pi,
             final Stack<int[]> stack,
             final double minRate,
@@ -147,12 +137,12 @@ public class CommonOperations implements Serializable {
     ) {
         final int n = spi.length;
         final int nonPivot = n - pivotsCount;
-        final int newStackSize = stack.size() + 1; // depth + 1 for this candidate layer
+        final int newStackSize = stack.size() + 1;  // depth + 1 for this candidate layer
 
-        // ---- Build masks and baseline fixed count (O(n)) ----
-        int npMask = 0;         // bit 1 where NOT a pivot
-        int fixedAllMask = 0;   // bit 1 where spi[l] == l (regardless of pivot)
-        int fixedNPmask = 0;    // bit 1 where NOT pivot AND spi[l] == l
+        // Build masks and baseline fixed count ONCE (O(n))
+        int npMask = 0;         // 1 where NOT a pivot
+        int fixedAllMask = 0;   // 1 where spi[l] == l (regardless of pivot)
+        int fixedNPmask = 0;    // 1 where NOT pivot AND spi[l] == l
         for (int l = 0; l < n; ++l) {
             final boolean np = (pivots[l] == 0);
             final boolean fix = (spi[l] == l);
@@ -162,142 +152,83 @@ public class CommonOperations implements Serializable {
         }
         final int fixed0 = Integer.bitCount(fixedNPmask);
 
-        // These temporaries are intentionally initialized here and reused
-        int a, b, c;
-        int av = 0, bv = 0, cv = 0;
-        int pre = 0, post;
-        int fixed, moved;
-        int totalMoves = 0, fixedBestCase = 0;
-        byte movesLeftBestCase = 0;
+// Optional: precompute the RHS factor to avoid redo in the loop
+        final double needEarly = minRate * newStackSize;
 
-        // ---- Optional gating using the last move on the stack (exact same semantics) ----
-        if (!stack.isEmpty()) {
-            final int[] last = stack.getLast();
-            a = last[0];
-            b = last[1];
-            c = last[2];
+        for (byte i = 0; i < pi.length - 2; i++) {
+            final int a = pi[i] & 0xFF; // widen to int index
+            if (((fixedAllMask >>> a) & 1) != 0) continue; // was: if (spi[pi[i]] != pi[i]) ...
 
-            // PRE fixed contribution among {a,b,c} over NON-pivots
-            if (((npMask >>> a) & 1) != 0 && av == a) pre++;
-            if (((npMask >>> b) & 1) != 0 && bv == b) pre++;
-            if (((npMask >>> c) & 1) != 0 && cv == c) pre++;
+            for (byte j = (byte) (i + 1); j < pi.length - 1; j++) {
+                final int b = pi[j] & 0xFF;
+                if (((fixedAllMask >>> b) & 1) != 0) continue;
 
-            // POST after 3-cycle (a b c): spi[a]=cv, spi[b]=av, spi[c]=bv
-            post = 0;
-            if (((npMask >>> a) & 1) != 0 && cv == a) post++;
-            if (((npMask >>> b) & 1) != 0 && av == b) post++;
-            if (((npMask >>> c) & 1) != 0 && bv == c) post++;
+                for (byte k = (byte) (j + 1); k < pi.length; k++) {
+                    final int c = pi[k] & 0xFF;
+                    if (((fixedAllMask >>> c) & 1) != 0) continue;
 
-            fixed = fixed0 + (post - pre);
-            moved = nonPivot - fixed;
+                    // Values currently at those symbols
+                    final int av = spi[a];
+                    final int bv = spi[b];
+                    final int cv = spi[c];
 
-            // Bound: max remaining moves each adds up to 3 fixed non-pivots
-            movesLeftBestCase = (byte) Math.min(maxDepth - newStackSize, (moved + 2) / 3);
-            totalMoves = newStackSize + movesLeftBestCase;
-            fixedBestCase = Math.min(fixed + 3 * movesLeftBestCase, nonPivot);
-        }
+                    // PRE fixed contribution among {a,b,c} over NON-pivots
+                    int pre = 0;
+                    if (((npMask >>> a) & 1) != 0 && av == a) pre++;
+                    if (((npMask >>> b) & 1) != 0 && bv == b) pre++;
+                    if (((npMask >>> c) & 1) != 0 && cv == c) pre++;
 
-        // Proceed if at root OR bound allows it (identical condition)
-        if (stack.empty() || fixedBestCase >= (int) Math.ceil(minRate * totalMoves)) {
+                    // POST after 3-cycle (a b c): spi[a]=cv, spi[b]=av, spi[c]=bv
+                    int post = 0;
+                    if (((npMask >>> a) & 1) != 0 && cv == a) post++;
+                    if (((npMask >>> b) & 1) != 0 && av == b) post++;
+                    if (((npMask >>> c) & 1) != 0 && bv == c) post++;
 
-            // Make a snapshot for the cache key exactly here (same place/semantics)
-            final byte[] spiCopy = Arrays.copyOf(spi, spi.length);
-            final StateKey key = new StateKey(pi, spiCopy, movesLeftBestCase);
+                    final int fixed = fixed0 + (post - pre);
+                    final int moved = nonPivot - fixed;
 
-            // Cache look-up only for shallow depths (same condition)
-            final boolean useCache = (!stack.isEmpty() && stack.size() <= 3);
-            if (useCache && NO_SOLUTION_CACHE.getIfPresent(key) != null) {
-                return Optional.empty(); // unfruitful branch, already visited
-            }
-
-            // Early-solution threshold for this layer
-            final double needEarly = minRate * newStackSize;
-
-            // ---- Enumerate triples ----
-            for (byte i = 0; i < pi.length - 2; i++) {
-                a = pi[i] & 0xFF;
-                if (((fixedAllMask >>> a) & 1) != 0) continue;
-
-                for (byte j = (byte) (i + 1); j < pi.length - 1; j++) {
-                    b = pi[j] & 0xFF;
-                    if (((fixedAllMask >>> b) & 1) != 0) continue;
-
-                    for (byte k = (byte) (j + 1); k < pi.length; k++) {
-                        c = pi[k] & 0xFF;
-                        if (((fixedAllMask >>> c) & 1) != 0) continue;
-
-                        // Values currently at those symbols
-                        av = spi[a];
-                        bv = spi[b];
-                        cv = spi[c];
-
-                        // PRE fixed contribution among {a,b,c} over NON-pivots
-                        pre = 0;
-                        if (((npMask >>> a) & 1) != 0 && av == a) pre++;
-                        if (((npMask >>> b) & 1) != 0 && bv == b) pre++;
-                        if (((npMask >>> c) & 1) != 0 && cv == c) pre++;
-
-                        // POST after 3-cycle (a b c): spi[a]=cv, spi[b]=av, spi[c]=bv
-                        post = 0;
-                        if (((npMask >>> a) & 1) != 0 && cv == a) post++;
-                        if (((npMask >>> b) & 1) != 0 && av == b) post++;
-                        if (((npMask >>> c) & 1) != 0 && bv == c) post++;
-
-                        fixed = fixed0 + (post - pre);
-                        moved = nonPivot - fixed;
-
-                        // Early-solution check (avoid division)
-                        if (fixed > 0 && fixed >= needEarly) {
-                            final double currentRate = fixed / (double) newStackSize;
-                            if (currentRate < bestRate) {
-                                log.info("Lowest currentRate: {}", currentRate);
-                                bestRate = currentRate;
-                            }
-                            stack.push(new int[]{a, b, c});
-                            return Optional.of(stack);
+                    // Early-solution check: avoid division
+                    if (fixed > 0 && fixed >= needEarly) {
+                        final double currentRate = fixed / (double) newStackSize;
+                        if (currentRate < bestRate) {
+                            log.info("Lowest currentRate: {}", currentRate);
+                            bestRate = currentRate;
                         }
+                        stack.push(new int[]{a, b, c});
+                        return Optional.of(stack);
+                    }
 
-                        // Bound: max remaining moves each adds up to 3 fixed non-pivots
-                        movesLeftBestCase = (byte) Math.min(maxDepth - newStackSize, (moved + 2) / 3);
-                        totalMoves = newStackSize + movesLeftBestCase;
-                        fixedBestCase = Math.min(fixed + 3 * movesLeftBestCase, nonPivot);
+                    // Bound: max remaining moves each adds up to 3 fixed non-pivots
+                    final int movesLeftBestCase = Math.min(maxDepth - newStackSize, (moved + 2) / 3);
+                    final int totalMoves = newStackSize + movesLeftBestCase;
+                    final int fixedBestCase = Math.min(fixed + 3 * movesLeftBestCase, nonPivot);
 
-                        if (fixedBestCase >= (int) Math.ceil(minRate * totalMoves)) {
-                            // Apply transposition in-place, recurse, then undo (unchanged semantics)
-                            spi[a] = (byte) cv;
-                            spi[b] = (byte) av;
-                            spi[c] = (byte) bv;
+                    if (fixedBestCase >= (int) Math.ceil(minRate * totalMoves)) {
+                        // Proceed: actually apply the transposition only now
+                        // mutate spi in-place for recursion, and undo on backtrack
+                        // Save originals (we already have av,bv,cv)
+                        spi[a] = cv;
+                        spi[b] = av;
+                        spi[c] = bv;
 
-                            final byte[] newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
-                            stack.push(new int[]{a, b, c});
-
-                            final var sorting = searchForSorting(pivots, pivotsCount, spi, newPi, stack, minRate, maxDepth);
-                            if (sorting.isPresent()) {
-                                return sorting;
-                            }
-                            stack.pop();
-
-                            // Undo
-                            spi[a] = (byte) av;
-                            spi[b] = (byte) bv;
-                            spi[c] = (byte) cv;
+                        final byte[] newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
+                        stack.push(new int[]{a, b, c});
+                        final var sorting = searchForSorting(pivots, pivotsCount, spi, newPi, stack, minRate, maxDepth);
+                        if (sorting.isPresent()) {
+                            return sorting;
                         }
+                        stack.pop();
+
+                        // Undo side effect
+                        spi[a] = av;
+                        spi[b] = bv;
+                        spi[c] = cv;
                     }
                 }
-            }
-
-            // Populate cache on failure for shallow depths (identical condition & timing)
-            if (useCache) {
-                NO_SOLUTION_CACHE.put(key, Boolean.TRUE);
             }
         }
 
         return Optional.empty();
-    }
-
-
-    private static boolean isStackAt(Stack<int[]> stack, int i, int a, int b, int c) {
-        return stack.size() >= i && Cycle.of(stack.get(i - 1)).equals(Cycle.of(a, b, c));
     }
 
     private static double bestRate = Double.MAX_VALUE;
@@ -314,37 +245,37 @@ public class CommonOperations implements Serializable {
         val spi = configuration.getSpi();
         val pi = toByteArray(configuration.getPi().getSymbols());
 
-        val pivotsArray = new byte[configuration.getPi().size()];
+        val pivotsArray = new int[configuration.getPi().size()];
         for (int i = 0; i < pivotsArray.length; i++) {
             if (pivots.contains(i)) {
                 pivotsArray[i] = 1; // mark as pivot
             }
         }
 
-        val twoLinesNotation = toByteArray(twoLinesNotation(spi));
-        var sorting = searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, Integer.MAX_VALUE)
-//                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 3))
-//                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 5))
-//                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, Integer.MAX_VALUE))
+        int[] twoLinesNotation = twoLinesNotation(spi);
+        var sorting = searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 1)
+                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 3))
+                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 5))
+                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, Integer.MAX_VALUE))
                 .map(moves -> moves.stream().map(Cycle::of).toList());
         if (sorting.isPresent()) {
             return sorting;
         }
 
-//        if (configuration.isFull()) {
-//            val sigma = spi.times(configuration.getPi());
-//            if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
-//                sorting = searchForSorting(new byte[configuration.getPi().size()], 0, twoLinesNotation, pi, new Stack<>(), minRate, Integer.MAX_VALUE)
-//                        .map(moves -> moves.stream().map(Cycle::of).toList());
-//
-//                if (sorting.isEmpty()) {
-//                    log.error("bad component {}", configuration);
-//                } else if (proofStorage != null) {
-//                    proofStorage.saveComponentSorting(configuration, sorting.get());
-//                }
-//                return Optional.empty();
-//            }
-//        }
+        if (configuration.isFull()) {
+            val sigma = spi.times(configuration.getPi());
+            if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
+                sorting = searchForSorting(new int[configuration.getPi().size()], 0, twoLinesNotation, pi, new Stack<>(), minRate, Integer.MAX_VALUE)
+                        .map(moves -> moves.stream().map(Cycle::of).toList());
+
+                if (sorting.isEmpty()) {
+                    log.error("bad component {}", configuration);
+                } else if (proofStorage != null) {
+                    proofStorage.saveComponentSorting(configuration, sorting.get());
+                }
+                return Optional.empty();
+            }
+        }
 
         return sorting;
     }
@@ -370,33 +301,5 @@ public class CommonOperations implements Serializable {
                 .boxed()
                 .map(s -> Pair.of(s, canonicalPi.indexOf(s)))
                 .max(Comparator.comparing(Pair::getRight)).get().getLeft();
-    }
-
-    @ToString
-    static class StateKey {
-        private byte[] pi;
-        private byte[] spiCopy;
-        private byte movesLeftBestCase;
-
-        public StateKey(byte[] pi, byte[] spiCopy, byte movesLeftBestCase) {
-            this.pi = pi;
-            this.spiCopy = spiCopy;
-            this.movesLeftBestCase = movesLeftBestCase;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof StateKey)) return false;
-            StateKey stateKey = (StateKey) o;
-            return movesLeftBestCase == stateKey.movesLeftBestCase &&
-                    Arrays.equals(pi, stateKey.pi) &&
-                    Arrays.equals(spiCopy, stateKey.spiCopy);
-        }
-
-        @Override
-        public int hashCode() {
-            return 31 * (Arrays.hashCode(pi) + Arrays.hashCode(spiCopy) + movesLeftBestCase);
-        }
     }
 }
