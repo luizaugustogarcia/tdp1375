@@ -2,9 +2,9 @@ package br.unb.cic.tdp.util;
 
 import lombok.val;
 
-public class VectorizedByteTransposition {
+public class Transpositions {
 
-    public static byte[] applyTransposition(final byte[] pi, final byte i, final byte j, final byte k) {
+    public static short[] apply(final short[] pi, final byte i, final byte j, final byte k) {
         val clone = pi.clone();  // Snapshot to allow safe overwrite
 
         val len1 = j - i;
@@ -16,8 +16,8 @@ public class VectorizedByteTransposition {
         return clone;
     }
 
-    public static void vectorCopy(final byte[] src, final int srcPos,
-                                  final byte[] dst, final int dstPos,
+    public static void vectorCopy(final short[] src, final int srcPos,
+                                  final short[] dst, final int dstPos,
                                   final int length) {
         if (length <= 0) return;
 

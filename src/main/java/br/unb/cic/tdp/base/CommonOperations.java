@@ -3,10 +3,9 @@ package br.unb.cic.tdp.base;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.proof.ProofStorage;
-import br.unb.cic.tdp.util.VectorizedByteTransposition;
+import br.unb.cic.tdp.util.Transpositions;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.time.StopWatch;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -36,66 +35,39 @@ public class CommonOperations implements Serializable {
             val stopWatch = new StopWatch();
             stopWatch.start();
             System.out.println(searchForSorting(null,
-                    new Configuration("(0 10 6)(1 8 2 14 3)(4 13)(5 12 9)(7 11)"),
-                    1.6, Set.of(10, 11, 12, 13, 14)));
+                    new Configuration("(0 10 7 2)(1 9 6 13 8 3 12 4)(5 14)(11 15)"),
+                    1.66, Set.of(5, 10, 11, 12)));
             stopWatch.stop();
             System.out.println("Time taken: " + stopWatch.getTime(TimeUnit.MILLISECONDS) + " ms");
         }
     }
 
-    private static void verify_ijk(List<int[]> sorting, double rate, Configuration configuration, Set<Integer> pivots) {
-        var pi = toByteArray(configuration.getPi().getSymbols());
+    private static Optional<List<int[]>> verify_ijk(short[][] sorting, double rate, Configuration configuration, Set<Integer> pivots) {
+        var pi = toShortArray(configuration.getPi().getSymbols());
         var spi = configuration.getSpi();
 
-        log.info("Pi0: {}", pi);
-        log.info("Spi0: {}\n", Arrays.toString(twoLinesNotation(spi)));
+        val result = new ArrayList<int[]>(sorting.length);
 
         for (val m : sorting) {
-            byte a = pi[m[0]];
-            byte b = pi[m[1]];
-            byte c = pi[m[2]];
+            val a = pi[m[0]];
+            val b = pi[m[1]];
+            val c = pi[m[2]];
             spi = spi.times(Cycle.of(a, b, c).getInverse());
-            log.info("Spi: {}", Arrays.toString(twoLinesNotation(spi)));
-            // print pi and spi
-            pi = VectorizedByteTransposition.applyTransposition(pi, (byte) m[0], (byte) m[1], (byte) m[2]);
-            log.info("Pi: {}", pi);
-            log.info("i,j,k: {}", Arrays.toString(m));
-            log.info("move: {}", Cycle.of(a, b, c));
-            System.out.println();
+            pi = Transpositions.apply(pi, (byte) m[0], (byte) m[1], (byte) m[2]);
+            result.add(new int[]{a, b, c});
         }
+
         val fixedNonPivot = spi.stream()
                 .filter(Cycle::isTrivial)
                 .map(c -> c.getSymbols()[0])
                 .filter(s -> !pivots.contains(s))
                 .count();
 
-        if ((fixedNonPivot / (double) sorting.size()) < rate) {
+        if ((fixedNonPivot / (double) sorting.length) < rate) {
             throw new RuntimeException("Sorting does not meet the rate requirement: " + rate);
         }
-    }
 
-    private static void verify(List<Cycle> sorting, double rate, Configuration configuration, Set<Integer> pivots) {
-        var pi = toByteArray(configuration.getPi().getSymbols());
-        var spi = configuration.getSpi();
-        for (val m : sorting) {
-            pi = VectorizedByteTransposition.applyTransposition(pi, (byte) ArrayUtils.indexOf(pi, (byte) m.get(0)),
-                    (byte) ArrayUtils.indexOf(pi, (byte) m.get(1)),
-                    (byte) ArrayUtils.indexOf(pi, (byte) m.get(2)));
-            spi = spi.times(m.getInverse());
-            // print pi and spi
-            log.info("Pi: {}", pi);
-            log.info("Spi: {}", Arrays.toString(twoLinesNotation(spi)));
-            System.out.println();
-        }
-        val fixedNonPivot = spi.stream()
-                .filter(Cycle::isTrivial)
-                .map(c -> c.getSymbols()[0])
-                .filter(s -> !pivots.contains(s))
-                .count();
-
-        if ((fixedNonPivot / (double) sorting.size()) < rate) {
-            throw new RuntimeException("Sorting does not meet the rate requirement: " + rate);
-        }
+        return result.isEmpty() ? Optional.empty() : Optional.of(result);
     }
 
     public static int mod(final int a, final int b) {
@@ -127,22 +99,27 @@ public class CommonOperations implements Serializable {
     }
 
     public static Optional<List<int[]>> searchForSorting(
-            final int[] pivots,
+            final short[] pivots,
             final int pivotsCount,
-            final int[] spi,
-            final byte[] pi,
+            final short[] spi,
+            final short[] pi,
             final Stack<int[]> stack,
             final double minRate,
-            final int maxDepth
+            final int maxDepth,
+            final StopWatch stopWatch,
+            final int maxTimeMillis
     ) {
-        final int n = spi.length;
-        final int nonPivot = n - pivotsCount;
-        final int newStackSize = stack.size() + 1;  // depth + 1 for this candidate layer
+        if (stopWatch.getTime() > maxTimeMillis) {
+            return Optional.empty();
+        }
+        val n = spi.length;
+        val nonPivot = n - pivotsCount;
+        val newStackSize = stack.size() + 1;  // depth + 1 for this candidate layer
 
         // Build masks and baseline fixed count ONCE (O(n))
-        int npMask = 0;         // 1 where NOT a pivot
-        int fixedAllMask = 0;   // 1 where spi[l] == l (regardless of pivot)
-        int fixedNPmask = 0;    // 1 where NOT pivot AND spi[l] == l
+        var npMask = 0;         // 1 where NOT a pivot
+        var fixedAllMask = 0;   // 1 where spi[l] == l (regardless of pivot)
+        var fixedNPmask = 0;    // 1 where NOT pivot AND spi[l] == l
         for (int l = 0; l < n; ++l) {
             final boolean np = (pivots[l] == 0);
             final boolean fix = (spi[l] == l);
@@ -150,46 +127,45 @@ public class CommonOperations implements Serializable {
             if (fix) fixedAllMask |= (1 << l);
             if (np && fix) fixedNPmask |= (1 << l);
         }
-        final int fixed0 = Integer.bitCount(fixedNPmask);
+        val fixed0 = Integer.bitCount(fixedNPmask);
 
-// Optional: precompute the RHS factor to avoid redo in the loop
-        final double needEarly = minRate * newStackSize;
+        val needEarly = minRate * newStackSize;
 
         for (byte i = 0; i < pi.length - 2; i++) {
-            final int a = pi[i] & 0xFF; // widen to int index
-            if (((fixedAllMask >>> a) & 1) != 0) continue; // was: if (spi[pi[i]] != pi[i]) ...
+            val a = pi[i] & 0xFF;
+            if (((fixedAllMask >>> a) & 1) != 0) continue;
 
             for (byte j = (byte) (i + 1); j < pi.length - 1; j++) {
-                final int b = pi[j] & 0xFF;
+                val b = pi[j] & 0xFF;
                 if (((fixedAllMask >>> b) & 1) != 0) continue;
 
                 for (byte k = (byte) (j + 1); k < pi.length; k++) {
-                    final int c = pi[k] & 0xFF;
+                    val c = pi[k] & 0xFF;
                     if (((fixedAllMask >>> c) & 1) != 0) continue;
 
                     // Values currently at those symbols
-                    final int av = spi[a];
-                    final int bv = spi[b];
-                    final int cv = spi[c];
+                    val av = spi[a];
+                    val bv = spi[b];
+                    val cv = spi[c];
 
                     // PRE fixed contribution among {a,b,c} over NON-pivots
-                    int pre = 0;
+                    var pre = 0;
                     if (((npMask >>> a) & 1) != 0 && av == a) pre++;
                     if (((npMask >>> b) & 1) != 0 && bv == b) pre++;
                     if (((npMask >>> c) & 1) != 0 && cv == c) pre++;
 
                     // POST after 3-cycle (a b c): spi[a]=cv, spi[b]=av, spi[c]=bv
-                    int post = 0;
+                    var post = 0;
                     if (((npMask >>> a) & 1) != 0 && cv == a) post++;
                     if (((npMask >>> b) & 1) != 0 && av == b) post++;
                     if (((npMask >>> c) & 1) != 0 && bv == c) post++;
 
-                    final int fixed = fixed0 + (post - pre);
-                    final int moved = nonPivot - fixed;
+                    val fixed = fixed0 + (post - pre);
+                    val moved = nonPivot - fixed;
 
                     // Early-solution check: avoid division
                     if (fixed > 0 && fixed >= needEarly) {
-                        final double currentRate = fixed / (double) newStackSize;
+                        val currentRate = fixed / (double) newStackSize;
                         if (currentRate < bestRate) {
                             log.info("Lowest currentRate: {}", currentRate);
                             bestRate = currentRate;
@@ -199,9 +175,9 @@ public class CommonOperations implements Serializable {
                     }
 
                     // Bound: max remaining moves each adds up to 3 fixed non-pivots
-                    final int movesLeftBestCase = Math.min(maxDepth - newStackSize, (moved + 2) / 3);
-                    final int totalMoves = newStackSize + movesLeftBestCase;
-                    final int fixedBestCase = Math.min(fixed + 3 * movesLeftBestCase, nonPivot);
+                    val movesLeftBestCase = Math.min(maxDepth - newStackSize, (moved + 2) / 3);
+                    val totalMoves = newStackSize + movesLeftBestCase;
+                    val fixedBestCase = Math.min(fixed + 3 * movesLeftBestCase, nonPivot);
 
                     if (fixedBestCase >= (int) Math.ceil(minRate * totalMoves)) {
                         // Proceed: actually apply the transposition only now
@@ -211,9 +187,9 @@ public class CommonOperations implements Serializable {
                         spi[b] = av;
                         spi[c] = bv;
 
-                        final byte[] newPi = VectorizedByteTransposition.applyTransposition(pi, i, j, k);
+                        val newPi = Transpositions.apply(pi, i, j, k);
                         stack.push(new int[]{a, b, c});
-                        final var sorting = searchForSorting(pivots, pivotsCount, spi, newPi, stack, minRate, maxDepth);
+                        val sorting = searchForSorting(pivots, pivotsCount, spi, newPi, stack, minRate, maxDepth, stopWatch, maxTimeMillis);
                         if (sorting.isPresent()) {
                             return sorting;
                         }
@@ -233,6 +209,14 @@ public class CommonOperations implements Serializable {
 
     private static double bestRate = Double.MAX_VALUE;
 
+    public static short[] toShortArray(int[] input) {
+        short[] result = new short[input.length];
+        for (int i = 0; i < input.length; i++) {
+            result[i] = (short) input[i]; // truncates to lower 8 bits
+        }
+        return result;
+    }
+
     public static byte[] toByteArray(int[] input) {
         byte[] result = new byte[input.length];
         for (int i = 0; i < input.length; i++) {
@@ -243,20 +227,22 @@ public class CommonOperations implements Serializable {
 
     public static Optional<List<Cycle>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate, final Set<Integer> pivots) {
         val spi = configuration.getSpi();
-        val pi = toByteArray(configuration.getPi().getSymbols());
+        val pi = toShortArray(configuration.getPi().getSymbols());
 
-        val pivotsArray = new int[configuration.getPi().size()];
-        for (int i = 0; i < pivotsArray.length; i++) {
+        val pivs = new short[configuration.getPi().size()];
+        for (int i = 0; i < pivs.length; i++) {
             if (pivots.contains(i)) {
-                pivotsArray[i] = 1; // mark as pivot
+                pivs[i] = 1; // mark as pivot
             }
         }
 
-        int[] twoLinesNotation = twoLinesNotation(spi);
-        var sorting = searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 1)
-                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 3))
-                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 5))
-                .or(() -> searchForSorting(pivotsArray, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, Integer.MAX_VALUE))
+        val twoLinesNotation = twoLinesNotation(spi);
+
+        val maxDepth = minRate == 1.6 ? 5 : 6;
+        var sorting = searchForSorting(pivs, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 1, new StopWatch(), 100)
+                .or(() -> searchForSorting(pivs, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 3, new StopWatch(), 100))
+                .or(() -> searchForSorting(pivs, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 5, new StopWatch(), 300))
+                .or(() -> verify_ijk(GPUSorter.syncSort(pi, pivs, twoLinesNotation, minRate, maxDepth), minRate, configuration, pivots))
                 .map(moves -> moves.stream().map(Cycle::of).toList());
         if (sorting.isPresent()) {
             return sorting;
@@ -265,7 +251,7 @@ public class CommonOperations implements Serializable {
         if (configuration.isFull()) {
             val sigma = spi.times(configuration.getPi());
             if (sigma.size() == 1 && sigma.asNCycle().size() == configuration.getPi().size()) {
-                sorting = searchForSorting(new int[configuration.getPi().size()], 0, twoLinesNotation, pi, new Stack<>(), minRate, Integer.MAX_VALUE)
+                sorting = searchForSorting(new short[configuration.getPi().size()], 0, twoLinesNotation, pi, new Stack<>(), minRate, Integer.MAX_VALUE, new StopWatch(), Integer.MAX_VALUE)
                         .map(moves -> moves.stream().map(Cycle::of).toList());
 
                 if (sorting.isEmpty()) {
@@ -273,6 +259,7 @@ public class CommonOperations implements Serializable {
                 } else if (proofStorage != null) {
                     proofStorage.saveComponentSorting(configuration, sorting.get());
                 }
+
                 return Optional.empty();
             }
         }
@@ -280,10 +267,10 @@ public class CommonOperations implements Serializable {
         return sorting;
     }
 
-    public static int[] twoLinesNotation(final MulticyclePermutation spi) {
-        val result = new int[spi.getNumberOfSymbols()];
+    public static short[] twoLinesNotation(final MulticyclePermutation spi) {
+        val result = new short[spi.getNumberOfSymbols()];
         for (var i = 0; i < result.length; i++) {
-            result[i] = spi.image(i);
+            result[i] = (short) spi.image(i);
         }
         return result;
     }
