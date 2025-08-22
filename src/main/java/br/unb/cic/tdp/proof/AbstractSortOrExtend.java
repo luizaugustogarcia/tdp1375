@@ -50,8 +50,9 @@ public abstract class AbstractSortOrExtend extends RecursiveAction {
                 }
             } // else: another thread is already working on this canonical
         } catch (final Throwable e) {
-            log.error(e.getMessage());
-            System.exit(1);
+            e.printStackTrace();
+            log.error("Error while processing {}: {}", pivotedConfiguration, e.getMessage(), e);
+            //System.exit(1);
         }
     }
 

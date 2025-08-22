@@ -11,8 +11,10 @@ public class GPUSorter {
     }
 
     public static ReentrantLock lock = new ReentrantLock();
+    private static long totalTime = 0;
+    private static int callCount = 0;
 
-    private static native short[][] sort(short[] pi, short[] piv, short[] spi, double minRate, int maxDepth);
+    private static native short[][] sort(short[] pi, short[] piv, short[] spi, double minRate, int maxDepth, int batchSize);
 
     public static short[][] syncSort(short[] pi, short[] piv, short[] spi, double minRate, int maxDepth) {
         lock.lock();
@@ -20,10 +22,17 @@ public class GPUSorter {
             val stopWatch = new StopWatch();
             stopWatch.start();
             try {
-                return sort(pi, piv, spi, minRate, maxDepth);
+                return sort(pi, piv, spi, minRate, maxDepth, 20000);
             } finally {
                 stopWatch.stop();
-                System.out.printf("GPU Sort took %d ms%n", stopWatch.getTime());
+                synchronized (GPUSorter.class) {
+                    totalTime += stopWatch.getTime();
+                    callCount++;
+                    if (callCount % 1000 == 0) {
+                        System.out.printf("Average GPU Sort time per 100 calls: %.2f ms%n", totalTime / 1000.0);
+                        totalTime = 0;
+                    }
+                }
             }
         } finally {
             lock.unlock();

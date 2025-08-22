@@ -35,15 +35,16 @@ public class CommonOperations implements Serializable {
             val stopWatch = new StopWatch();
             stopWatch.start();
             System.out.println(searchForSorting(null,
-                    new Configuration("(0 10 7 2)(1 9 6 13 8 3 12 4)(5 14)(11 15)"),
-                    1.66, Set.of(5, 10, 11, 12)));
+                    new Configuration("(0 10 2 13 5)(1 11 4)(3 15 6)(7 14 12)(8 17)(9 16)"),
+                    1.66, Set.of(0, 11, 14, 15, 16, 17)));
             stopWatch.stop();
             System.out.println("Time taken: " + stopWatch.getTime(TimeUnit.MILLISECONDS) + " ms");
         }
     }
 
     private static Optional<List<int[]>> verify_ijk(short[][] sorting, double rate, Configuration configuration, Set<Integer> pivots) {
-        var pi = toShortArray(configuration.getPi().getSymbols());
+        var _pi = configuration.getPi();
+        var pi = toShortArray(_pi.getSymbols());
         var spi = configuration.getSpi();
 
         val result = new ArrayList<int[]>(sorting.length);
@@ -52,8 +53,14 @@ public class CommonOperations implements Serializable {
             val a = pi[m[0]];
             val b = pi[m[1]];
             val c = pi[m[2]];
-            spi = spi.times(Cycle.of(a, b, c).getInverse());
-            pi = Transpositions.apply(pi, (byte) m[0], (byte) m[1], (byte) m[2]);
+            val move = Cycle.of(a, b, c);
+            spi = spi.times(move.getInverse());
+            try {
+                pi = Transpositions.apply(pi, (byte) m[0], (byte) m[1], (byte) m[2]);
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw e;
+            }
+            _pi = move.times(_pi).asNCycle();
             result.add(new int[]{a, b, c});
         }
 
@@ -217,14 +224,6 @@ public class CommonOperations implements Serializable {
         return result;
     }
 
-    public static byte[] toByteArray(int[] input) {
-        byte[] result = new byte[input.length];
-        for (int i = 0; i < input.length; i++) {
-            result[i] = (byte) input[i]; // truncates to lower 8 bits
-        }
-        return result;
-    }
-
     public static Optional<List<Cycle>> searchForSorting(final ProofStorage proofStorage, final Configuration configuration, final double minRate, final Set<Integer> pivots) {
         val spi = configuration.getSpi();
         val pi = toShortArray(configuration.getPi().getSymbols());
@@ -241,7 +240,6 @@ public class CommonOperations implements Serializable {
         val maxDepth = minRate == 1.6 ? 5 : 6;
         var sorting = searchForSorting(pivs, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 1, new StopWatch(), 100)
                 .or(() -> searchForSorting(pivs, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 3, new StopWatch(), 100))
-                .or(() -> searchForSorting(pivs, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 5, new StopWatch(), 300))
                 .or(() -> verify_ijk(GPUSorter.syncSort(pi, pivs, twoLinesNotation, minRate, maxDepth), minRate, configuration, pivots))
                 .map(moves -> moves.stream().map(Cycle::of).toList());
         if (sorting.isPresent()) {
