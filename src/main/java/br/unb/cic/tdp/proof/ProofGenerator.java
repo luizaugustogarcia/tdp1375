@@ -1,5 +1,7 @@
 package br.unb.cic.tdp.proof;
 
+import br.unb.cic.tdp.base.CommonOperations;
+import br.unb.cic.tdp.base.GPUSorter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
@@ -16,6 +18,9 @@ public class ProofGenerator {
 
         val minRate = Double.parseDouble(args[1]);
         log.info("Min rate: {}", minRate);
+
+        CommonOperations.MAX_DEPTH = Integer.parseInt(args[2]);
+        GPUSorter.DEVICES_COUNT = Integer.parseInt(args[3]);
 
 //        log.info("Generating extensions containing 2-cycles...");
 //        TwoCycles.generate(outputDir, minRate);

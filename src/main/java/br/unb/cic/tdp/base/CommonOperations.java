@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 public class CommonOperations implements Serializable {
 
     public static final Cycle[] CANONICAL_PI;
+    public static int MAX_DEPTH;
 
     static {
         CANONICAL_PI = new Cycle[2000];
@@ -31,12 +32,14 @@ public class CommonOperations implements Serializable {
     }
 
     public static void main(String[] args) {
+        GPUSorter.DEVICES_COUNT = 1;
+        MAX_DEPTH = 6;
         for (int i = 0; i < 100; i++) {
             val stopWatch = new StopWatch();
             stopWatch.start();
             System.out.println(searchForSorting(null,
-                    new Configuration("(0 10 2 13 5)(1 11 4)(3 15 6)(7 14 12)(8 17)(9 16)"),
-                    1.66, Set.of(0, 11, 14, 15, 16, 17)));
+                    new Configuration("(0 1 13 8)(2 18 10 4 14 7)(3 6)(5 15 12 17 9)(11 16)"),
+                    1.66, Set.of(1, 6, 16, 17, 18)));
             stopWatch.stop();
             System.out.println("Time taken: " + stopWatch.getTime(TimeUnit.MILLISECONDS) + " ms");
         }
@@ -237,10 +240,9 @@ public class CommonOperations implements Serializable {
 
         val twoLinesNotation = twoLinesNotation(spi);
 
-        val maxDepth = minRate == 1.6 ? 5 : 6;
         var sorting = searchForSorting(pivs, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 1, new StopWatch(), 100)
                 .or(() -> searchForSorting(pivs, pivots.size(), twoLinesNotation, pi, new Stack<>(), minRate, 3, new StopWatch(), 100))
-                .or(() -> verify_ijk(GPUSorter.syncSort(pi, pivs, twoLinesNotation, minRate, maxDepth), minRate, configuration, pivots))
+                .or(() -> verify_ijk(GPUSorter.syncSort(pi, pivs, twoLinesNotation, minRate, MAX_DEPTH), minRate, configuration, pivots))
                 .map(moves -> moves.stream().map(Cycle::of).toList());
         if (sorting.isPresent()) {
             return sorting;
