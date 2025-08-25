@@ -1,6 +1,9 @@
 package br.unb.cic.tdp.base;
 
+import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import cern.colt.bitvector.BitVector;
+import cern.colt.list.IntArrayList;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
@@ -10,6 +13,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+
+import static br.unb.cic.tdp.base.CommonOperations.mod;
 
 @RequiredArgsConstructor
 @Getter
@@ -58,17 +63,44 @@ public class PivotedConfiguration {
         return "%s#%s".formatted(this.getConfiguration().getSpi().toString(), this.getPivots());
     }
 
-    private PivotedConfiguration rotate(final int i, MulticyclePermutation spi, TreeSet<Integer> pivots) {
-        var conjugator = CommonOperations.CANONICAL_PI[spi.getNumberOfSymbols()].getInverse();
+    private PivotedConfiguration rotate(final int i, final MulticyclePermutation spi, final TreeSet<Integer> pivots) {
+        int numberOfSymbols = spi.getNumberOfSymbols();
+        val conjugated = new short[numberOfSymbols];
 
-        for (int j = 0; j < i; j++) {
-            spi = spi.conjugateBy(conjugator);
+        for (int x = 0; x < numberOfSymbols; x++) {
+            val y = spi.image(x);
+            conjugated[mod(x + (-1 * i), numberOfSymbols)] = (short) mod(y + (-1 * i), numberOfSymbols);
         }
 
-        for (int j = 0; j < i; j++) {
-            pivots = pivots.stream().map(conjugator::image).collect(Collectors.toCollection(TreeSet::new));
+        return of(new Configuration(toCycles(conjugated)), pivots.stream()
+                .map(p -> mod(p + (-1 * i), numberOfSymbols))
+                .collect(Collectors.toCollection(TreeSet::new)));
+    }
+
+    public static MulticyclePermutation toCycles(final short[] perm) {
+        val n = perm.length;
+        val visited = new BitVector(n);
+        val cycles = new MulticyclePermutation();
+
+        for (int i = 0; i < n; i++) {
+            if (!visited.getQuick(i)) {
+                val cycle = new IntArrayList();
+                var current = i;
+
+                while (!visited.getQuick(current)) {
+                    visited.putQuick(current, true);
+                    cycle.add(current);
+                    current = perm[current];
+                }
+
+                val arr = new int[cycle.size()];
+                for (int k = 0; k < cycle.size(); k++) {
+                    arr[k] = (short) cycle.get(k);
+                }
+                cycles.add(Cycle.of(arr));
+            }
         }
 
-        return of(new Configuration(spi), pivots);
+        return cycles;
     }
 }

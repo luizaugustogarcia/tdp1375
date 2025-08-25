@@ -30,7 +30,7 @@ public class GPUSorter {
                 totalTime += stopWatch.getTime();
                 callCount++;
                 if (callCount % 1000 == 0) {
-                    System.out.printf("Average GPU Sort time per 100 calls: %.2f ms%n", totalTime / 1000.0);
+                    System.out.printf("Average GPU Sort time per 1000 calls: %.2f ms%n", totalTime / 1000.0);
                     totalTime = 0;
                 }
             }
