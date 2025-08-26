@@ -17,17 +17,22 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CommonOperations implements Serializable {
 
+    public static final short[][] CANONICAL_PI_SHORT;
     public static final Cycle[] CANONICAL_PI;
     public static int MAX_DEPTH;
 
     static {
         CANONICAL_PI = new Cycle[2000];
+        CANONICAL_PI_SHORT = new short[2000][];
         for (var i = 1; i < 2000; i++) {
             val pi = new int[i];
+            val s_pi = new short[i];
             for (var j = 0; j < i; j++) {
                 pi[j] = j;
+                s_pi[j] = (short) j;
             }
             CANONICAL_PI[i] = Cycle.of(pi);
+            CANONICAL_PI_SHORT[i] = s_pi;
         }
     }
 
@@ -38,8 +43,8 @@ public class CommonOperations implements Serializable {
             val stopWatch = new StopWatch();
             stopWatch.start();
             System.out.println(searchForSorting(null,
-                    new Configuration("(0 1 13 8)(2 18 10 4 14 7)(3 6)(5 15 12 17 9)(11 16)"),
-                    1.66, Set.of(1, 6, 16, 17, 18)));
+                    new Configuration("(0 1 13 10)(2 9 17 14 8)(3 6 16 11 5 15 12)(4 7)"),
+                    1.6, Set.of(1, 6, 7, 9)));
             stopWatch.stop();
             System.out.println("Time taken: " + stopWatch.getTime(TimeUnit.MILLISECONDS) + " ms");
         }
@@ -268,9 +273,13 @@ public class CommonOperations implements Serializable {
     }
 
     public static short[] twoLinesNotation(final MulticyclePermutation spi) {
-        val result = new short[spi.getNumberOfSymbols()];
-        for (var i = 0; i < result.length; i++) {
-            result[i] = (short) spi.image(i);
+        val numberOfSymbols = spi.getNumberOfSymbols();
+        val result = Arrays.copyOf(CANONICAL_PI_SHORT[numberOfSymbols], numberOfSymbols);
+        for (val cycle : spi) {
+            val symbols = cycle.getSymbols();
+            for (var i = 0; i < symbols.length; i++) {
+                result[symbols[i]] = (short) cycle.image(symbols[i]);
+            }
         }
         return result;
     }

@@ -15,6 +15,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.mod;
+import static br.unb.cic.tdp.base.CommonOperations.twoLinesNotation;
 
 @RequiredArgsConstructor
 @Getter
@@ -37,8 +38,10 @@ public class PivotedConfiguration {
         var canonical = this;
         var canonicalStr = this.toString();
 
+        val spi = twoLinesNotation(this.getConfiguration().getSpi());
+
         for (int i = 0; i < this.getConfiguration().getPi().size(); i++) {
-            val rotation = rotate(i, this.getConfiguration().getSpi(), this.getPivots());
+            val rotation = rotate(i, spi, this.getPivots());
             val rotationStr = rotation.toString();
             if (rotationStr.compareTo(canonicalStr) < 0) {
                 canonical = rotation;
@@ -51,8 +54,9 @@ public class PivotedConfiguration {
 
     public List<PivotedConfiguration> getEquivalent() {
         val equivalent = new ArrayList<PivotedConfiguration>();
+        val spi = twoLinesNotation(this.getConfiguration().getSpi());
         for (int i = 0; i < this.getConfiguration().getPi().size(); i++) {
-            val rotation = rotate(i, this.getConfiguration().getSpi(), this.getPivots());
+            val rotation = rotate(i, spi, this.getPivots());
             equivalent.add(rotation);
             // TODO reflection?
         }
@@ -63,12 +67,12 @@ public class PivotedConfiguration {
         return "%s#%s".formatted(this.getConfiguration().getSpi().toString(), this.getPivots());
     }
 
-    private PivotedConfiguration rotate(final int i, final MulticyclePermutation spi, final TreeSet<Integer> pivots) {
-        int numberOfSymbols = spi.getNumberOfSymbols();
+    private PivotedConfiguration rotate(final int i, final short[] spi, final TreeSet<Integer> pivots) {
+        int numberOfSymbols = spi.length;
         val conjugated = new short[numberOfSymbols];
 
         for (int x = 0; x < numberOfSymbols; x++) {
-            val y = spi.image(x);
+            val y = spi[x];
             conjugated[mod(x + (-1 * i), numberOfSymbols)] = (short) mod(y + (-1 * i), numberOfSymbols);
         }
 
