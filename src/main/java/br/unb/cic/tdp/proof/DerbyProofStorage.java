@@ -3,6 +3,7 @@ package br.unb.cic.tdp.proof;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.base.PivotedConfiguration;
 import br.unb.cic.tdp.permutation.Cycle;
+import br.unb.cic.tdp.util.ShortArrayPacker;
 import br.unb.cic.tdp.util.SingleConnectionDataSource;
 import com.google.common.collect.Sets;
 import com.zaxxer.hikari.HikariConfig;
@@ -48,7 +49,11 @@ public class DerbyProofStorage implements ProofStorage {
         val runner = getQueryRunner();
 
         try {
-            runner.update("CREATE TABLE %ssorting (config VARCHAR(255) PRIMARY KEY, parent VARCHAR(255), sorting VARCHAR(255))".formatted(tablePrefix));
+            runner.update(("CREATE TABLE %ssorting (" +
+                    "config VARCHAR(100) FOR BIT DATA, " +
+                    "pivots VARCHAR(50) FOR BIT DATA, " +
+                    "sorting VARCHAR(100) FOR BIT DATA, " +
+                    "PRIMARY KEY (config, pivots))").formatted(tablePrefix));
         } catch (final SQLException ignored) {
             log.error("Table already exists");
         }
@@ -72,9 +77,10 @@ public class DerbyProofStorage implements ProofStorage {
     @Override
     public boolean isAlreadySorted(final PivotedConfiguration pivotedConfiguration) {
         return getQueryRunner().query(
-                "SELECT COUNT(1) FROM %ssorting WHERE config = ?".formatted(tablePrefix),
+                "SELECT COUNT(1) FROM %ssorting WHERE config = ? and pivots = ?".formatted(tablePrefix),
                 new ScalarHandler<Integer>(1),
-                getId(pivotedConfiguration)
+                pivotedConfiguration.getPackedSpi(),
+                pivotedConfiguration.getPackedPivots()
         ) > 0;
     }
 
@@ -107,14 +113,30 @@ public class DerbyProofStorage implements ProofStorage {
 
     @SneakyThrows
     @Override
-    public void saveSorting(final PivotedConfiguration pivotedConfiguration, PivotedConfiguration parent, final List<Cycle> sorting) {
+    public void saveSorting(final PivotedConfiguration pivotedConfiguration, final PivotedConfiguration parent, final List<Cycle> sorting) {
         try {
-            getQueryRunner().update("INSERT INTO %ssorting(config, parent, sorting) VALUES (?, ?, ?)".formatted(tablePrefix),
-                    getId(pivotedConfiguration), getId(parent), sorting.toString());
+            getQueryRunner().update("INSERT INTO %ssorting(config, pivots, sorting) VALUES (?, ?, ?)".formatted(tablePrefix),
+                    pivotedConfiguration.getPackedSpi(), pivotedConfiguration.getPackedPivots(), ShortArrayPacker.encode(flatten(sorting.stream().map(Cycle::getSymbols).toList())));
         } catch (final SQLException e) {
             if (!"23505".equals(e.getSQLState())) throw e;
         }
     }
+
+    public static short[] flatten(List<int[]> list) {
+        int totalLength = list.size() * 3;
+
+        short[] result = new short[totalLength];
+
+        int pos = 0;
+        for (int[] arr : list) {
+            for (int val : arr) {
+                result[pos++] = (short) val;
+            }
+        }
+
+        return result;
+    }
+
 
     @SneakyThrows
     @Override

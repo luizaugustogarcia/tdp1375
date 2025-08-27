@@ -2,6 +2,7 @@ package br.unb.cic.tdp.base;
 
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
+import br.unb.cic.tdp.util.ShortArrayPacker;
 import cern.colt.bitvector.BitVector;
 import cern.colt.list.IntArrayList;
 import lombok.Getter;
@@ -25,20 +26,34 @@ public class PivotedConfiguration {
 
     private final TreeSet<Integer> pivots;
 
+    private final short[] spiTwoLinesNotation;
+
+    public byte[] packedSpi;
+
+    public byte[] packedPivots;
+
     public static PivotedConfiguration of(final Configuration configuration, final TreeSet<Integer> pivots) {
-        return new PivotedConfiguration(configuration, pivots);
+        return new PivotedConfiguration(configuration, pivots, twoLinesNotation(configuration.getSpi()));
+    }
+
+    public static PivotedConfiguration of(final Configuration configuration, final TreeSet<Integer> pivots, final short[] twoLinesNotation) {
+        return new PivotedConfiguration(configuration, pivots, twoLinesNotation);
     }
 
     public static PivotedConfiguration of(final String spi, final int... pivots) {
-        return new PivotedConfiguration(new Configuration(spi), Arrays.stream(pivots).boxed().collect(Collectors.toCollection(TreeSet::new)));
+        val config = new Configuration(spi);
+        return new PivotedConfiguration(
+                config,
+                Arrays.stream(pivots).boxed().collect(Collectors.toCollection(TreeSet::new)),
+                twoLinesNotation(config.getSpi())
+        );
     }
 
     public PivotedConfiguration getCanonical() {
-        val spi = twoLinesNotation(this.getConfiguration().getSpi());
-        val minRotation = leastLexRotationWithBooth(spi);
+        val minRotation = leastLexRotationWithBooth(this.spiTwoLinesNotation);
         return of(new Configuration(toCycles(minRotation.rotation)), pivots.stream()
-                .map(p -> mod(p + (-1 * minRotation.r), spi.length))
-                .collect(Collectors.toCollection(TreeSet::new)));
+                .map(p -> mod(p + (-1 * minRotation.r), this.spiTwoLinesNotation.length))
+                .collect(Collectors.toCollection(TreeSet::new)), minRotation.rotation);
     }
 
     public List<PivotedConfiguration> getEquivalent() {
@@ -68,6 +83,21 @@ public class PivotedConfiguration {
         return of(new Configuration(toCycles(conjugated)), pivots.stream()
                 .map(p -> mod(p + (-1 * i), numberOfSymbols))
                 .collect(Collectors.toCollection(TreeSet::new)));
+    }
+
+    public byte[] getPackedSpi() {
+        if (this.packedSpi != null) return this.packedSpi;
+        return this.packedSpi = ShortArrayPacker.encode(this.spiTwoLinesNotation);
+    }
+
+    public byte[] getPackedPivots() {
+        if (this.packedPivots != null) return this.packedPivots;
+        val pivotsArray = this.pivots.stream().mapToInt(Integer::intValue).toArray();
+        val shortPivots = new short[pivotsArray.length];
+        for (int i = 0; i < pivotsArray.length; i++) {
+            shortPivots[i] = (short) pivotsArray[i];
+        }
+        return packedPivots = ShortArrayPacker.encode(shortPivots);
     }
 
     public static MulticyclePermutation toCycles(final short[] perm) {
