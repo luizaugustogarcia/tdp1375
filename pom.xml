@@ -57,6 +57,13 @@
             <version>6.3.0</version>
         </dependency>
 
+        <!-- Chronicle Map -->
+        <dependency>
+            <groupId>net.openhft</groupId>
+            <artifactId>chronicle-map</artifactId>
+            <version>3.25.4</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
