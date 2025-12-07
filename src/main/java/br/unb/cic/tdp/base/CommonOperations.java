@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.AbstractSbtAlgorithm.isOutOfInterval;
 import static br.unb.cic.tdp.permutation.PermutationGroups.computeProduct;
+import static java.util.function.Predicate.not;
 
 public class CommonOperations implements Serializable {
 
@@ -123,6 +124,28 @@ public class CommonOperations implements Serializable {
      * Creates an array where the cycles in <code>bigGamma</code> can be accessed by the symbols of <code>pi</code>
      * (being the indexes of the resulting array).
      */
+    public static Cycle[] cycleIndex(final Collection<Cycle> bigGamma, final int[] pi) {
+        return cyclesIndex(List.of(bigGamma), pi);
+    }
+
+    public static Cycle[] cyclesIndex(final List<Collection<Cycle>> components, final int[] pi) {
+        val index = new Cycle[pi.length];
+
+        components.forEach(component -> {
+            for (val cycle : component) {
+                for (final int symbol : cycle.getSymbols()) {
+                    index[symbol] = cycle;
+                }
+            }
+        });
+
+        return index;
+    }
+
+    /**
+     * Creates an array where the cycles in <code>bigGamma</code> can be accessed by the symbols of <code>pi</code>
+     * (being the indexes of the resulting array).
+     */
     public static Cycle[] cycleIndex(final Collection<Cycle> bigGamma, final Cycle pi) {
         return cyclesIndex(List.of(bigGamma), pi);
     }
@@ -163,9 +186,62 @@ public class CommonOperations implements Serializable {
      */
     public static List<Cycle> searchForSortingSeq(final Cycle pi, final MulticyclePermutation bigGamma, final Stack<Cycle> moves,
                                                   final int initialNumberOfEvenCycles, final float maxRatio) {
+        val movedSymbols = bigGamma.stream().filter(not(c -> c.size() == 1)).mapToInt(Cycle::size).sum();
+        val n = movedSymbols - 1;
+        val upperBoundDiameter = d(n);
+        return searchForSortingSeq(pi.getSymbols(), bigGamma, moves, initialNumberOfEvenCycles, maxRatio, upperBoundDiameter);
+    }
+
+    private static int d(int n) {
+        switch (n) {
+            case 1:
+                return 0;
+            case 2:
+                return 1;
+            case 3:
+                return 2;
+            case 4:
+                return 3;
+            case 5:
+                return 3;
+            case 6:
+                return 4;
+            case 7:
+                return 4;
+            case 8:
+                return 5;
+            case 9:
+                return 5;
+            case 10:
+                return 6;
+            case 11:
+                return 6;
+            case 12:
+                return 7;
+            case 13:
+                return 8;
+            case 14:
+                return 8;
+            case 15:
+                return 9;
+            default:
+                return (int) Math.ceil((n + 1) / 2.0); // Eriksson et al.
+        }
+    }
+
+    /**
+     * Find a sorting sequence whose approximation ratio is at most <code>maxRatio</code>.
+     */
+    public static List<Cycle> searchForSortingSeq(final int[] pi, final MulticyclePermutation bigGamma, final Stack<Cycle> moves,
+                                                  final int initialNumberOfEvenCycles, final float maxRatio, final int maxMoves) {
         val numberOfEvenCycles = bigGamma.getNumberOfEvenCycles();
-        val lowerBound = (pi.size() - numberOfEvenCycles) / 2;
-        val minAchievableRatio = (float) (moves.size() + lowerBound) / (float) ((pi.size() - initialNumberOfEvenCycles) / 2);
+        val lowerBound = Math.ceil((pi.length - numberOfEvenCycles) / 2.0);
+
+        if (moves.size() + lowerBound > maxMoves) {
+            return Collections.emptyList();
+        }
+
+        val minAchievableRatio = (float) (moves.size() + lowerBound) / (float) ((pi.length - initialNumberOfEvenCycles) / 2);
 
         // Do not allow it to exceed the max ratio
         if (minAchievableRatio <= maxRatio) {
@@ -176,19 +252,38 @@ public class CommonOperations implements Serializable {
             if (moves.size() >= 8 && instantRatio <= maxRatio) {
                 return moves;
             } else {
-                val iterator = generateAll0And2Moves(bigGamma, pi).iterator();
-                while (iterator.hasNext()) {
-                    val pair = iterator.next();
-                    val move = pair.getFirst();
+                val ci = cycleIndex(bigGamma, pi);
 
-                    val bigGammaPrime = PermutationGroups.computeProduct(bigGamma, move.getInverse());
-                    moves.push(move);
-                    val sorting = searchForSortingSeq(applyTranspositionOptimized(pi, move),
-                            bigGammaPrime, moves, initialNumberOfEvenCycles, maxRatio);
-                    if (!sorting.isEmpty()) {
-                        return moves;
+                for (var i = 0; i < pi.length - 2; i++) {
+                    val a = pi[i];
+                    if (ci[a].size() == 1) continue;
+
+                    for (var j = i + 1; j < pi.length - 1; j++) {
+                        val b = pi[j];
+                        if (ci[b].size() == 1) continue;
+
+                        for (var k = j + 1; k < pi.length; k++) {
+                            val c = pi[k];
+                            if (ci[c].size() == 1) continue;
+
+                            if (isMinusTwoMove(ci, a, b, c))
+                                continue;
+
+                            val d = getDelta(ci, a, b, c);
+
+                            if (d == 0 || d == 2) {
+                                val move = Cycle.of(a, b, c);
+                                val bigGammaPrime = PermutationGroups.computeProduct(bigGamma, move.getInverse());
+                                moves.push(move);
+                                val sorting = searchForSortingSeq(apply(pi, i, j, k),
+                                        bigGammaPrime, moves, initialNumberOfEvenCycles, maxRatio, maxMoves);
+                                if (!sorting.isEmpty()) {
+                                    return moves;
+                                }
+                                moves.pop();
+                            }
+                        }
                     }
-                    moves.pop();
                 }
             }
         }
@@ -196,9 +291,17 @@ public class CommonOperations implements Serializable {
         return Collections.emptyList();
     }
 
+    public static int[] apply(final int[] pi, final int i, final int j, final int k) {
+        val result = Arrays.copyOf(pi, pi.length);
+
+        System.arraycopy(pi, j, result, i, k - j);
+        System.arraycopy(pi, i, result, i + (k - j), j - i);
+
+        return result;
+    }
+
     public static Stream<Pair<Cycle, Integer>> generateAll0And2Moves(final MulticyclePermutation spi, final Cycle pi) {
         val ci = cycleIndex(spi, pi);
-        val numberOfEvenCycles = spi.getNumberOfEvenCycles();
         return IntStream.range(0, pi.size() - 2).boxed()
                 .filter(i -> ci[pi.get(i)].size() > 1)
                 .flatMap(i -> IntStream.range(i + 1, pi.size() - 1).boxed()
@@ -206,21 +309,98 @@ public class CommonOperations implements Serializable {
                                 .filter(k -> ci[pi.get(k)].size() > 1)
                                 .filter(k -> {
                                     int a = pi.get(i), b = pi.get(j), c = pi.get(k);
-                                    val is_2Move = ci[a] != ci[b] && ci[b] != ci[c] && ci[a] != ci[c];
-                                    // skip (-2)-moves
-                                    return !is_2Move;
+                                    return !isMinusTwoMove(ci, a, b, c);
                                 }).map(k -> {
                                     int a = pi.get(i), b = pi.get(j), c = pi.get(k);
-
-                                    val move = Cycle.of(a, b, c);
-                                    val spiPrime = computeProduct(true, pi.getMaxSymbol() + 1, spi, move.getInverse());
-                                    val delta = spiPrime.getNumberOfEvenCycles() - numberOfEvenCycles;
-
-                                    if (delta >= 0)
-                                        return new Pair<>(move, delta);
-
+                                    int delta = getDelta(ci, a, b, c);
+                                    if (delta == 0 || delta == 2) {
+                                        return new Pair<>(Cycle.of(a, b, c), delta);
+                                    }
                                     return null;
                                 }))).filter(Objects::nonNull);
+    }
+
+    private static int getDelta(final Cycle[] ci, final int a, final int b, final int c) {
+        Cycle cycle = ci[a], cb = ci[b], cc = ci[c];
+
+        int delta, afterEven, beforeEven;
+
+        // case when {ca,cb,cc} are two distinct cycles
+        if (!((cycle == cb && cb == cc) || (cycle != cb && cb != cc && cycle != cc))) {
+            // Determine which cycle appears twice
+            Cycle doubleCycle;
+            int sym1, sym2, singleSym;
+
+            if (cycle == cb) {
+                doubleCycle = cycle;
+                sym1 = a;
+                sym2 = b;
+                singleSym = c;
+            } else if (cycle == cc) {
+                doubleCycle = cycle;
+                sym1 = a;
+                sym2 = c;
+                singleSym = b;
+            } else { // cb == cc
+                doubleCycle = cb;
+                sym1 = b;
+                sym2 = c;
+                singleSym = a;
+            }
+
+            val singleCycle = ci[singleSym];
+
+            // Count the initial number of even cycles
+            beforeEven = (doubleCycle.isEven() ? 1 : 0) + (singleCycle.isEven() ? 1 : 0);
+
+            // After applying (a b c)^{-1}, the double cycle splits into two parts
+            // One part merges with the single cycle, the other remains separate
+            // So we still have 2 cycles total
+
+            // Calculate the distance splitSize between sym1 and sym2 in the double cycle
+            val splitSize = doubleCycle.getK(sym1, sym2);
+
+            // Determine which segment merges with singleCycle based on position of singleSym
+            // The transposition (a b c)^{-1} determines which part connects
+            int cycle1Size, cycle2Size;
+
+            // Check if singleSym comes between sym1 and sym2 in the sequence a,b,c
+            // ca == cc means sym1=a, sym2=c, singleSym=b (b comes between a and c)
+            val singleSymBetween = (cycle == cc);
+
+            if (singleSymBetween) {
+                // The segment between sym1 and sym2 merges with singleCycle
+                cycle1Size = splitSize + singleCycle.size();
+                cycle2Size = doubleCycle.size() - splitSize;
+            } else {
+                // The segment NOT between sym1 and sym2 merges with singleCycle
+                cycle1Size = (doubleCycle.size() - splitSize) + singleCycle.size();
+                cycle2Size = splitSize;
+            }
+
+            // The parity of a cycle of size n is: even if n is odd, odd if n is even
+            afterEven = ((cycle1Size % 2 == 1) ? 1 : 0) + ((cycle2Size % 2 == 1) ? 1 : 0);
+        } else { // all are the same cycle (all are different was filtered before)
+            // All three symbols are in the same cycle
+            beforeEven = cycle.isEven() ? 1 : 0;
+
+            // After applying (a b c)^{-1}, the cycle splits into 3 cycles
+            int kab = cycle.getK(a, b);
+            int kbc = cycle.getK(b, c);
+            int kca = cycle.getK(c, a);
+
+            // The three resulting cycles have sizes kab, kbc, and kca
+            afterEven = ((kab % 2 == 1) ? 1 : 0) + ((kbc % 2 == 1) ? 1 : 0) + ((kca % 2 == 1) ? 1 : 0);
+        }
+
+        delta = afterEven - beforeEven;
+
+        return delta;
+    }
+
+    private static boolean isMinusTwoMove(final Cycle[] ci, final int a, final int b, final int c) {
+        // skip (-2)-moves
+        return ci[a] != ci[b] && ci[b] != ci[c] && ci[a] != ci[c];
     }
 
     public static List<Cycle> generateAll2MovesFromOrientedCycles(final Collection<Cycle> spi, final Cycle pi) {
@@ -331,7 +511,8 @@ public class CommonOperations implements Serializable {
                 var intersecting = false;
                 var orientedTriple = false;
 
-                openGate: for (Cycle gamma : spi) {
+                openGate:
+                for (Cycle gamma : spi) {
                     if (gamma.size() == 1) continue;
 
                     if (epsilon != gamma) {
