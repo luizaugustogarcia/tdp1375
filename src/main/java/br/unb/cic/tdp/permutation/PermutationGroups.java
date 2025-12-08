@@ -29,7 +29,6 @@ public class PermutationGroups implements Serializable {
 
     public static MulticyclePermutation computeProduct(final boolean include1Cycle, final int n, final Permutation... permutations) {
         var composed = new int[n];
-        var buffer = new int[n];
         val mapping = new int[n];
 
         for (var i = 0; i < n; i++) {
@@ -53,13 +52,10 @@ public class PermutationGroups implements Serializable {
             }
 
             for (var start = 0; start < n; start++) {
-                val image = mapping[composed[start]];
-                buffer[start] = image == -1 ? composed[start] : image;
+                val current = composed[start];
+                val image = mapping[current];
+                composed[start] = image == -1 ? current : image;
             }
-
-            val tmp = composed;
-            composed = buffer;
-            buffer = tmp;
         }
 
         val result = new MulticyclePermutation();
