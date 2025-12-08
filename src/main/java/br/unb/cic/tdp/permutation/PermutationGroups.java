@@ -28,58 +28,58 @@ public class PermutationGroups implements Serializable {
     }
 
     public static MulticyclePermutation computeProduct(final boolean include1Cycle, final int n, final Permutation... permutations) {
-        val functions = new int[permutations.length][n];
+        var composed = new int[n];
+        val mapping = new int[n];
 
-        // initializing
-        for (var i = 0; i < permutations.length; i++)
-            Arrays.fill(functions[i], -1);
+        for (var i = 0; i < n; i++) {
+            composed[i] = i;
+        }
 
-        for (var i = 0; i < permutations.length; i++) {
-            if (permutations[i] instanceof Cycle) {
-                val cycle = (Cycle) permutations[i];
+        for (var idx = permutations.length - 1; idx >= 0; idx--) {
+            Arrays.fill(mapping, -1);
+
+            if (permutations[idx] instanceof Cycle) {
+                val cycle = (Cycle) permutations[idx];
                 for (var j = 0; j < cycle.size(); j++) {
-                    functions[i][cycle.get(j)] = cycle.image(cycle.get(j));
+                    mapping[cycle.get(j)] = cycle.image(cycle.get(j));
                 }
             } else {
-                for (val cycle : ((MulticyclePermutation) permutations[i])) {
+                for (val cycle : ((MulticyclePermutation) permutations[idx])) {
                     for (var j = 0; j < cycle.size(); j++) {
-                        functions[i][cycle.get(j)] = cycle.image(cycle.get(j));
+                        mapping[cycle.get(j)] = cycle.image(cycle.get(j));
                     }
                 }
+            }
+
+            for (var start = 0; start < n; start++) {
+                val current = composed[start];
+                val image = mapping[current];
+                composed[start] = image == -1 ? current : image;
             }
         }
 
         val result = new MulticyclePermutation();
-
-        val cycle = new IntArrayList();
         val seen = new BitArray(n);
-        var counter = 0;
-        while (counter < n) {
-            var start = seen.nextZeroBit(0);
+        val cycle = new IntArrayList();
 
-            var image = start;
-            for (var i = functions.length - 1; i >= 0; i--) {
-                image = functions[i][image] == -1 ? image : functions[i][image];
-            }
-
-            if (image == start) {
-                ++counter;
-                seen.set(start);
-                if (include1Cycle)
-                    result.add(Cycle.of(start));
+        for (var start = 0; start < n; start++) {
+            if (seen.get(start)) {
                 continue;
             }
-            while (!seen.get(start)) {
+
+            if (composed[start] == start) {
                 seen.set(start);
-                ++counter;
-                cycle.add(start);
-
-                image = start;
-                for (var i = functions.length - 1; i >= 0; i--) {
-                    image = functions[i][image] == -1 ? image : functions[i][image];
+                if (include1Cycle) {
+                    result.add(Cycle.of(start));
                 }
+                continue;
+            }
 
-                start = image;
+            var current = start;
+            while (!seen.get(current)) {
+                seen.set(current);
+                cycle.add(current);
+                current = composed[current];
             }
 
             result.add(Cycle.of(Arrays.copyOfRange(cycle.elements(), 0, cycle.size())));
