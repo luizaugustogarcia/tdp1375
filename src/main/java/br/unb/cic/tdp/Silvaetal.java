@@ -23,6 +23,8 @@ import static br.unb.cic.tdp.base.CommonOperations.*;
 public class Silvaetal extends AbstractSbtAlgorithm {
 
     public Pair<Cycle, List<Cycle>> transform(Cycle pi, Cycle sigma) {
+        INITIALIZER.get();
+
         val n = pi.size();
 
         val initialPi = pi;
