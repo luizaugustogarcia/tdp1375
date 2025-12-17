@@ -30,7 +30,7 @@ public abstract class AbstractSbtAlgorithm {
 
     private final Pattern INPUT_PATTERN = Pattern.compile("^\\d+(,\\d+)*$");
 
-    private final Supplier<Boolean> INITIALIZER = Suppliers.memoize(() -> {
+    protected final Supplier<Boolean> INITIALIZER = Suppliers.memoize(() -> {
         System.out.print("Loading cases into memory...");
         loadSortings("cases/cases-3,2.txt", _3_2_sortings);
         load11_8Sortings(_11_8_sortings);
