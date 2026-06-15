@@ -12,12 +12,29 @@ import java.util.stream.Collectors;
 
 public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
+    public static final byte[][] CANONICAL_PI_BYTE;
+
+    static {
+        CANONICAL_PI_BYTE = new byte[2000][];
+        for (var i = 1; i < 2000; i++) {
+            val pi = new int[i];
+            val b_pi = new byte[i];
+            for (var j = 0; j < i; j++) {
+                pi[j] = j;
+                b_pi[j] = (byte) j;
+            }
+            CANONICAL_PI_BYTE[i] = b_pi;
+        }
+    }
+
     private final List<Cycle> cycles = new ArrayList<>();
 
     @Getter
     private final Set<Integer> symbols = new HashSet<>();
 
     private int numberOfEvenCycles;
+
+    private byte[] oneLineNotation;
 
     public MulticyclePermutation() {
     }
@@ -37,12 +54,33 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
         of(permutation);
     }
 
+    public byte[] getOneLineNotation() {
+        if (oneLineNotation == null) {
+            oneLineNotation = oneLineNotation(this);
+        }
+        return oneLineNotation;
+    }
+
+    public static byte[] oneLineNotation(final Collection<Cycle> spi) {
+        // assumption: pi is always CANONICAL_PI_BYTE i.e. spi is in standard form
+        val numberOfSymbols = spi.stream().mapToInt(Cycle::size).sum();
+        val result = Arrays.copyOf(CANONICAL_PI_BYTE[numberOfSymbols], numberOfSymbols);
+        for (val cycle : spi) {
+            val symbols = cycle.getSymbols();
+            for (int symbol : symbols) {
+                val symbolIndex = (symbol);
+                result[symbolIndex] = (byte) cycle.image(symbolIndex);
+            }
+        }
+        return result;
+    }
+
     private void of(String permutation) {
         val cyclePattern = Pattern.compile("\\(([^\\(\\)]*?)\\)");
         if (!permutation.contains("(")) {
             this.add(Cycle.of(permutation));
         } else {
-            val matcher= cyclePattern.matcher(permutation);
+            val matcher = cyclePattern.matcher(permutation);
             while (matcher.find()) {
                 this.add(Cycle.of(matcher.group(1)));
             }
@@ -95,7 +133,7 @@ public class MulticyclePermutation implements Collection<Cycle>, Permutation {
 
     @Override
     public int image(final int a) {
-        for (val cycle: cycles) {
+        for (val cycle : cycles) {
             if (cycle.contains(a)) {
                 return cycle.image(a);
             }

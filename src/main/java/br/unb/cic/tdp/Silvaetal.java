@@ -25,8 +25,6 @@ public class Silvaetal extends AbstractSbtAlgorithm {
     public Pair<Cycle, List<Cycle>> transform(Cycle pi, Cycle sigma) {
         INITIALIZER.get();
 
-        val n = pi.size();
-
         val initialPi = pi;
 
         val sorting = new ArrayList<Cycle>();

@@ -3,19 +3,19 @@ package br.unb.cic.tdp.proof.seq11_8;
 import br.unb.cic.tdp.base.Configuration;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
-import br.unb.cic.tdp.proof.util.SortOrExtend;
+import br.unb.cic.tdp.proof.SortOrExtend;
 import br.unb.cic.tdp.util.Pair;
 import cern.colt.list.FloatArrayList;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.val;
-import org.apache.commons.io.FileUtils;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.Velocity;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.PrintStream;
+import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -23,200 +23,70 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static br.unb.cic.tdp.base.CommonOperations.cycleIndex;
-import static br.unb.cic.tdp.base.CommonOperations.is11_8;
 import static br.unb.cic.tdp.base.Configuration.ofSignature;
 import static br.unb.cic.tdp.base.Configuration.signature;
-import static br.unb.cic.tdp.proof.ProofGenerator.permutationToJsArray;
+import static br.unb.cic.tdp.proof.SortOrExtend.permutationToJsArray;
 
 public class Extensions {
 
     @SneakyThrows
     public static void generate(final String outputDir) {
         Files.createDirectories(Paths.get(outputDir + "/dfs/"));
-        Files.createDirectories(Paths.get(outputDir + "/dfs/working/"));
         Files.createDirectories(Paths.get(outputDir + "/dfs/bad-cases/"));
 
-        cleanUpIncompleteCases(outputDir + "/dfs/");
+//        try (var pool = new ForkJoinPool()) {
+//            // oriented 5-cycle
+//            pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
+//            // interleaving pair
+//            pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
+//            // intersecting pair
+//            pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
+//        }
 
-        cleanUpBadExtensionAndInvalidFiles(outputDir + "/dfs/");
-
-        // ATTENTION: The Sort Or Extend fork/join can never run with BAD EXTENSION files in the dfs directory.
-        // Otherwise, it will wrongly skip cases.
-
-        var pool = new ForkJoinPool();
-        // oriented 5-cycle
-        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1,4,2)")), outputDir + "/dfs/"));
-        // interleaving pair
-        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,4,2)(1,5,3)")), outputDir + "/dfs/"));
-        // intersecting pair
-        pool.execute(new SortOrExtendExtensions(new Configuration(new MulticyclePermutation("(0,3,1)(2,5,4)")), outputDir + "/dfs/"));
-        pool.shutdown();
-        // boundless
-        pool.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-
-        val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
-                .map(Path::toFile)
-                .forEach(file -> executor.submit(() -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
-
-        executor.shutdown();
-        // boundless
-        executor.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-    }
-
-    @SneakyThrows
-    public static void cleanUpBadExtensionAndInvalidFiles(final String outputDir) {
-        val dir = new File(outputDir);
-
-        val files = new ArrayList<File>();
-        Stream.of(dir.listFiles(file -> file.getName().endsWith(".html")))
-                .parallel()
-                .forEach(f -> {
-                    val file = new File(outputDir + f.getName());
-
-                    try {
-                        if (isBadExtension(file)) {
-                            files.add(file);
-                        } else {
-                            val canonical = new Configuration(new MulticyclePermutation(f.getName().replace(" ", ",")));
-                            val sorting = getSorting(file.toPath());
-                            if (!is11_8(canonical.getSpi(), canonical.getPi(), sorting.getSecond())) {
-                                files.add(file);
-                            }
-                        }
-                    } catch (IllegalStateException e) {
-                        files.add(file);
-                    }
-                });
-
-        boolean canContinue = true;
-        for (val file : files) {
-            boolean deleted = FileUtils.deleteQuietly(file);
-            canContinue &= deleted;
-            if (!deleted) {
-                System.out.println("rm \"" + file + "\"");
-            }
+        try (val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())) {
+            Files.list(Paths.get(outputDir + "/dfs/bad-cases/"))
+                    .map(Path::toFile)
+                    .forEach(file -> executor.submit(() -> makeHtmlNavigation(new Configuration(new MulticyclePermutation(file.getName())), outputDir)));
         }
-
-        if (!canContinue)
-            throw new RuntimeException("ERROR: files not deleted, cannot continue.");
     }
 
-    @SneakyThrows
-    public static Pair<MulticyclePermutation, List<Cycle>> getSorting(final Path path) {
-        val reader = new BufferedReader(new FileReader(path.toFile()), 1024 * 10);
-        var line = reader.readLine();
-        MulticyclePermutation spi = null;
-
-        while ((line = reader.readLine()) != null) {
-            line = line.trim();
-
-            if (line.startsWith("<h6>")) {
-                spi = new MulticyclePermutation(line.trim().replace("<h6>", "")
-                        .replace("</h6>", "").replace(" ", ","));
-            }
-
-            if (line.equals("THE EXTENSIONS ARE:")) {
-                return new Pair<>(spi, null);
-            }
-
-            val sorting = new ArrayList<Cycle>();
-            if (line.trim().equals("ALLOWS (11/8)-SEQUENCE")) {
-                while ((line = reader.readLine()) != null) {
-                    line = line.trim();
-
-                    if (!line.equals("<div style=\"margin-top: 10px; \">")) {
-                        continue;
-                    }
-
-                    line = reader.readLine();
-
-                    val move = line.split(": ")[1].replace(" ", ",")
-                            .replace("<br>", "");
-                    sorting.add(Cycle.of(move));
-                }
-                return new Pair<>(spi, sorting);
-            }
-        }
-
-        throw new IllegalStateException("Unknown file " + path.toFile());
+    @Getter
+    @AllArgsConstructor
+    public static class ExtensionData {
+        private final String info;
+        private final boolean hasSorting;
+        private final int hashCode;
+        private final int threeNorm;
+        private final String signature;
+        private final String jsSpi;
+        private final String spi;
+        private final String linkTarget;
     }
 
-    public static boolean isBadExtension(final File file) {
-        final BufferedReader reader;
-        try {
-            reader = new BufferedReader(new FileReader(file), 1024 * 10);
-            var line = reader.readLine();
-
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-
-                if (line.equals("THE EXTENSIONS ARE:")) {
-                    return true;
-                }
-
-                if (line.trim().equals("ALLOWS (11/8)-SEQUENCE")) {
-                    return false;
-                }
-            }
-        } catch (Throwable e) {
-            Throwables.propagate(e);
-        }
-
-        throw new IllegalStateException("Unknown file");
-    }
-
-    @SneakyThrows
-    private static void renderExtensions(final List<Pair<String, Configuration>> extensions, final PrintStream out, final String outputDir) {
+    private static List<ExtensionData> buildExtensionData(final List<Pair<String, Configuration>> extensions, final String outputDir) {
+        val result = new ArrayList<ExtensionData>();
         for (val extension : extensions) {
             val configuration = extension.getSecond();
             val canonical = extension.getSecond().getCanonical();
 
             val badCaseFile = new File(outputDir + "/dfs/bad-cases/" + canonical.getSpi());
             val hasSorting = !badCaseFile.exists();
-            out.println(hasSorting ? "<div style=\"margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)\">" :
-                    "<div style=\"margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);\">");
-            out.println(extension.getFirst() + "<br>");
-            out.println(((hasSorting ? "GOOD" : "BAD") + " EXTENSION") + "<br>");
-            out.println("Hash code: " + configuration.hashCode() + "<br>");
-            out.println("3-norm: " + configuration.getSpi().get3Norm() + "<br>");
-            out.println("Signature: " + configuration.getSignature() + "<br>");
-            val jsSpi = permutationToJsArray(configuration.getSpi());
-            out.printf("Extension: <a href=\"\" " +
-                            "onclick=\"" +
-                            "updateCanvas('modalCanvas', %s); " +
-                            "$('h6.modal-title').text('%s');" +
-                            "$('#modal').modal('show'); " +
-                            "return false;\">%s</a><br>%n",
-                    jsSpi, configuration.getSpi(), configuration.getSpi());
-            out.printf("View canonical extension: <a href=\"%s.html\">%s</a>%n", canonical.getSpi(), canonical.getSpi());
-            out.println("</div>");
+
+            result.add(new ExtensionData(
+                    extension.getFirst(),
+                    hasSorting,
+                    configuration.hashCode(),
+                    configuration.getSpi().get3Norm(),
+                    configuration.getSignature().toString(),
+                    permutationToJsArray(configuration.getSpi()),
+                    configuration.getSpi().toString(),
+                    canonical.getSpi().toString()
+            ));
         }
-    }
-
-    @SneakyThrows
-    public static void cleanUpIncompleteCases(final String outputDir) {
-        val excludeFiles = new ArrayList<File>();
-
-        Files.list(Paths.get(outputDir + "/working/"))
-                .map(Path::toFile)
-                .forEach(excludeFiles::add);
-
-        boolean canContinue = true;
-        for (val file : excludeFiles) {
-            boolean deleted = FileUtils.deleteQuietly(file);
-            canContinue &= deleted;
-            if (!deleted) {
-                System.out.println("rm \"" + file + "\"");
-            }
-        }
-
-        if (!canContinue)
-            throw new RuntimeException("ERROR: working files not deleted, cannot continue.");
+        return result;
     }
 
     /*
@@ -314,7 +184,7 @@ public class Extensions {
                             }
                         } else if (cyclesSizes.get(label) == 3) {
                             val extensionPrime = extend(cyclesByLabel, label, signature, a, b);
-                            val fractions = new float[]{0.1F, 0.3F, 0.5F, 0.2F, 0.4F};
+                            val fractions = new float[]{0.01F, 0.03F, 0.05F, 0.02F, 0.04F};
                             for (int i = 0; i < fractions.length; i++) {
                                 fractions[i] += label;
                             }
@@ -335,7 +205,8 @@ public class Extensions {
     public static boolean areSymbolsInCyclicOrder(final float[] elements, final float[] other) {
         int next = 0;
 
-        outer: for (int i = 0; i < elements.length; i++) {
+        outer:
+        for (int i = 0; i < elements.length; i++) {
             if (elements[i] == other[next]) {
                 for (int j = 0; j <= elements.length; j++) {
                     int index = (i + j) % elements.length;
@@ -364,16 +235,16 @@ public class Extensions {
         System.arraycopy(signature, 0, copiedsignature, 0, signature.length);
 
         for (int i = cycle.getSymbols().length - 1; i >= 0; i--) {
-            copiedsignature[cycle.getSymbols()[i]] += 0.1 * (i + 1);
+            copiedsignature[cycle.getSymbols()[i]] += 0.01 * (i + 1);
         }
 
-        float next = 0.5f;
+        float next = 0.05f;
         val positions = new int[]{a, b};
         val extension = new FloatArrayList(copiedsignature);
         int inserted = 0;
         for (int position : positions) {
             extension.beforeInsert(position + inserted, label + next);
-            next -= 0.1f;
+            next -= 0.01f;
             inserted++;
         }
         extension.trimToSize();
@@ -419,78 +290,23 @@ public class Extensions {
     }
 
     @SneakyThrows
-    private static void makeHtmlNavigation (final Configuration configuration, final String outputDir) {
-        try (val out = new PrintStream(outputDir + "/dfs/" + configuration.getSpi() + ".html")) {
-            out.println("<html>\n" +
-                    "\t<head>\n" +
-                    "\t\t<link rel=\"stylesheet\" href=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css\" integrity=\"sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh\" crossorigin=\"anonymous\">\n" +
-                    "\t\t<script src=\"https://code.jquery.com/jquery-3.4.1.slim.min.js\" integrity=\"sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n\" crossorigin=\"anonymous\"></script>\n" +
-                    "\t\t<script src=\"https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js\" integrity=\"sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo\" crossorigin=\"anonymous\"></script>\n" +
-                    "\t\t<script src=\"https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js\" integrity=\"sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6\" crossorigin=\"anonymous\"></script>\n" +
-                    "\t\t<script src=\"../draw-config.js\"></script>\n" +
-                    "\t\t<style>* { font-size: small; }</style>\n" +
-                    "\t</head>\n" +
-                    "<body>\n" +
-                    "<div class=\"modal fade\" id=\"modal\" role=\"dialog\">\n" +
-                    "    <div class=\"modal-dialog\" style=\"left: 25px; max-width: unset;\">\n" +
-                    "      <!-- Modal content-->\n" +
-                    "      <div class=\"modal-content\" style=\"width: fit-content;\">\n" +
-                    "        <div class=\"modal-header\">\n" +
-                    "          <h6 class=\"modal-title\">--------</h6>\n" +
-                    "          <button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>\n" +
-                    "        </div>\n" +
-                    "        <div class=\"modal-body\">\n" +
-                    "          <canvas id=\"modalCanvas\"></canvas>\n" +
-                    "        </div>\n" +
-                    "      </div>\n" +
-                    "    </div>\n" +
-                    "</div>\n" +
-                    "<script>\n" +
-                    "\tfunction updateCanvas(canvasId, spi) {\n" +
-                    "\t   var pi = []; for (var i = 0; i < spi.flatMap(c => c).length; i++) { pi.push(i); }" +
-                    "\t   var canvas = document.getElementById(canvasId);\n" +
-                    "\t   canvas.height = calcHeight(canvas, spi, pi);\n" +
-                    "\t   canvas.width = pi.length * padding;\n" +
-                    "\t   draw(canvas, spi, pi);\n" +
-                    "\t}\n" +
-                    "</script>\n" +
-                    "<div style=\"margin-top: 10px; margin-left: 10px\">");
+    private static void makeHtmlNavigation(final Configuration configuration, final String outputDir) {
+        val file = new File(outputDir + "/dfs/" + configuration.getSpi() + ".html");
 
-            out.println("<canvas id=\"canvas\"></canvas>");
-            out.printf("<script>updateCanvas('canvas', %s);</script>%n",
-                    permutationToJsArray(configuration.getSpi()));
+        val context = new VelocityContext();
+        context.put("jsSpi", permutationToJsArray(configuration.getSpi()));
+        context.put("spi", configuration.getSpi().toString());
+        context.put("hashCode", configuration.hashCode());
+        context.put("openGates", configuration.getOpenGates().toString());
+        context.put("signature", configuration.getSignature().toString());
+        context.put("threeNorm", configuration.getSpi().get3Norm());
+        context.put("type1Extensions", buildExtensionData(type1Extensions(configuration), outputDir));
+        context.put("type2Extensions", buildExtensionData(type2Extensions(configuration), outputDir));
+        context.put("type3Extensions", buildExtensionData(type3Extensions(configuration), outputDir));
 
-            out.println("<h6>" + configuration.getSpi() + "</h6>");
-
-            out.println("Hash code: " + configuration.hashCode() + "<br>");
-            out.println("Open gates: " + configuration.getOpenGates() + "<br>");
-            out.println("Signature: " + configuration.getSignature() + "<br>");
-            out.println("3-norm: " + configuration.getSpi().get3Norm());
-
-            out.println("<p style=\"margin-top: 10px;\"></p>");
-            out.println("THE EXTENSIONS ARE:");
-
-            out.println("<table style=\"width:100%; border: 1px solid lightgray; border-collapse: collapse;\">");
-            out.println("  <tr>");
-            out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 1</th>");
-            out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 2</th>");
-            out.println("    <th style=\"text-align: start; border: 1px solid lightgray;\">Type 3</th>");
-            out.println("  </tr>");
-            out.println("  <tr>");
-            out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-            renderExtensions(type1Extensions(configuration), out, outputDir);
-            out.println("    </td>");
-            out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-            renderExtensions(type2Extensions(configuration), out, outputDir);
-            out.println("    </td>");
-            out.println("    <td style=\"vertical-align: baseline; border: 1px solid lightgray;\">");
-            renderExtensions(type3Extensions(configuration), out, outputDir);
-            out.println("    </td>");
-            out.println("  </tr>");
-            out.println("</table>");
-
-            out.println("</body>");
-            out.println("</html>");
+        val template = Velocity.getTemplate("templates/extensions.html");
+        try (val writer = new FileWriter(file)) {
+            template.merge(context, writer);
         }
     }
 

@@ -1,0 +1,64 @@
+<html>
+	<head>
+		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+		<script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+		<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+		<script src="../draw-config.js"></script>
+		<style>* { font-size: small; }</style>
+	</head>
+<body>
+<div class="modal fade" id="modal" role="dialog">
+    <div class="modal-dialog" style="left: 25px; max-width: unset;">
+      <!-- Modal content-->
+      <div class="modal-content" style="width: fit-content;">
+        <div class="modal-header">
+          <h6 class="modal-title">--------</h6>
+          <button type="button" class="close" data-dismiss="modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <canvas id="modalCanvas"></canvas>
+        </div>
+      </div>
+    </div>
+</div>
+<script>
+	function updateCanvas(canvasId, spi) {
+	   var pi = []; for (var i = 0; i < spi.flatMap(c => c).length; i++) { pi.push(i); }
+	   var canvas = document.getElementById(canvasId);
+	   canvas.height = calcHeight(canvas, spi, pi);
+	   canvas.width = pi.length * padding;
+	   draw(canvas, spi, pi);
+	}
+</script>
+<div style="margin-top: 10px; margin-left: 10px">
+<canvas id="canvas"></canvas>
+<script>updateCanvas('canvas', $jsSpi);</script>
+<h6>$spi</h6>
+Hash code: $hashCode<br>
+Signature: $signature<br>
+3-norm: $threeNorm
+<p style="margin-top: 10px;"></p>
+THE EXTENSIONS ARE:
+#foreach($ext in $extensions)
+#if($ext.hasSorting)
+<div style="margin-top: 10px; background-color: rgba(153, 255, 153, 0.15)">
+#else
+<div style="margin-top: 10px; background-color: rgba(255, 0, 0, 0.05);">
+#end
+$ext.info<br>
+#if($ext.hasSorting)GOOD EXTENSION#{else}BAD EXTENSION#end<br>
+Hash code: $ext.hashCode<br>
+3-norm: $ext.threeNorm<br>
+Signature: $ext.signature<br>
+Extension: <a href="" onclick="updateCanvas('modalCanvas', $ext.jsSpi); $('h6.modal-title').text('$ext.spi');$('#modal').modal('show'); return false;">$ext.spi</a><br>
+#if($ext.hasSorting)
+View sorting: <a href="${ext.linkTarget}.html">$ext.linkTarget</a>
+#else
+View extension: <a href="${ext.spi}.html">$ext.spi</a>
+#end
+</div>
+#end
+</div>
+</body>
+</html>

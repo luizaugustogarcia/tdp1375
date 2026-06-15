@@ -6,6 +6,7 @@ import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import br.unb.cic.tdp.permutation.PermutationGroups;
 import br.unb.cic.tdp.proof.ProofGenerator;
 import br.unb.cic.tdp.util.Pair;
+import cern.colt.list.IntArrayList;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.HashMultimap;
@@ -20,7 +21,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
-import static br.unb.cic.tdp.proof.ProofGenerator.removeExtraSymbols;
 import static java.nio.file.Files.lines;
 
 public abstract class AbstractSbtAlgorithm {
@@ -270,5 +270,14 @@ public abstract class AbstractSbtAlgorithm {
 
         // the article contains the proof that there will always be a (3,2)-sequence at this point
         throw new RuntimeException("ERROR");
+    }
+
+    public static Cycle removeExtraSymbols(final Set<Integer> symbols, final Cycle pi) {
+        val newPi = new IntArrayList(symbols.size());
+        for (val symbol : pi.getSymbols()) {
+            if (symbols.contains(symbol))
+                newPi.add(symbol);
+        }
+        return Cycle.of(newPi);
     }
 }
