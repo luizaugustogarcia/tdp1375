@@ -192,7 +192,7 @@ public class CommonOperations implements Serializable {
         return searchForSortingSeq(pi.getSymbols(), bigGamma, moves, initialNumberOfEvenCycles, maxRatio, upperBoundDiameter);
     }
 
-    private static int d(int n) {
+    public static int d(int n) {
         switch (n) {
             case 1:
                 return 0;

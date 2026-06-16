@@ -3,7 +3,6 @@ package br.unb.cic.tdp.base;
 import br.unb.cic.tdp.permutation.Cycle;
 import br.unb.cic.tdp.permutation.MulticyclePermutation;
 import com.google.common.primitives.Floats;
-import com.google.common.primitives.Ints;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.ToString;
@@ -18,8 +17,6 @@ import java.util.stream.Stream;
 import java.util.zip.CRC32;
 
 import static br.unb.cic.tdp.base.CommonOperations.*;
-import static java.util.Comparator.comparing;
-import static java.util.stream.Collectors.toCollection;
 
 /**
  * Only supports oriented cycles whose length is at most 100.
@@ -54,35 +51,49 @@ public class Configuration {
     }
 
     public static float[] signature(final Collection<Cycle> spi, final Cycle pi) {
-        val labelByCycle = new HashMap<Cycle, Float>();
+        val labelByCycle = new IdentityHashMap<Cycle, Float>();
         val cycleIndex = cycleIndex(spi, pi);
-        val orientedCycles = spi.stream().filter(c -> !areSymbolsInCyclicOrder(pi.getInverse(), c.getSymbols()))
-                .collect(Collectors.toSet());
-        val symbolIndexByOrientedCycle = new HashMap<Cycle, int[]>();
+        val orientedByCycle = new IdentityHashMap<Cycle, Boolean>();
+        val symbolIndexByOrientedCycle = new IdentityHashMap<Cycle, int[]>();
+        val piInverse = pi.getInverse();
+        val maxSymbol = pi.getMaxSymbol();
+        val piPosition = new int[maxSymbol + 1];
+        val nextLabel = new int[]{1};
+
+        for (var i = 0; i < pi.size(); i++) {
+            piPosition[pi.get(i)] = i;
+        }
 
         val signature = new float[pi.size()];
 
         for (var i = 0; i < signature.length; i++) {
             val symbol = pi.get(i);
             val cycle = cycleIndex[symbol];
-            if (orientedCycles.contains(cycle)) {
+            val oriented = orientedByCycle.computeIfAbsent(cycle, c ->
+                    !areSymbolsInCyclicOrder(piInverse, c.getSymbols()));
+            if (oriented) {
                 symbolIndexByOrientedCycle.computeIfAbsent(cycle, c -> {
-                    val symbolIndex = new int[pi.getMaxSymbol() + 1];
-                    val symbolMinIndex = Ints.asList(c.getSymbols()).stream().min(comparing(pi::indexOf)).get();
-                    for (var j = 0; j < c.getSymbols().length; j++) {
-                        if (c.getSymbols()[j] == symbolMinIndex) {
-                            for (var k = 0; k < c.getSymbols().length; k++) {
-                                symbolIndex[c.getSymbols()[(j + k) % c.getSymbols().length]] = k + 1;
-                            }
-                            break;
+                    val symbolIndex = new int[maxSymbol + 1];
+                    val cycleSymbols = c.getSymbols();
+                    var minPos = Integer.MAX_VALUE;
+                    var minCycleIdx = 0;
+
+                    for (var j = 0; j < cycleSymbols.length; j++) {
+                        val pos = piPosition[cycleSymbols[j]];
+                        if (pos < minPos) {
+                            minPos = pos;
+                            minCycleIdx = j;
                         }
+                    }
+
+                    for (var k = 0; k < cycleSymbols.length; k++) {
+                        symbolIndex[cycleSymbols[(minCycleIdx + k) % cycleSymbols.length]] = k + 1;
                     }
                     return symbolIndex;
                 });
             }
-            labelByCycle.computeIfAbsent(cycle, c -> (float) (labelByCycle.size() + 1));
-            signature[i] = orientedCycles.contains(cycle) ?
-                    labelByCycle.get(cycle) + (float) symbolIndexByOrientedCycle.get(cycle)[symbol] / 100 : labelByCycle.get(cycle);
+            val label = labelByCycle.computeIfAbsent(cycle, c -> (float) nextLabel[0]++);
+            signature[i] = oriented ? label + (float) symbolIndexByOrientedCycle.get(cycle)[symbol] / 100 : label;
         }
 
         return signature;
@@ -90,36 +101,55 @@ public class Configuration {
 
     public static Configuration ofSignature(final float[] signature) {
         val pi = CANONICAL_PI[signature.length];
-
-        val cyclesByLabel = new HashMap<Integer, List<Integer>>();
-        val piSymbolsByOrientedCycleSymbols = new HashMap<Float, Integer>();
-        val orientedCyclesByLabel = new HashMap<Integer, List<Integer>>();
-
-        for (var i = signature.length - 1; i >= 0; i--) {
-            val label = (int) Math.floor(signature[i]);
-            cyclesByLabel.computeIfAbsent(label, key -> new ArrayList<>());
-            cyclesByLabel.get(label).add(i);
-            if (signature[i] % 1 > 0) {
-                piSymbolsByOrientedCycleSymbols.put(signature[i], pi.get(i));
-                orientedCyclesByLabel.computeIfAbsent(label, key -> cyclesByLabel.get(label));
+        var maxLabel = 0;
+        for (val value : signature) {
+            val label = (int) value;
+            if (label > maxLabel) {
+                maxLabel = label;
             }
         }
 
-        orientedCyclesByLabel.forEach((key, value) -> {
-            val sortedSignature = signature.clone();
-            Arrays.sort(sortedSignature);
-            val orientedCycle = new ArrayList<Integer>();
-            for (var i = 0; i < signature.length; i++) {
-                if (Math.floor(sortedSignature[i]) == key) {
-                    orientedCycle.add(piSymbolsByOrientedCycleSymbols.get(sortedSignature[i]));
-                }
+        val cycleSizes = new int[maxLabel + 1];
+        val orientedSizes = new int[maxLabel + 1];
+        for (val value : signature) {
+            val label = (int) value;
+            cycleSizes[label]++;
+            if (value % 1 > 0) {
+                orientedSizes[label]++;
             }
-            value.clear();
-            value.addAll(orientedCycle);
-        });
+        }
 
-        val spi = cyclesByLabel.values().stream().map(c -> Cycle.of(Ints.toArray(c)))
-                .collect(toCollection(MulticyclePermutation::new));
+        val cyclesByLabel = new int[maxLabel + 1][];
+        val orientedCyclesByLabel = new int[maxLabel + 1][];
+        for (var label = 0; label <= maxLabel; label++) {
+            if (cycleSizes[label] > 0) {
+                cyclesByLabel[label] = new int[cycleSizes[label]];
+            }
+            if (orientedSizes[label] > 0) {
+                orientedCyclesByLabel[label] = new int[orientedSizes[label]];
+            }
+        }
+
+        val cycleFillIdx = new int[maxLabel + 1];
+        for (var i = signature.length - 1; i >= 0; i--) {
+            val value = signature[i];
+            val label = (int) value;
+            cyclesByLabel[label][cycleFillIdx[label]++] = i;
+            if (value % 1 > 0) {
+                val rank = Math.round((value - label) * 100f);
+                orientedCyclesByLabel[label][rank - 1] = pi.get(i);
+            }
+        }
+
+        val spi = new MulticyclePermutation();
+        for (var label = 0; label <= maxLabel; label++) {
+            if (cycleSizes[label] == 0) {
+                continue;
+            }
+            val cycleSymbols = orientedSizes[label] > 0 ? orientedCyclesByLabel[label] : cyclesByLabel[label];
+            spi.add(Cycle.of(cycleSymbols));
+        }
+
         return new Configuration(spi, pi);
     }
 

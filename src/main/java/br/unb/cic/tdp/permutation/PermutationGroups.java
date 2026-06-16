@@ -28,46 +28,81 @@ public class PermutationGroups implements Serializable {
     }
 
     public static MulticyclePermutation computeProduct(final boolean include1Cycle, final int n, final Permutation... permutations) {
-        var composed = new int[n];
-        val mapping = new int[n];
+        val composed = new int[n];
 
         for (var i = 0; i < n; i++) {
             composed[i] = i;
         }
 
-        for (var idx = permutations.length - 1; idx >= 0; idx--) {
-            Arrays.fill(mapping, -1);
+        val mapping = new int[n];
+        val mappingSet = new boolean[n];
 
-            if (permutations[idx] instanceof Cycle) {
-                val cycle = (Cycle) permutations[idx];
-                for (var j = 0; j < cycle.size(); j++) {
-                    mapping[cycle.get(j)] = cycle.image(cycle.get(j));
+        for (var idx = permutations.length - 1; idx >= 0; idx--) {
+            val perm = permutations[idx];
+
+            if (perm instanceof Cycle) {
+                val cycle = (Cycle) perm;
+                val symbols = cycle.getSymbols();
+                val size = symbols.length;
+
+                for (var j = 0; j < size; j++) {
+                    val sym = symbols[j];
+                    val nextSym = symbols[(j + 1) % size];
+                    mapping[sym] = nextSym;
+                    mappingSet[sym] = true;
                 }
-            } else {
-                for (val cycle : ((MulticyclePermutation) permutations[idx])) {
-                    for (var j = 0; j < cycle.size(); j++) {
-                        mapping[cycle.get(j)] = cycle.image(cycle.get(j));
+
+                for (var start = 0; start < n; start++) {
+                    val current = composed[start];
+                    if (mappingSet[current]) {
+                        composed[start] = mapping[current];
                     }
                 }
-            }
 
-            for (var start = 0; start < n; start++) {
-                val current = composed[start];
-                val image = mapping[current];
-                composed[start] = image == -1 ? current : image;
+                for (var j = 0; j < size; j++) {
+                    mappingSet[symbols[j]] = false;
+                }
+            } else {
+                val multicycle = (MulticyclePermutation) perm;
+                for (val cycle : multicycle) {
+                    val symbols = cycle.getSymbols();
+                    val size = symbols.length;
+
+                    for (var j = 0; j < size; j++) {
+                        val sym = symbols[j];
+                        val nextSym = symbols[(j + 1) % size];
+                        mapping[sym] = nextSym;
+                        mappingSet[sym] = true;
+                    }
+                }
+
+                for (var start = 0; start < n; start++) {
+                    val current = composed[start];
+                    if (mappingSet[current]) {
+                        composed[start] = mapping[current];
+                    }
+                }
+
+                for (val cycle : multicycle) {
+                    val symbols = cycle.getSymbols();
+                    for (var j = 0; j < symbols.length; j++) {
+                        mappingSet[symbols[j]] = false;
+                    }
+                }
             }
         }
 
         val result = new MulticyclePermutation();
         val seen = new BitArray(n);
-        val cycle = new IntArrayList();
+        val cycleBuffer = new int[n];
 
         for (var start = 0; start < n; start++) {
             if (seen.get(start)) {
                 continue;
             }
 
-            if (composed[start] == start) {
+            val target = composed[start];
+            if (target == start) {
                 seen.set(start);
                 if (include1Cycle) {
                     result.add(Cycle.of(start));
@@ -75,15 +110,15 @@ public class PermutationGroups implements Serializable {
                 continue;
             }
 
+            var cycleLen = 0;
             var current = start;
-            while (!seen.get(current)) {
+            do {
                 seen.set(current);
-                cycle.add(current);
+                cycleBuffer[cycleLen++] = current;
                 current = composed[current];
-            }
+            } while (current != start);
 
-            result.add(Cycle.of(Arrays.copyOfRange(cycle.elements(), 0, cycle.size())));
-            cycle.clear();
+            result.add(Cycle.of(Arrays.copyOf(cycleBuffer, cycleLen)));
         }
 
         return result;
