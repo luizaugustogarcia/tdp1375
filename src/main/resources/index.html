@@ -17,6 +17,7 @@
 \newcommand\epi{\bar{\pi}}
 \newcommand\eiota{\bar{\iota}}
 \newcommand\spi{{\eiota}{\epi}^{-1}}
+\DeclareMathOperator{\Supp}{Supp}
 \)
 <table border=0 cellspacing=0 cellpadding=5 width="60%">
     <tr>
@@ -131,11 +132,22 @@
                 &nbsp;&nbsp;&nbsp;&nbsp;(2.b.xv) $\epi=(a\dots i\dots f\dots c\dots h\dots e\dots b\dots g\dots d\dots )$. $\tau_1=(d\;f\;e)$, $\tau_2=(a\;b\;c)$, $\tau_3=(d\;f\;e)$
 
 
-            <h3>Proposition 40: If $\Gamma$ is a component of $\spi$, then the product $\Gamma\epi$ is a $(n+1)$-cycle.</h3>
-            Proof. Suppose that $\spi=\Sigma\Gamma$. We have two cases:
+            <h3>Proposition 40: If $\Gamma$ is a component of $\spi$, then the product $\Gamma\epi$ is an $N$-cycle.</h3>
+            Proof. Write $\spi=\Sigma\Gamma$, where $\Sigma$ is the product of the nontrivial cycles outside $\Gamma$. If $\Sigma=\iota$, then $\Gamma=\spi$, and hence
+            \[
+            \Gamma\epi=\spi\epi=\eiota,
+            \]
+            which is an $N$-cycle. Assume henceforth that $\Sigma\ne\iota$. For $U\subseteq E_N$, call each maximal sequence in $E_N\setminus U$ consecutive under $\epi^{-1}$ a $U$-gap. Fix a cycle $\mathsf{D}$ of $\Sigma$. The support of every cycle $\mathsf{C}$ of $\Gamma$ lies in one $\Supp(\mathsf{D})$-gap: otherwise, some consecutive pair $(a,b)$ of $\mathsf{C}$ separates two symbols of $\mathsf{D}$, and some consecutive pair $(d,e)$ of $\mathsf{D}$ crosses the resulting intervals. Thus
+            \[
+            \epi^{-1}=(a\ \dots\ e\ \dots\ b\ \dots\ d\ \dots),
+            \]
+            so $\mathsf{C}$ and $\mathsf{D}$ intersect, a contradiction. Furthermore, cycles lying in distinct $\Supp(\mathsf{D})$-gaps cannot intersect. The connectedness of $\Gamma$ therefore places all of $\Supp(\Gamma)$ in one such gap, and hence places $\Supp(\mathsf{D})$ in one $\Supp(\Gamma)$-gap.
             <br>
-            (1) $\Sigma=\iota$. Then $\Gamma=\spi$ and $\spi\epi=\sigma$. As $\sigma$ is a $(n+1)$-cycle, the proposition holds.<br>
-            (2) $\Sigma\neq\iota$ and $Supp(\Gamma)\cap Supp(\Sigma)=\emptyset$. As the cycles of $\Gamma$ do not intersect or interleave any cycle of $\Sigma$, then w.l.o.g assume $\epi=(\gamma_1\;\gamma_2\dots\gamma_r\;a\dots)$ and $Supp(\Gamma)=\{\gamma_1,\gamma_2,\dots,\gamma_r\}$, where $a \in Supp(\Sigma)$. Suppose, by contradiction, that $\Gamma\epi$ is not a $(n+1)$-cycle. In this case, $\Gamma\epi$ is a product of disjoint cycles containing a cycle $(\gamma_r\;a\dots)$ and this is the only cycle of $\Gamma\epi$ containing symbols of $Supp(\Sigma)$. However, this implies that $\Sigma\Gamma\epi=\spi\epi=\sigma$ is not a $(n+1)$-cycle, which is impossible.
+            Set $\alpha=\Gamma\epi$. Because $\Gamma$ fixes every symbol outside $\Supp(\Gamma)$, each $\Supp(\Gamma)$-gap is contained in a single cycle of $\alpha$. By the preceding, the support of each nontrivial cycle $\mathsf{D}$ of $\Sigma$ is therefore contained in a single cycle of $\alpha$. Since $\mathsf{D}$ fixes every symbol outside its support, it cannot send a symbol from one cycle of $\alpha$ to another. The nontrivial cycles of $\Sigma$ are disjoint, so neither can $\Sigma$. Consequently, left multiplication by $\Sigma$ cannot merge distinct cycles of $\alpha$. Since
+            \[
+            \Sigma\alpha=\Sigma\Gamma\epi=\spi\epi=\eiota
+            \]
+            is an $N$-cycle, $\alpha$ cannot have more than one cycle. Therefore $\Gamma\epi=\alpha$ is an $N$-cycle.
         </td>
     </tr>
 </table>
